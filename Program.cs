@@ -1,2 +1,2 @@
-﻿using var game = new ZooTycoonManager.Game1();
+﻿using var game = new ZooTycoonManager.GameWorld();
 game.Run();
