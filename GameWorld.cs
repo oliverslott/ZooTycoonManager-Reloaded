@@ -1,6 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
+using System;
+using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
@@ -8,6 +11,8 @@ namespace ZooTycoonManager
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+
+        Animal animal = new Animal();
 
         public GameWorld()
         {
@@ -29,6 +34,8 @@ namespace ZooTycoonManager
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            animal.LoadContent(Content);
+
             // TODO: use this.Content to load your game content here
         }
 
@@ -36,6 +43,16 @@ namespace ZooTycoonManager
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
+
+            MouseState mouse = Mouse.GetState();
+
+            if (mouse.LeftButton == ButtonState.Pressed)
+            {
+                Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
+                animal.PathfindTo(clickPosition);
+            }
+
+            animal.Update(gameTime);
 
             // TODO: Add your update logic here
 
@@ -47,6 +64,12 @@ namespace ZooTycoonManager
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
+
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            animal.Draw(_spriteBatch);
+
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }

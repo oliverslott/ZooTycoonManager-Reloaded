@@ -1,0 +1,108 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ZooTycoonManager
+{
+    public class AStarPathfinding
+    {
+        private int width, height;
+        private Node[,] grid;
+
+        public AStarPathfinding(int width, int height, bool[,] walkableMap)
+        {
+            this.width = width;
+            this.height = height;
+            grid = new Node[width, height];
+
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    grid[x, y] = new Node(x, y, walkableMap[x, y]);
+        }
+
+        public List<Node> FindPath(int startX, int startY, int endX, int endY)
+        {
+            Node startNode = grid[startX, startY];
+            Node endNode = grid[endX, endY];
+
+            var openSet = new List<Node> { startNode };
+            var closedSet = new HashSet<Node>();
+
+            while (openSet.Count > 0)
+            {
+                Node current = openSet.OrderBy(n => n.FCost).ThenBy(n => n.HCost).First();
+
+                if (current == endNode)
+                    return RetracePath(startNode, endNode);
+
+                openSet.Remove(current);
+                closedSet.Add(current);
+
+                foreach (Node neighbor in GetNeighbors(current))
+                {
+                    if (!neighbor.Walkable || closedSet.Contains(neighbor))
+                        continue;
+
+                    float tentativeGCost = current.GCost + GetDistance(current, neighbor);
+                    if (tentativeGCost < neighbor.GCost || !openSet.Contains(neighbor))
+                    {
+                        neighbor.GCost = tentativeGCost;
+                        neighbor.HCost = GetDistance(neighbor, endNode);
+                        neighbor.Parent = current;
+
+                        if (!openSet.Contains(neighbor))
+                            openSet.Add(neighbor);
+                    }
+                }
+            }
+
+            return null; // No path found
+        }
+
+        private List<Node> RetracePath(Node startNode, Node endNode)
+        {
+            var path = new List<Node>();
+            Node current = endNode;
+
+            while (current != startNode)
+            {
+                path.Add(current);
+                current = current.Parent;
+            }
+
+            path.Reverse();
+            return path;
+        }
+
+        private List<Node> GetNeighbors(Node node)
+        {
+            var neighbors = new List<Node>();
+
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
+                    if (x == 0 && y == 0)
+                        continue;
+
+                    int checkX = node.X + x;
+                    int checkY = node.Y + y;
+
+                    if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height)
+                        neighbors.Add(grid[checkX, checkY]);
+                }
+            }
+
+            return neighbors;
+        }
+
+        private float GetDistance(Node a, Node b)
+        {
+            int dstX = Math.Abs(a.X - b.X);
+            int dstY = Math.Abs(a.Y - b.Y);
+            return dstX + dstY; // Manhattan distance
+        }
+    }
+}
