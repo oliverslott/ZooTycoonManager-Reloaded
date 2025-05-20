@@ -33,6 +33,7 @@ namespace ZooTycoonManager
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
+            position = new Vector2(GameWorld.TILE_SIZE * 5, GameWorld.TILE_SIZE * 5);
         }
 
         private void PerformPathfinding()
@@ -76,6 +77,9 @@ namespace ZooTycoonManager
                 Debug.WriteLine("Animal is already pathfinding. New request ignored.");
                 return;
             }
+
+            // Refresh pathfinder with updated walkable map
+            pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
 
             IsPathfinding = true;
             _pathfindingStartPos = this.position;

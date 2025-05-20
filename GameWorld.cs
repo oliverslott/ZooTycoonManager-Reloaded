@@ -86,11 +86,13 @@ namespace ZooTycoonManager
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             animal.LoadContent(Content);
+            Fence.LoadContent(Content);
 
             // TODO: use this.Content to load your game content here
         }
 
         MouseState prevMouseState;
+        private bool isDraggingFence = false;
 
         protected override void Update(GameTime gameTime)
         {
@@ -105,6 +107,21 @@ namespace ZooTycoonManager
                 animal.PathfindTo(clickPosition);
             }
 
+            // Handle right mouse button for fence placement
+            if (mouse.RightButton == ButtonState.Pressed)
+            {
+                if (!isDraggingFence)
+                {
+                    isDraggingFence = true;
+                }
+                Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
+                Fence.PlaceFence(clickPosition);
+            }
+            else
+            {
+                isDraggingFence = false;
+            }
+
             animal.Update(gameTime);
 
             prevMouseState = mouse;
@@ -116,10 +133,9 @@ namespace ZooTycoonManager
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
-
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
+            Fence.Draw(_spriteBatch);
             animal.Draw(_spriteBatch);
 
             _spriteBatch.End();
