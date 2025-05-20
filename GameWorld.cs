@@ -101,7 +101,6 @@ namespace ZooTycoonManager
         }
 
         MouseState prevMouseState;
-        private bool isDraggingFence = false;
         KeyboardState prevKeyboardState;
 
         private void PlaceFence(Vector2 pixelPosition)
@@ -149,10 +148,6 @@ namespace ZooTycoonManager
             {
                 Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
                 PlaceFence(clickPosition);
-            }
-            else
-            {
-                isDraggingFence = false;
             }
 
             // Update all habitats and their animals
