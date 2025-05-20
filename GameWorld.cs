@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 namespace ZooTycoonManager
 {
@@ -18,11 +19,15 @@ namespace ZooTycoonManager
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        private SpriteFont _font;  // Add font field
 
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
 
-        private Animal animal;
+        // Fence and enclosure management
+        private bool isPlacingEnclosure = true;
+        private List<Habitat> habitats;
+        private Habitat currentHabitat;
 
         public static GameWorld Instance
         {
@@ -55,6 +60,8 @@ namespace ZooTycoonManager
             for (int x = 0; x < GRID_WIDTH; x++)
                 for (int y = 0; y < GRID_HEIGHT; y++)
                     WalkableMap[x, y] = true;
+
+            habitats = new List<Habitat>();
         }
 
         // Convert pixel position to tile position
@@ -77,22 +84,87 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            animal = new Animal();
+            // Create initial animal
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _font = Content.Load<SpriteFont>("font");  // Load the font
 
-            animal.LoadContent(Content);
-            Fence.LoadContent(Content);
-
-            // TODO: use this.Content to load your game content here
+            // Load content for all habitats and their animals
+            foreach (var habitat in habitats)
+            {
+                habitat.LoadAnimalContent(Content);
+            }
+            Habitat.LoadContent(Content);
         }
 
         MouseState prevMouseState;
         private bool isDraggingFence = false;
+        KeyboardState prevKeyboardState;
+
+        private void PlaceFence(Vector2 pixelPosition)
+        {
+            Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
+            
+            PlaceEnclosure(pixelPosition);
+        }
+
+        private void PlaceEnclosure(Vector2 centerPixelPosition)
+        {
+            Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
+            
+            // Convert the center position to tile coordinates
+            Vector2 centerTile = PixelToTile(centerPixelPosition);
+            Debug.WriteLine($"Center tile position: {centerTile}");
+
+            // Create a new habitat
+            currentHabitat = new Habitat(centerPixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+            habitats.Add(currentHabitat);
+
+            // Calculate the corners of the enclosure
+            int radius = Habitat.GetEnclosureRadius();
+            int startX = (int)centerTile.X - radius;
+            int startY = (int)centerTile.Y - radius;
+            int endX = (int)centerTile.X + radius;
+            int endY = (int)centerTile.Y + radius;
+
+            Debug.WriteLine($"Enclosure bounds: ({startX},{startY}) to ({endX},{endY})");
+
+            // Place the top and bottom rows
+            for (int x = startX; x <= endX; x++)
+            {
+                PlaceFenceTile(new Vector2(x, startY)); // Top row
+                PlaceFenceTile(new Vector2(x, endY));   // Bottom row
+            }
+
+            // Place the left and right columns (excluding corners which are already placed)
+            for (int y = startY + 1; y < endY; y++)
+            {
+                PlaceFenceTile(new Vector2(startX, y)); // Left column
+                PlaceFenceTile(new Vector2(endX, y));   // Right column
+            }
+        }
+
+        private void PlaceFenceTile(Vector2 tilePos)
+        {
+            // Ensure we're within bounds
+            if (tilePos.X < 0 || tilePos.X >= GRID_WIDTH ||
+                tilePos.Y < 0 || tilePos.Y >= GRID_HEIGHT)
+            {
+                Debug.WriteLine($"Skipping out of bounds fence at: {tilePos}");
+                return;
+            }
+
+            Vector2 pixelPos = TileToPixel(tilePos);
+            Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
+            
+            WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
+            currentHabitat.AddFencePosition(pixelPos);
+            Debug.WriteLine($"Successfully placed fence at: {tilePos}");
+        }
 
         protected override void Update(GameTime gameTime)
         {
@@ -100,31 +172,65 @@ namespace ZooTycoonManager
                 Exit();
 
             MouseState mouse = Mouse.GetState();
+            KeyboardState keyboard = Keyboard.GetState();
+
+            // Handle 'A' key press for spawning animals
+            if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
+            {
+                Vector2 mousePos = new Vector2(mouse.X, mouse.Y);
+                // Find the habitat that contains the mouse position
+                Habitat targetHabitat = habitats.FirstOrDefault(h => h.ContainsPosition(mousePos));
+                if (targetHabitat != null)
+                {
+                    // Convert mouse position to tile coordinates and back to pixel coordinates
+                    Vector2 tilePos = PixelToTile(mousePos);
+                    
+                    // Only spawn if the position is walkable
+                    if (tilePos.X >= 0 && tilePos.X < GRID_WIDTH && 
+                        tilePos.Y >= 0 && tilePos.Y < GRID_HEIGHT &&
+                        WalkableMap[(int)tilePos.X, (int)tilePos.Y])
+                    {
+                        Vector2 pixelPos = TileToPixel(tilePos);
+                        
+                        Animal newAnimal = new Animal();
+                        // Set the animal's initial position to the tile-aligned position
+                        newAnimal.SetPosition(pixelPos);
+                        newAnimal.LoadContent(Content);
+                        newAnimal.SetHabitat(targetHabitat);
+                        targetHabitat.AddAnimal(newAnimal);
+                    }
+                }
+            }
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
-                animal.PathfindTo(clickPosition);
+                // Make the first animal in the first habitat pathfind to the clicked position
+                if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
+                {
+                    habitats[0].GetAnimals()[0].PathfindTo(clickPosition);
+                }
             }
 
             // Handle right mouse button for fence placement
-            if (mouse.RightButton == ButtonState.Pressed)
+            if (mouse.RightButton == ButtonState.Pressed && prevMouseState.RightButton != ButtonState.Pressed)
             {
-                if (!isDraggingFence)
-                {
-                    isDraggingFence = true;
-                }
                 Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
-                Fence.PlaceFence(clickPosition);
+                PlaceFence(clickPosition);
             }
             else
             {
                 isDraggingFence = false;
             }
 
-            animal.Update(gameTime);
+            // Update all habitats and their animals
+            foreach (var habitat in habitats)
+            {
+                habitat.Update(gameTime);
+            }
 
             prevMouseState = mouse;
+            prevKeyboardState = keyboard;
 
             base.Update(gameTime);
         }
@@ -135,8 +241,16 @@ namespace ZooTycoonManager
 
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            Fence.Draw(_spriteBatch);
-            animal.Draw(_spriteBatch);
+            // Draw all habitats and their animals
+            foreach (var habitat in habitats)
+            {
+                habitat.Draw(_spriteBatch);
+            }
+
+            // Draw instructions at the bottom of the screen
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal";
+            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 50);
+            _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _spriteBatch.End();
 
