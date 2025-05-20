@@ -17,7 +17,7 @@ namespace ZooTycoonManager
         Vector2 position;
         List<Node> path;
         int currentNodeIndex = 0;
-        float speed = 300f;
+        float speed = 100f;
         AStarPathfinding pathfinder;
         private Habitat currentHabitat;
         private Random random = new Random();
