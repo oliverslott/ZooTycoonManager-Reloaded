@@ -27,7 +27,6 @@ namespace ZooTycoonManager
         // Fence and enclosure management
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
-        private Habitat currentHabitat;
 
         public static GameWorld Instance
         {
@@ -121,8 +120,8 @@ namespace ZooTycoonManager
             Debug.WriteLine($"Center tile position: {centerTile}");
 
             // Create a new habitat
-            currentHabitat = new Habitat(centerPixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
-            habitats.Add(currentHabitat);
+            Habitat newHabitat = new Habitat(centerPixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+            habitats.Add(newHabitat);
 
             // Calculate the corners of the enclosure
             int radius = Habitat.GetEnclosureRadius();
@@ -136,19 +135,19 @@ namespace ZooTycoonManager
             // Place the top and bottom rows
             for (int x = startX; x <= endX; x++)
             {
-                PlaceFenceTile(new Vector2(x, startY)); // Top row
-                PlaceFenceTile(new Vector2(x, endY));   // Bottom row
+                PlaceFenceTile(new Vector2(x, startY), newHabitat); // Top row
+                PlaceFenceTile(new Vector2(x, endY), newHabitat);   // Bottom row
             }
 
             // Place the left and right columns (excluding corners which are already placed)
             for (int y = startY + 1; y < endY; y++)
             {
-                PlaceFenceTile(new Vector2(startX, y)); // Left column
-                PlaceFenceTile(new Vector2(endX, y));   // Right column
+                PlaceFenceTile(new Vector2(startX, y), newHabitat); // Left column
+                PlaceFenceTile(new Vector2(endX, y), newHabitat);   // Right column
             }
         }
 
-        private void PlaceFenceTile(Vector2 tilePos)
+        private void PlaceFenceTile(Vector2 tilePos, Habitat habitat)
         {
             // Ensure we're within bounds
             if (tilePos.X < 0 || tilePos.X >= GRID_WIDTH ||
@@ -162,7 +161,7 @@ namespace ZooTycoonManager
             Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
             
             WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
-            currentHabitat.AddFencePosition(pixelPos);
+            habitat.AddFencePosition(pixelPos);
             Debug.WriteLine($"Successfully placed fence at: {tilePos}");
         }
 
