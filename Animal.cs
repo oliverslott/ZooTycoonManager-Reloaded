@@ -3,8 +3,10 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZooTycoonManager
@@ -18,21 +20,81 @@ namespace ZooTycoonManager
         int currentNodeIndex = 0;
         float speed = 300f;
 
-        bool[,] walkableMap = new bool[1280, 720];
+        bool[,] walkableMap;
         AStarPathfinding pathfinder;
+
+        private Thread _pathfindingThread;
+        private List<Node> _newlyCalculatedPath;
+        private readonly object _pathLock = new object();
+
+        public bool IsPathfinding { get; private set; }
+
+        private Vector2 _pathfindingStartPos;
+        private Vector2 _pathfindingTargetPos;
 
         public Animal()
         {
+            walkableMap = new bool[1280, 720];
             for (int x = 0; x < 1280; x++)
                 for (int y = 0; y < 720; y++)
                     walkableMap[x, y] = true;
 
             pathfinder = new AStarPathfinding(1280, 720, walkableMap);
+            IsPathfinding = false;
         }
 
-        public void PathfindTo(Vector2 pos)
+        private void PerformPathfinding()
         {
-            path = pathfinder.FindPath((int)position.X, (int)position.Y, (int)pos.X, (int)pos.Y);
+            List<Node> calculatedPath = null;
+            Stopwatch stopwatch = new Stopwatch();
+            try
+            {
+                stopwatch.Start();
+                calculatedPath = pathfinder.FindPath(
+                    (int)_pathfindingStartPos.X, (int)_pathfindingStartPos.Y,
+                    (int)_pathfindingTargetPos.X, (int)_pathfindingTargetPos.Y);
+
+                stopwatch.Stop();
+                Debug.WriteLine($"Pathfinding took {stopwatch.ElapsedMilliseconds} ms.");
+            }
+            catch (ThreadAbortException tae)
+            {
+                Debug.WriteLine($"Animal pathfinding thread ({Thread.CurrentThread.Name}) aborted: {tae.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in animal pathfinding thread ({Thread.CurrentThread.Name}): {ex.Message}");
+            }
+            finally
+            {
+                lock (_pathLock)
+                {
+                    _newlyCalculatedPath = calculatedPath;
+                }
+            }
+        }
+
+        public void PathfindTo(Vector2 targetDestination)
+        {
+            if (IsPathfinding)
+            {
+                Debug.WriteLine("Animal is already pathfinding. New request ignored.");
+                return;
+            }
+
+            IsPathfinding = true;
+            _pathfindingStartPos = this.position;
+            _pathfindingTargetPos = targetDestination;
+
+            lock (_pathLock)
+            {
+                _newlyCalculatedPath = null;
+            }
+
+            _pathfindingThread = new Thread(new ThreadStart(PerformPathfinding));
+            _pathfindingThread.Name = $"Animal_{GetHashCode()}_Pathfinder";
+            _pathfindingThread.IsBackground = true;
+            _pathfindingThread.Start();
         }
 
         public void LoadContent(ContentManager contentManager)
@@ -42,36 +104,58 @@ namespace ZooTycoonManager
 
         public void Update(GameTime gameTime)
         {
-            if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
-                return;
-
-            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            float remainingMove = speed * deltaTime;
-
-            while (remainingMove > 0 && currentNodeIndex < path.Count)
+            if (IsPathfinding)
             {
-                Node targetNode = path[currentNodeIndex];
-                Vector2 targetPosition = new Vector2(targetNode.X, targetNode.Y);
-                Vector2 direction = targetPosition - position;
-                float distance = direction.Length();
+                if (_pathfindingThread != null && !_pathfindingThread.IsAlive)
+                {
+                    lock (_pathLock)
+                    {
+                        if (_newlyCalculatedPath != null)
+                        {
+                            path = _newlyCalculatedPath;
+                            currentNodeIndex = 0;
+                        }
+                        _newlyCalculatedPath = null;
+                    }
 
-                if (distance <= remainingMove)
-                {
-                    // Move all the way to the node and subtract the distance
-                    position = targetPosition;
-                    currentNodeIndex++;
-                    remainingMove -= distance;
-                }
-                else
-                {
-                    // Move as far as we can toward the node
-                    direction.Normalize();
-                    position += direction * remainingMove;
-                    remainingMove = 0;
+                    IsPathfinding = false;
+                    _pathfindingThread = null;
                 }
             }
 
-            // If we've reached the end of the path, reset
+
+            if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
+            {
+                return;
+            }
+
+            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            float remainingMoveThisFrame = speed * deltaTime;
+
+            while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
+            {
+                Node targetNode = path[currentNodeIndex];
+                Vector2 targetNodePosition = new Vector2(targetNode.X, targetNode.Y);
+                Vector2 directionToNode = targetNodePosition - position;
+                float distanceToNode = directionToNode.Length();
+
+                if (distanceToNode <= remainingMoveThisFrame)
+                {
+                    position = targetNodePosition;
+                    currentNodeIndex++;
+                    remainingMoveThisFrame -= distanceToNode;
+                }
+                else
+                {
+                    if (distanceToNode > 0)
+                    {
+                        directionToNode.Normalize();
+                        position += directionToNode * remainingMoveThisFrame;
+                    }
+                    remainingMoveThisFrame = 0;
+                }
+            }
+
             if (currentNodeIndex >= path.Count)
             {
                 path = null;
@@ -79,12 +163,20 @@ namespace ZooTycoonManager
             }
         }
 
-
-
-
         public void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(sprite, position, new Rectangle(0,0, 16, 16), Color.White, 0f, new Vector2(0,0), 4f, SpriteEffects.None, 0);
+            if (sprite == null) return;
+            spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 4f, SpriteEffects.None, 0f);
+        }
+
+
+        public void StopPathfindingThread()
+        {
+            if (_pathfindingThread != null && _pathfindingThread.IsAlive)
+            {
+                IsPathfinding = false;
+            }
+            _pathfindingThread = null;
         }
     }
 }

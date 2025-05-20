@@ -39,6 +39,8 @@ namespace ZooTycoonManager
             // TODO: use this.Content to load your game content here
         }
 
+        MouseState prevMouseState;
+
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -46,7 +48,7 @@ namespace ZooTycoonManager
 
             MouseState mouse = Mouse.GetState();
 
-            if (mouse.LeftButton == ButtonState.Pressed)
+            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
                 animal.PathfindTo(clickPosition);
@@ -54,7 +56,7 @@ namespace ZooTycoonManager
 
             animal.Update(gameTime);
 
-            // TODO: Add your update logic here
+            prevMouseState = mouse;
 
             base.Update(gameTime);
         }
