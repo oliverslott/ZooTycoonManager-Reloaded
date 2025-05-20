@@ -108,61 +108,10 @@ namespace ZooTycoonManager
         {
             Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
             
-            PlaceEnclosure(pixelPosition);
-        }
-
-        private void PlaceEnclosure(Vector2 centerPixelPosition)
-        {
-            Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
-            
-            // Convert the center position to tile coordinates
-            Vector2 centerTile = PixelToTile(centerPixelPosition);
-            Debug.WriteLine($"Center tile position: {centerTile}");
-
-            // Create a new habitat
-            Habitat newHabitat = new Habitat(centerPixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+            // Create a new habitat and place its enclosure
+            Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
             habitats.Add(newHabitat);
-
-            // Calculate the corners of the enclosure
-            int radius = Habitat.GetEnclosureRadius();
-            int startX = (int)centerTile.X - radius;
-            int startY = (int)centerTile.Y - radius;
-            int endX = (int)centerTile.X + radius;
-            int endY = (int)centerTile.Y + radius;
-
-            Debug.WriteLine($"Enclosure bounds: ({startX},{startY}) to ({endX},{endY})");
-
-            // Place the top and bottom rows
-            for (int x = startX; x <= endX; x++)
-            {
-                PlaceFenceTile(new Vector2(x, startY), newHabitat); // Top row
-                PlaceFenceTile(new Vector2(x, endY), newHabitat);   // Bottom row
-            }
-
-            // Place the left and right columns (excluding corners which are already placed)
-            for (int y = startY + 1; y < endY; y++)
-            {
-                PlaceFenceTile(new Vector2(startX, y), newHabitat); // Left column
-                PlaceFenceTile(new Vector2(endX, y), newHabitat);   // Right column
-            }
-        }
-
-        private void PlaceFenceTile(Vector2 tilePos, Habitat habitat)
-        {
-            // Ensure we're within bounds
-            if (tilePos.X < 0 || tilePos.X >= GRID_WIDTH ||
-                tilePos.Y < 0 || tilePos.Y >= GRID_HEIGHT)
-            {
-                Debug.WriteLine($"Skipping out of bounds fence at: {tilePos}");
-                return;
-            }
-
-            Vector2 pixelPos = TileToPixel(tilePos);
-            Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
-            
-            WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
-            habitat.AddFencePosition(pixelPos);
-            Debug.WriteLine($"Successfully placed fence at: {tilePos}");
+            newHabitat.PlaceEnclosure(pixelPosition);
         }
 
         protected override void Update(GameTime gameTime)
@@ -181,23 +130,7 @@ namespace ZooTycoonManager
                 Habitat targetHabitat = habitats.FirstOrDefault(h => h.ContainsPosition(mousePos));
                 if (targetHabitat != null)
                 {
-                    // Convert mouse position to tile coordinates and back to pixel coordinates
-                    Vector2 tilePos = PixelToTile(mousePos);
-                    
-                    // Only spawn if the position is walkable
-                    if (tilePos.X >= 0 && tilePos.X < GRID_WIDTH && 
-                        tilePos.Y >= 0 && tilePos.Y < GRID_HEIGHT &&
-                        WalkableMap[(int)tilePos.X, (int)tilePos.Y])
-                    {
-                        Vector2 pixelPos = TileToPixel(tilePos);
-                        
-                        Animal newAnimal = new Animal();
-                        // Set the animal's initial position to the tile-aligned position
-                        newAnimal.SetPosition(pixelPos);
-                        newAnimal.LoadContent(Content);
-                        newAnimal.SetHabitat(targetHabitat);
-                        targetHabitat.AddAnimal(newAnimal);
-                    }
+                    targetHabitat.SpawnAnimal(mousePos);
                 }
             }
 

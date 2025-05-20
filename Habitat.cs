@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Content;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
@@ -119,6 +120,77 @@ namespace ZooTycoonManager
             {
                 animal.LoadContent(content);
             }
+        }
+
+        public void PlaceEnclosure(Vector2 centerPixelPosition)
+        {
+            Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
+            
+            // Convert the center position to tile coordinates
+            Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
+            Debug.WriteLine($"Center tile position: {centerTile}");
+
+            // Calculate the corners of the enclosure
+            int radius = GetEnclosureRadius();
+            int startX = (int)centerTile.X - radius;
+            int startY = (int)centerTile.Y - radius;
+            int endX = (int)centerTile.X + radius;
+            int endY = (int)centerTile.Y + radius;
+
+            Debug.WriteLine($"Enclosure bounds: ({startX},{startY}) to ({endX},{endY})");
+
+            // Place the top and bottom rows
+            for (int x = startX; x <= endX; x++)
+            {
+                PlaceFenceTile(new Vector2(x, startY)); // Top row
+                PlaceFenceTile(new Vector2(x, endY));   // Bottom row
+            }
+
+            // Place the left and right columns (excluding corners which are already placed)
+            for (int y = startY + 1; y < endY; y++)
+            {
+                PlaceFenceTile(new Vector2(startX, y)); // Left column
+                PlaceFenceTile(new Vector2(endX, y));   // Right column
+            }
+        }
+
+        private void PlaceFenceTile(Vector2 tilePos)
+        {
+            // Ensure we're within bounds
+            if (tilePos.X < 0 || tilePos.X >= GameWorld.GRID_WIDTH ||
+                tilePos.Y < 0 || tilePos.Y >= GameWorld.GRID_HEIGHT)
+            {
+                Debug.WriteLine($"Skipping out of bounds fence at: {tilePos}");
+                return;
+            }
+
+            Vector2 pixelPos = GameWorld.TileToPixel(tilePos);
+            Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
+            
+            GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
+            AddFencePosition(pixelPos);
+            Debug.WriteLine($"Successfully placed fence at: {tilePos}");
+        }
+
+        public bool SpawnAnimal(Vector2 pixelPosition)
+        {
+            Vector2 tilePos = GameWorld.PixelToTile(pixelPosition);
+            
+            // Only spawn if the position is walkable and within bounds
+            if (tilePos.X >= 0 && tilePos.X < GameWorld.GRID_WIDTH && 
+                tilePos.Y >= 0 && tilePos.Y < GameWorld.GRID_HEIGHT &&
+                GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y])
+            {
+                Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
+                
+                Animal newAnimal = new Animal();
+                newAnimal.SetPosition(spawnPos);
+                newAnimal.LoadContent(GameWorld.Instance.Content);
+                newAnimal.SetHabitat(this);
+                AddAnimal(newAnimal);
+                return true;
+            }
+            return false;
         }
     }
 } 
