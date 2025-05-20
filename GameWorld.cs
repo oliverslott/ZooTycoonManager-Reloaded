@@ -9,24 +9,75 @@ namespace ZooTycoonManager
 {
     public class GameWorld : Game
     {
+        // Tile and grid settings
+        public const int TILE_SIZE = 32; // Size of each tile in pixels
+        public const int GRID_WIDTH = 40; // 1280 / 32
+        public const int GRID_HEIGHT = 22; // 720 / 32
+
+        private static GameWorld _instance;
+        private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        Animal animal = new Animal();
+        // Walkable map for pathfinding
+        public bool[,] WalkableMap { get; private set; }
 
-        public GameWorld()
+        private Animal animal;
+
+        public static GameWorld Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new GameWorld();
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
+
+        private GameWorld()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = 1280;
-            _graphics.PreferredBackBufferHeight = 720;
+            _graphics.PreferredBackBufferWidth = GRID_WIDTH * TILE_SIZE;
+            _graphics.PreferredBackBufferHeight = GRID_HEIGHT * TILE_SIZE;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+
+            // Initialize walkable map
+            WalkableMap = new bool[GRID_WIDTH, GRID_HEIGHT];
+            for (int x = 0; x < GRID_WIDTH; x++)
+                for (int y = 0; y < GRID_HEIGHT; y++)
+                    WalkableMap[x, y] = true;
+        }
+
+        // Convert pixel position to tile position
+        public static Vector2 PixelToTile(Vector2 pixelPos)
+        {
+            return new Vector2(
+                (int)(pixelPos.X / TILE_SIZE),
+                (int)(pixelPos.Y / TILE_SIZE)
+            );
+        }
+
+        // Convert tile position to pixel position (center of tile)
+        public static Vector2 TileToPixel(Vector2 tilePos)
+        {
+            return new Vector2(
+                tilePos.X * TILE_SIZE + TILE_SIZE / 2,
+                tilePos.Y * TILE_SIZE + TILE_SIZE / 2
+            );
         }
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
+            animal = new Animal();
             base.Initialize();
         }
 

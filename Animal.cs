@@ -16,11 +16,8 @@ namespace ZooTycoonManager
         Texture2D sprite;
         Vector2 position;
         List<Node> path;
-
         int currentNodeIndex = 0;
         float speed = 300f;
-
-        bool[,] walkableMap;
         AStarPathfinding pathfinder;
 
         private Thread _pathfindingThread;
@@ -34,12 +31,7 @@ namespace ZooTycoonManager
 
         public Animal()
         {
-            walkableMap = new bool[1280, 720];
-            for (int x = 0; x < 1280; x++)
-                for (int y = 0; y < 720; y++)
-                    walkableMap[x, y] = true;
-
-            pathfinder = new AStarPathfinding(1280, 720, walkableMap);
+            pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
         }
 
@@ -50,9 +42,12 @@ namespace ZooTycoonManager
             try
             {
                 stopwatch.Start();
+                Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
+                Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
+                
                 calculatedPath = pathfinder.FindPath(
-                    (int)_pathfindingStartPos.X, (int)_pathfindingStartPos.Y,
-                    (int)_pathfindingTargetPos.X, (int)_pathfindingTargetPos.Y);
+                    (int)startTile.X, (int)startTile.Y,
+                    (int)targetTile.X, (int)targetTile.Y);
 
                 stopwatch.Stop();
                 Debug.WriteLine($"Pathfinding took {stopwatch.ElapsedMilliseconds} ms.");
@@ -123,7 +118,6 @@ namespace ZooTycoonManager
                 }
             }
 
-
             if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
             {
                 return;
@@ -135,7 +129,7 @@ namespace ZooTycoonManager
             while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
             {
                 Node targetNode = path[currentNodeIndex];
-                Vector2 targetNodePosition = new Vector2(targetNode.X, targetNode.Y);
+                Vector2 targetNodePosition = GameWorld.TileToPixel(new Vector2(targetNode.X, targetNode.Y));
                 Vector2 directionToNode = targetNodePosition - position;
                 float distanceToNode = directionToNode.Length();
 
@@ -166,9 +160,8 @@ namespace ZooTycoonManager
         public void Draw(SpriteBatch spriteBatch)
         {
             if (sprite == null) return;
-            spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 4f, SpriteEffects.None, 0f);
+            spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
         }
-
 
         public void StopPathfindingThread()
         {
