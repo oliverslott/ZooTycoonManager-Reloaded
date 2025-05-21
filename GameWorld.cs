@@ -29,6 +29,16 @@ namespace ZooTycoonManager
         private List<Habitat> habitats;
         private List<Visitor> visitors; // Add visitors list
 
+        public List<Habitat> GetHabitats()
+        {
+            return habitats;
+        }
+
+        public List<Visitor> GetVisitors()
+        {
+            return visitors;
+        }
+
         public static GameWorld Instance
         {
             get
@@ -138,7 +148,10 @@ namespace ZooTycoonManager
             // Handle 'B' key press for spawning visitors
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
-                Visitor newVisitor = new Visitor();
+                Vector2 mousePos = new Vector2(mouse.X, mouse.Y);
+                Vector2 tilePos = PixelToTile(mousePos);
+                Vector2 spawnPos = TileToPixel(tilePos);
+                Visitor newVisitor = new Visitor(spawnPos);
                 newVisitor.LoadContent(Content);
                 visitors.Add(newVisitor);
             }

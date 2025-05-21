@@ -31,11 +31,11 @@ namespace ZooTycoonManager
         private Vector2 _pathfindingStartPos;
         private Vector2 _pathfindingTargetPos;
 
-        public Visitor()
+        public Visitor(Vector2 spawnPosition)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
-            position = new Vector2(GameWorld.TILE_SIZE * 20, GameWorld.TILE_SIZE * 20);
+            position = spawnPosition;
 
             // Start the update thread
             _updateThread = new Thread(UpdateLoop);
@@ -71,7 +71,39 @@ namespace ZooTycoonManager
             {
                 timeSinceLastRandomWalk = 0f;
 
-                // Get a random position within the grid
+                // Get all habitats from GameWorld
+                var habitats = GameWorld.Instance.GetHabitats();
+                if (habitats.Count > 0)
+                {
+                    // 70% chance to visit a habitat, 30% chance to random walk
+                    if (random.NextDouble() < 0.7)
+                    {
+                        // Pick a random habitat
+                        var randomHabitat = habitats[random.Next(habitats.Count)];
+                        var visitPosition = randomHabitat.GetRandomFencePosition();
+                        
+                        if (visitPosition.HasValue)
+                        {
+                            Debug.WriteLine($"Visitor {GetHashCode()}: Deciding to visit a habitat at position {visitPosition.Value}");
+                            PathfindTo(visitPosition.Value);
+                            return;
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"Visitor {GetHashCode()}: Failed to find a valid position next to habitat");
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Visitor {GetHashCode()}: Deciding to take a random walk instead of visiting habitat");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"Visitor {GetHashCode()}: No habitats available, taking random walk");
+                }
+
+                // Fallback to random walk if no habitats or random choice
                 int randomX = random.Next(0, GameWorld.GRID_WIDTH);
                 int randomY = random.Next(0, GameWorld.GRID_HEIGHT);
 
@@ -80,6 +112,7 @@ namespace ZooTycoonManager
 
                 if (GameWorld.Instance.WalkableMap[randomX, randomY])
                 {
+                    Debug.WriteLine($"Visitor {GetHashCode()}: Random walking to position {randomPixelPos}");
                     PathfindTo(randomPixelPos);
                 }
             }
@@ -154,6 +187,7 @@ namespace ZooTycoonManager
                         {
                             path = _newlyCalculatedPath;
                             currentNodeIndex = 0;
+                            Debug.WriteLine($"Visitor {GetHashCode()}: Received new path with {path.Count} nodes");
                         }
                         _newlyCalculatedPath = null;
                     }
@@ -203,6 +237,7 @@ namespace ZooTycoonManager
 
             if (currentNodeIndex >= path.Count)
             {
+                Debug.WriteLine($"Visitor {GetHashCode()}: Reached destination at position {position}");
                 path = null;
                 currentNodeIndex = 0;
             }
@@ -214,6 +249,14 @@ namespace ZooTycoonManager
             lock (_positionLock)
             {
                 spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
+            }
+        }
+
+        public Vector2 GetPosition()
+        {
+            lock (_positionLock)
+            {
+                return position;
             }
         }
     }
