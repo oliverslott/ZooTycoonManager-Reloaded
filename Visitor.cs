@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ZooTycoonManager
 {
@@ -19,6 +20,9 @@ namespace ZooTycoonManager
         private Random random = new Random();
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 5f; // Longer interval than animals
+        private const float VISIT_DURATION = 4f;  // How long to stay at a habitat
+        private float currentVisitTime = 0f;
+        private Habitat currentHabitat = null;
 
         private Thread _updateThread;
         private Thread _pathfindingThread;
@@ -71,6 +75,12 @@ namespace ZooTycoonManager
             {
                 timeSinceLastRandomWalk = 0f;
 
+                // If we're currently visiting a habitat, just return
+                if (currentHabitat != null)
+                {
+                    return;
+                }
+
                 // Get all habitats from GameWorld
                 var habitats = GameWorld.Instance.GetHabitats();
                 if (habitats.Count > 0)
@@ -84,9 +94,19 @@ namespace ZooTycoonManager
                         
                         if (visitPosition.HasValue)
                         {
-                            Debug.WriteLine($"Visitor {GetHashCode()}: Deciding to visit a habitat at position {visitPosition.Value}");
-                            PathfindTo(visitPosition.Value);
-                            return;
+                            // Try to enter the habitat
+                            if (randomHabitat.TryEnterHabitatSync(this))
+                            {
+                                Debug.WriteLine($"Visitor {GetHashCode()}: Entering habitat at position {visitPosition.Value}");
+                                currentHabitat = randomHabitat;
+                                currentVisitTime = 0f;
+                                PathfindTo(visitPosition.Value);
+                                return;
+                            }
+                            else
+                            {
+                                Debug.WriteLine($"Visitor {GetHashCode()}: Habitat is full, taking random walk instead");
+                            }
                         }
                         else
                         {
@@ -175,6 +195,24 @@ namespace ZooTycoonManager
 
         private void Update(GameTime gameTime)
         {
+            // Check visit duration every frame
+            if (currentHabitat != null)
+            {
+                // Only increment visit time if we're not currently pathfinding and have no active path
+                if (!IsPathfinding && (path == null || path.Count == 0))
+                {
+                    currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    //Debug.WriteLine($"Visitor {GetHashCode()}: Current visit time: {currentVisitTime:F2}s / {VISIT_DURATION}s");
+                    if (currentVisitTime >= VISIT_DURATION)
+                    {
+                        currentHabitat.LeaveHabitat(this);
+                        currentHabitat = null;
+                        currentVisitTime = 0f;
+                        Debug.WriteLine($"Visitor {GetHashCode()}: Finished visiting habitat");
+                    }
+                }
+            }
+
             TryRandomWalk(gameTime);
 
             if (IsPathfinding)
@@ -187,7 +225,7 @@ namespace ZooTycoonManager
                         {
                             path = _newlyCalculatedPath;
                             currentNodeIndex = 0;
-                            Debug.WriteLine($"Visitor {GetHashCode()}: Received new path with {path.Count} nodes");
+                            //Debug.WriteLine($"Visitor {GetHashCode()}: Received new path with {path.Count} nodes");
                         }
                         _newlyCalculatedPath = null;
                     }
@@ -237,7 +275,7 @@ namespace ZooTycoonManager
 
             if (currentNodeIndex >= path.Count)
             {
-                Debug.WriteLine($"Visitor {GetHashCode()}: Reached destination at position {position}");
+                //Debug.WriteLine($"Visitor {GetHashCode()}: Reached destination at position {position}");
                 path = null;
                 currentNodeIndex = 0;
             }

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System;
+using System.Threading.Tasks;
 
 namespace ZooTycoonManager
 {
@@ -13,6 +14,7 @@ namespace ZooTycoonManager
     {
         // Enclosure size constant
         public const int DEFAULT_ENCLOSURE_SIZE = 9;  // Total size of the enclosure (9x9)
+        private const int MAX_VISITORS = 3;  // Maximum number of visitors allowed in a habitat
 
         private Vector2 centerPosition;
         private int width;
@@ -20,6 +22,8 @@ namespace ZooTycoonManager
         private List<Vector2> fencePositions;
         private List<Animal> animals;
         private static Texture2D fenceTexture;
+        private SemaphoreSlim visitorSemaphore;  // Semaphore to control visitor access
+        private HashSet<Visitor> currentVisitors;  // Track current visitors
 
         public static int GetEnclosureRadius()
         {
@@ -33,6 +37,8 @@ namespace ZooTycoonManager
             this.height = height;
             this.fencePositions = new List<Vector2>();
             this.animals = new List<Animal>();
+            this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+            this.currentVisitors = new HashSet<Visitor>();
         }
 
         public static void LoadContent(ContentManager content)
@@ -260,6 +266,51 @@ namespace ZooTycoonManager
             }
 
             return nearestWalkablePos;
+        }
+
+        public async Task<bool> TryEnterHabitat(Visitor visitor)
+        {
+            if (await visitorSemaphore.WaitAsync(0))  // Try to acquire the semaphore without waiting
+            {
+                lock (currentVisitors)
+                {
+                    currentVisitors.Add(visitor);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryEnterHabitatSync(Visitor visitor)
+        {
+            if (visitorSemaphore.Wait(0))  // Try to acquire the semaphore without waiting
+            {
+                lock (currentVisitors)
+                {
+                    currentVisitors.Add(visitor);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public void LeaveHabitat(Visitor visitor)
+        {
+            lock (currentVisitors)
+            {
+                if (currentVisitors.Remove(visitor))
+                {
+                    visitorSemaphore.Release();
+                }
+            }
+        }
+
+        public int GetCurrentVisitorCount()
+        {
+            lock (currentVisitors)
+            {
+                return currentVisitors.Count;
+            }
         }
     }
 } 
