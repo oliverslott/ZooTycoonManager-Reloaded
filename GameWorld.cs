@@ -27,6 +27,7 @@ namespace ZooTycoonManager
         // Fence and enclosure management
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
+        private List<Visitor> visitors; // Add visitors list
 
         public static GameWorld Instance
         {
@@ -61,6 +62,7 @@ namespace ZooTycoonManager
                     WalkableMap[x, y] = true;
 
             habitats = new List<Habitat>();
+            visitors = new List<Visitor>(); // Initialize visitors list
         }
 
         // Convert pixel position to tile position
@@ -133,6 +135,14 @@ namespace ZooTycoonManager
                 }
             }
 
+            // Handle 'B' key press for spawning visitors
+            if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
+            {
+                Visitor newVisitor = new Visitor();
+                newVisitor.LoadContent(Content);
+                visitors.Add(newVisitor);
+            }
+
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
@@ -174,9 +184,15 @@ namespace ZooTycoonManager
                 habitat.Draw(_spriteBatch);
             }
 
+            // Draw all visitors
+            foreach (var visitor in visitors)
+            {
+                visitor.Draw(_spriteBatch);
+            }
+
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal";
-            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 50);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor";
+            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 70);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _spriteBatch.End();
