@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 
 namespace ZooTycoonManager
 {
-    public class Visitor
+    public class Visitor : ISaveable, ILoadable
     {
         private Texture2D sprite;
         private Vector2 position;
@@ -35,11 +36,47 @@ namespace ZooTycoonManager
         private Vector2 _pathfindingStartPos;
         private Vector2 _pathfindingTargetPos;
 
-        public Visitor(Vector2 spawnPosition)
+        // Database properties
+        public int VisitorId { get; set; }
+        public string Name { get; set; }
+        public int Money { get; set; }
+        public int Mood { get; set; }
+        public int Hunger { get; set; }
+        public int? HabitatId { get; set; }
+        public int? ShopId { get; set; }
+        private int _positionX;
+        private int _positionY;
+
+        public Vector2 Position 
+        { 
+            get => position;
+            private set
+            {
+                position = value;
+                // Update database position properties with tile coordinates
+                Vector2 tilePos = GameWorld.PixelToTile(value);
+                _positionX = (int)tilePos.X;
+                _positionY = (int)tilePos.Y;
+            }
+        }
+
+        public int PositionX => _positionX;
+        public int PositionY => _positionY;
+
+        public Visitor(Vector2 spawnPosition, int visitorId = 0)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
-            position = spawnPosition;
+            Position = spawnPosition;
+            VisitorId = visitorId;
+
+            // Initialize default values
+            Name = "Visitor";
+            Money = 100;
+            Mood = 100;
+            Hunger = 0;
+            HabitatId = null;
+            ShopId = null;
 
             // Start the update thread
             _updateThread = new Thread(UpdateLoop);
@@ -296,6 +333,75 @@ namespace ZooTycoonManager
             {
                 return position;
             }
+        }
+
+        public void Save(SqliteTransaction transaction)
+        {
+            var command = transaction.Connection.CreateCommand();
+            command.Transaction = transaction;
+
+            command.Parameters.AddWithValue("$visitor_id", VisitorId);
+            command.Parameters.AddWithValue("$name", Name);
+            command.Parameters.AddWithValue("$money", Money);
+            command.Parameters.AddWithValue("$mood", Mood);
+            command.Parameters.AddWithValue("$hunger", Hunger);
+            command.Parameters.AddWithValue("$habitat_id", (object)HabitatId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$shop_id", (object)ShopId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$position_x", PositionX);
+            command.Parameters.AddWithValue("$position_y", PositionY);
+
+            command.CommandText = @"
+                UPDATE Visitor 
+                SET name = $name, 
+                    money = $money, 
+                    mood = $mood, 
+                    hunger = $hunger, 
+                    habitat_id = $habitat_id, 
+                    shop_id = $shop_id, 
+                    position_x = $position_x, 
+                    position_y = $position_y
+                WHERE visitor_id = $visitor_id;
+            ";
+            int rowsAffected = command.ExecuteNonQuery();
+
+            if (rowsAffected == 0)
+            {
+                command.CommandText = @"
+                    INSERT INTO Visitor (visitor_id, name, money, mood, hunger, habitat_id, shop_id, position_x, position_y)
+                    VALUES ($visitor_id, $name, $money, $mood, $hunger, $habitat_id, $shop_id, $position_x, $position_y);
+                ";
+                command.ExecuteNonQuery();
+                Debug.WriteLine($"Inserted Visitor: ID {VisitorId}, Name: {Name}");
+            }
+            else
+            {
+                Debug.WriteLine($"Updated Visitor: ID {VisitorId}, Name: {Name}");
+            }
+        }
+
+        public void Load(SqliteDataReader reader)
+        {
+            VisitorId = reader.GetInt32(0);
+            Name = reader.GetString(1);
+            Money = reader.GetInt32(2);
+            Mood = reader.GetInt32(3);
+            Hunger = reader.GetInt32(4);
+            HabitatId = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5);
+            ShopId = reader.IsDBNull(6) ? null : (int?)reader.GetInt32(6);
+            int posX = reader.GetInt32(7);
+            int posY = reader.GetInt32(8);
+
+            // Convert tile position to pixel position
+            Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
+            Position = pixelPos;
+
+            // Initialize other properties
+            pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
+            IsPathfinding = false;
+            path = null;
+            currentNodeIndex = 0;
+            timeSinceLastRandomWalk = 0f;
+            currentVisitTime = 0f;
         }
     }
 }

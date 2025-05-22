@@ -7,10 +7,11 @@ using System.Linq;
 using System.Threading;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 
 namespace ZooTycoonManager
 {
-    public class Habitat
+    public class Habitat: ISaveable, ILoadable
     {
         // Enclosure size constant
         public const int DEFAULT_ENCLOSURE_SIZE = 9;  // Total size of the enclosure (9x9)
@@ -25,20 +26,51 @@ namespace ZooTycoonManager
         private SemaphoreSlim visitorSemaphore;  // Semaphore to control visitor access
         private HashSet<Visitor> currentVisitors;  // Track current visitors
 
+        //Database
+        public int HabitatId { get; set; }
+        public int Size { get; set; }
+        public int MaxAnimals { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
+        private int positionX;
+        private int positionY;
+
+        public Vector2 CenterPosition 
+        { 
+            get => centerPosition;
+            private set
+            {
+                centerPosition = value;
+                // Update database position properties with tile coordinates
+                Vector2 tilePos = GameWorld.PixelToTile(value);
+                positionX = (int)tilePos.X;
+                positionY = (int)tilePos.Y;
+            }
+        }
+
+        public int PositionX => positionX;
+        public int PositionY => positionY;
+
         public static int GetEnclosureRadius()
         {
             return (DEFAULT_ENCLOSURE_SIZE - 1) / 2;
         }
 
-        public Habitat(Vector2 centerPosition, int width, int height)
+        public Habitat(Vector2 centerPosition, int width, int height, int habitatId = 0)
         {
-            this.centerPosition = centerPosition;
             this.width = width;
             this.height = height;
             this.fencePositions = new List<Vector2>();
             this.animals = new List<Animal>();
             this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
             this.currentVisitors = new HashSet<Visitor>();
+            CenterPosition = centerPosition;
+            HabitatId = habitatId;
+
+            Size = 1;
+            MaxAnimals = 10;
+            Name = "Goat Habitat";
+            Type = "Normal";
         }
 
         public static void LoadContent(ContentManager content)
@@ -59,7 +91,7 @@ namespace ZooTycoonManager
         public bool ContainsPosition(Vector2 position)
         {
             Vector2 tilePos = GameWorld.PixelToTile(position);
-            Vector2 centerTile = GameWorld.PixelToTile(centerPosition);
+            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
 
             int halfWidth = width / 2;
             int halfHeight = height / 2;
@@ -82,7 +114,7 @@ namespace ZooTycoonManager
 
         public Vector2 GetCenterPosition()
         {
-            return centerPosition;
+            return CenterPosition;
         }
 
         public int GetWidth()
@@ -134,6 +166,8 @@ namespace ZooTycoonManager
         public void PlaceEnclosure(Vector2 centerPixelPosition)
         {
             Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
+            
+            CenterPosition = centerPixelPosition;
             
             // Convert the center position to tile coordinates
             Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
@@ -192,7 +226,7 @@ namespace ZooTycoonManager
             {
                 Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
                 
-                Animal newAnimal = new Animal();
+                Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
                 newAnimal.SetPosition(spawnPos);
                 newAnimal.LoadContent(GameWorld.Instance.Content);
                 newAnimal.SetHabitat(this);
@@ -311,6 +345,73 @@ namespace ZooTycoonManager
             {
                 return currentVisitors.Count;
             }
+        }
+
+        public void Save(SqliteTransaction transaction)
+        {
+            var command = transaction.Connection.CreateCommand();
+            command.Transaction = transaction;
+
+            command.Parameters.AddWithValue("$habitat_id", HabitatId);
+            command.Parameters.AddWithValue("$size", Size);
+            command.Parameters.AddWithValue("$max_animals", MaxAnimals);
+            command.Parameters.AddWithValue("$name", Name);
+            command.Parameters.AddWithValue("$type", Type);
+            command.Parameters.AddWithValue("$position_x", PositionX);
+            command.Parameters.AddWithValue("$position_y", PositionY);
+
+            try
+            {
+                // Try to insert first
+                command.CommandText = @"
+                    INSERT INTO Habitat (habitat_id, size, max_animals, name, type, position_x, position_y)
+                    VALUES ($habitat_id, $size, $max_animals, $name, $type, $position_x, $position_y);
+                ";
+                command.ExecuteNonQuery();
+                Debug.WriteLine($"Inserted Habitat: ID {HabitatId}");
+            }
+            catch (SqliteException ex) when (ex.SqliteErrorCode == 19) // SQLITE_CONSTRAINT
+            {
+                // If insert fails due to primary key constraint, update instead
+                command.CommandText = @"
+                    UPDATE Habitat 
+                    SET size = $size, 
+                        max_animals = $max_animals, 
+                        name = $name, 
+                        type = $type, 
+                        position_x = $position_x, 
+                        position_y = $position_y
+                    WHERE habitat_id = $habitat_id;
+                ";
+                command.ExecuteNonQuery();
+                Debug.WriteLine($"Updated Habitat: ID {HabitatId}");
+            }
+        }
+
+        public void Load(SqliteDataReader reader)
+        {
+            HabitatId = reader.GetInt32(0);
+            Size = reader.GetInt32(1);
+            MaxAnimals = reader.GetInt32(2);
+            Name = reader.GetString(3);
+            Type = reader.GetString(4);
+            int posX = reader.GetInt32(5);
+            int posY = reader.GetInt32(6);
+
+            // Convert tile position to pixel position
+            Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
+            CenterPosition = pixelPos;
+            
+            // Initialize other properties
+            width = Habitat.DEFAULT_ENCLOSURE_SIZE;
+            height = Habitat.DEFAULT_ENCLOSURE_SIZE;
+            fencePositions = new List<Vector2>();
+            animals = new List<Animal>();
+            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+            currentVisitors = new HashSet<Visitor>();
+
+            // Place the enclosure
+            PlaceEnclosure(pixelPos);
         }
     }
 } 

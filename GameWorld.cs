@@ -31,6 +31,9 @@ namespace ZooTycoonManager
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
         private List<Visitor> visitors; // Add visitors list
+        private int _nextHabitatId = 1;
+        private int _nextAnimalId = 1;
+        private int _nextVisitorId = 1;
 
         public List<Habitat> GetHabitats()
         {
@@ -98,7 +101,12 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            // Create initial animal
+            var (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId) = DatabaseManager.Instance.LoadGame(Content);
+            habitats = loadedHabitats;
+            _nextHabitatId = nextHabitatId;
+            _nextAnimalId = nextAnimalId;
+            _nextVisitorId = nextVisitorId;
+
             base.Initialize();
         }
 
@@ -112,7 +120,6 @@ namespace ZooTycoonManager
 
             map = new Map(400, 400); // yo, this is where the size happens
             tileRenderer = new TileRenderer(tileTextures);
-
 
             // Load content for all habitats and their animals
             foreach (var habitat in habitats)
@@ -130,7 +137,7 @@ namespace ZooTycoonManager
             Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
             
             // Create a new habitat and place its enclosure
-            Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+            Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, _nextHabitatId++);
             habitats.Add(newHabitat);
             newHabitat.PlaceEnclosure(pixelPosition);
         }
@@ -161,9 +168,24 @@ namespace ZooTycoonManager
                 Vector2 mousePos = new Vector2(mouse.X, mouse.Y);
                 Vector2 tilePos = PixelToTile(mousePos);
                 Vector2 spawnPos = TileToPixel(tilePos);
-                Visitor newVisitor = new Visitor(spawnPos);
+                Visitor newVisitor = new Visitor(spawnPos, _nextVisitorId++);
                 newVisitor.LoadContent(Content);
                 visitors.Add(newVisitor);
+            }
+
+            if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
+            {
+                DatabaseManager.Instance.SaveGame(habitats);
+            }
+
+            // Handle 'O' key press for clearing everything
+            if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
+            {
+                habitats.Clear();
+                visitors.Clear();
+                _nextHabitatId = 1;
+                _nextAnimalId = 1;
+                _nextVisitorId = 1;
             }
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
@@ -216,13 +238,18 @@ namespace ZooTycoonManager
             }
 
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor";
-            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 70);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything";
+            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 110);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        public int GetNextAnimalId()
+        {
+            return _nextAnimalId++;
         }
     }
 }
