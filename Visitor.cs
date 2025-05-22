@@ -291,7 +291,7 @@ namespace ZooTycoonManager
                 {
                     lock (_positionLock)
                     {
-                        position = targetNodePosition;
+                        Position = targetNodePosition;
                     }
                     currentNodeIndex++;
                     remainingMoveThisFrame -= distanceToNode;
@@ -303,7 +303,7 @@ namespace ZooTycoonManager
                         directionToNode.Normalize();
                         lock (_positionLock)
                         {
-                            position += directionToNode * remainingMoveThisFrame;
+                            Position = position + directionToNode * remainingMoveThisFrame;
                         }
                     }
                     remainingMoveThisFrame = 0;
