@@ -12,8 +12,8 @@ namespace ZooTycoonManager
     {
         // Tile and grid settings
         public const int TILE_SIZE = 32; // Size of each tile in pixels
-        public const int GRID_WIDTH = 40; // 1280 / 32
-        public const int GRID_HEIGHT = 22; // 720 / 32
+        public const int GRID_WIDTH = 100;
+        public const int GRID_HEIGHT = 100;
 
         private static GameWorld _instance;
         private static readonly object _lock = new object();
@@ -41,8 +41,6 @@ namespace ZooTycoonManager
 
         // Window state
         private bool _isFullscreen = false;
-        private int _defaultWidth;
-        private int _defaultHeight;
 
         public List<Habitat> GetHabitats()
         {
@@ -75,10 +73,8 @@ namespace ZooTycoonManager
         private GameWorld()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _defaultWidth = GRID_WIDTH * TILE_SIZE;
-            _defaultHeight = GRID_HEIGHT * TILE_SIZE;
-            _graphics.PreferredBackBufferWidth = _defaultWidth;
-            _graphics.PreferredBackBufferHeight = _defaultHeight;
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
             _graphics.IsFullScreen = false;
             Window.AllowUserResizing = true;
             _graphics.ApplyChanges();
@@ -155,7 +151,7 @@ namespace ZooTycoonManager
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
-            map = new Map(100, 100); // yo, this is where the size happens
+            map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens
             tileRenderer = new TileRenderer(tileTextures);
 
             // Load content for all habitats and their animals
@@ -275,8 +271,8 @@ namespace ZooTycoonManager
             }
             else
             {
-                _graphics.PreferredBackBufferWidth = _defaultWidth;
-                _graphics.PreferredBackBufferHeight = _defaultHeight;
+                _graphics.PreferredBackBufferWidth = 1280;
+                _graphics.PreferredBackBufferHeight = 720;
                 _graphics.IsFullScreen = false;
             }
             _graphics.ApplyChanges();
