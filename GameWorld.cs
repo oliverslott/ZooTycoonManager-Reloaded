@@ -23,6 +23,7 @@ namespace ZooTycoonManager
         Map map;
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
+        private FPSCounter _fpsCounter;  // Add FPS counter field
 
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
@@ -74,6 +75,10 @@ namespace ZooTycoonManager
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
+            // Set to use monitor refresh rate instead of fixed 60 FPS
+            IsFixedTimeStep = false;
+            TargetElapsedTime = TimeSpan.FromTicks(1);
+
             // Initialize camera
             _camera = new Camera(_graphics);
 
@@ -120,11 +125,12 @@ namespace ZooTycoonManager
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
+            _fpsCounter = new FPSCounter(_font);  // Initialize FPS counter
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
-            map = new Map(400, 400); // yo, this is where the size happens
+            map = new Map(100, 100); // yo, this is where the size happens
             tileRenderer = new TileRenderer(tileTextures);
 
             // Load content for all habitats and their animals
@@ -152,6 +158,8 @@ namespace ZooTycoonManager
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
+
+            _fpsCounter.Update(gameTime);  // Update FPS counter
 
             MouseState mouse = Mouse.GetState();
             KeyboardState keyboard = Keyboard.GetState();
@@ -251,6 +259,9 @@ namespace ZooTycoonManager
 
             // Draw UI elements without camera offset
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            // Draw FPS counter
+            _fpsCounter.Draw(_spriteBatch);
 
             // Draw instructions at the bottom of the screen
             string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
