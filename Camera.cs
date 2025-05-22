@@ -31,22 +31,13 @@ namespace ZooTycoonManager
         public Vector2 ScreenToWorld(Vector2 screenPos)
         {
             Vector2 screenCenter = new Vector2(
-                _graphics.PreferredBackBufferWidth / 2f, // Using 2f for float division, good practice
+                _graphics.PreferredBackBufferWidth / 2f,
                 _graphics.PreferredBackBufferHeight / 2f
             );
 
-            // Inverse of: ScreenPos = ((WorldPos - screenCenter) * _zoomScale + screenCenter) - _cameraPosition
-
-            // Step 1: Add _cameraPosition to screenPos
-            Vector2 worldPos = screenPos + _cameraPosition;
-            // Step 2: Subtract screenCenter
-            worldPos = worldPos - screenCenter;
-            // Step 3: Divide by _zoomScale
-            worldPos = worldPos / _zoomScale;
-            // Step 4: Add screenCenter
-            worldPos = worldPos + screenCenter;
-
-            return worldPos;
+            // Inverse of: P_s = (P_w - _cameraPosition) * _zoomScale + screenCenter
+            // P_w = (P_s - screenCenter) / _zoomScale + _cameraPosition
+            return (screenPos - screenCenter) / _zoomScale + _cameraPosition;
         }
 
         public void Update(GameTime gameTime, MouseState mouse, MouseState prevMouseState, KeyboardState keyboard, KeyboardState prevKeyboardState)
@@ -81,7 +72,7 @@ namespace ZooTycoonManager
                 {
                     Vector2 currentMousePosition = new Vector2(mouse.X, mouse.Y);
                     Vector2 delta = currentMousePosition - _lastMousePosition;
-                    _cameraPosition -= delta;
+                    _cameraPosition -= delta / _zoomScale;
                     _lastMousePosition = currentMousePosition;
                 }
             }
@@ -94,14 +85,16 @@ namespace ZooTycoonManager
         public Matrix GetTransformMatrix()
         {
             Vector2 screenCenter = new Vector2(
-                _graphics.PreferredBackBufferWidth / 2, // Using 2 for integer division
-                _graphics.PreferredBackBufferHeight / 2
+                _graphics.PreferredBackBufferWidth / 2f, 
+                _graphics.PreferredBackBufferHeight / 2f
             );
 
-            return Matrix.CreateTranslation(new Vector3(-screenCenter, 0)) *
-                   Matrix.CreateScale(_zoomScale) *
-                   Matrix.CreateTranslation(new Vector3(screenCenter, 0)) *
-                   Matrix.CreateTranslation(-_cameraPosition.X, -_cameraPosition.Y, 0);
+            // 1. Translate world so _cameraPosition is at origin
+            // 2. Scale around the new origin
+            // 3. Translate the new origin to the screenCenter
+            return Matrix.CreateTranslation(-_cameraPosition.X, -_cameraPosition.Y, 0f) *
+                   Matrix.CreateScale(_zoomScale, _zoomScale, 1f) *
+                   Matrix.CreateTranslation(screenCenter.X, screenCenter.Y, 0f);
         }
 
         public void UpdateViewport(Viewport viewport)
