@@ -110,7 +110,7 @@ namespace ZooTycoonManager
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
-            map = new Map(800, 800); // yo, this is where the size happens
+            map = new Map(400, 400); // yo, this is where the size happens
             tileRenderer = new TileRenderer(tileTextures);
 
 
