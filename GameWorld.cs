@@ -20,6 +20,9 @@ namespace ZooTycoonManager
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         private SpriteFont _font;  // Add font field
+        Map map;
+        TileRenderer tileRenderer;
+        Texture2D[] tileTextures;
 
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
@@ -103,6 +106,13 @@ namespace ZooTycoonManager
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
+            tileTextures = new Texture2D[2];
+            tileTextures[0] = Content.Load<Texture2D>("Grass1");
+            tileTextures[1] = Content.Load<Texture2D>("Dirt1");
+
+            map = new Map(800, 800); // yo, this is where the size happens
+            tileRenderer = new TileRenderer(tileTextures);
+
 
             // Load content for all habitats and their animals
             foreach (var habitat in habitats)
@@ -190,6 +200,8 @@ namespace ZooTycoonManager
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            tileRenderer.Draw(_spriteBatch, map);
 
             // Draw all habitats and their animals
             foreach (var habitat in habitats)
