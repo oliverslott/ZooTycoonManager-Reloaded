@@ -13,12 +13,19 @@ namespace ZooTycoonManager
         private SpriteFont _font;
         private Vector2 _position;
         private Color _color;
+        private GraphicsDeviceManager _graphics;
 
-        public FPSCounter(SpriteFont font)
+        public FPSCounter(SpriteFont font, GraphicsDeviceManager graphics)
         {
             _font = font;
-            _position = new Vector2(GameWorld.GRID_WIDTH * GameWorld.TILE_SIZE - 100, 10);
+            _graphics = graphics;
             _color = Color.White;
+            UpdatePosition();
+        }
+
+        private void UpdatePosition()
+        {
+            _position = new Vector2(_graphics.PreferredBackBufferWidth - 100, 10);
         }
 
         public void Update(GameTime gameTime)
@@ -33,6 +40,9 @@ namespace ZooTycoonManager
                 _frameCount = 0;
                 _elapsedTime = 0;
             }
+
+            // Update position when window is resized
+            UpdatePosition();
         }
 
         public void Draw(SpriteBatch spriteBatch)

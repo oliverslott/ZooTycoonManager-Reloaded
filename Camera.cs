@@ -103,5 +103,13 @@ namespace ZooTycoonManager
                    Matrix.CreateTranslation(new Vector3(screenCenter, 0)) *
                    Matrix.CreateTranslation(-_cameraPosition.X, -_cameraPosition.Y, 0);
         }
+
+        public void UpdateViewport(Viewport viewport)
+        {
+            // Update the camera's view of the screen dimensions
+            _graphics.PreferredBackBufferWidth = viewport.Width;
+            _graphics.PreferredBackBufferHeight = viewport.Height;
+            _graphics.ApplyChanges();
+        }
     }
 } 

@@ -39,6 +39,11 @@ namespace ZooTycoonManager
         // Camera instance
         private Camera _camera;
 
+        // Window state
+        private bool _isFullscreen = false;
+        private int _defaultWidth;
+        private int _defaultHeight;
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -70,8 +75,14 @@ namespace ZooTycoonManager
         private GameWorld()
         {
             _graphics = new GraphicsDeviceManager(this);
-            _graphics.PreferredBackBufferWidth = GRID_WIDTH * TILE_SIZE;
-            _graphics.PreferredBackBufferHeight = GRID_HEIGHT * TILE_SIZE;
+            _defaultWidth = GRID_WIDTH * TILE_SIZE;
+            _defaultHeight = GRID_HEIGHT * TILE_SIZE;
+            _graphics.PreferredBackBufferWidth = _defaultWidth;
+            _graphics.PreferredBackBufferHeight = _defaultHeight;
+            _graphics.IsFullScreen = false;
+            Window.AllowUserResizing = true;
+            _graphics.ApplyChanges();
+            
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -90,6 +101,20 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
+
+            // Subscribe to window resize event
+            Window.ClientSizeChanged += OnClientSizeChanged;
+        }
+
+        private void OnClientSizeChanged(object sender, EventArgs e)
+        {
+            if (!_isFullscreen)
+            {
+                _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+                _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+                _graphics.ApplyChanges();
+                _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+            }
         }
 
         // Convert pixel position to tile position
@@ -125,7 +150,7 @@ namespace ZooTycoonManager
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
-            _fpsCounter = new FPSCounter(_font);  // Initialize FPS counter
+            _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
@@ -163,6 +188,12 @@ namespace ZooTycoonManager
 
             MouseState mouse = Mouse.GetState();
             KeyboardState keyboard = Keyboard.GetState();
+
+            // Handle F11 for fullscreen toggle
+            if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Keys.F11))
+            {
+                ToggleFullscreen();
+            }
 
             // Update camera
             _camera.Update(gameTime, mouse, prevMouseState, keyboard, prevKeyboardState);
@@ -233,6 +264,25 @@ namespace ZooTycoonManager
             base.Update(gameTime);
         }
 
+        private void ToggleFullscreen()
+        {
+            _isFullscreen = !_isFullscreen;
+            if (_isFullscreen)
+            {
+                _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+                _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+                _graphics.IsFullScreen = true;
+            }
+            else
+            {
+                _graphics.PreferredBackBufferWidth = _defaultWidth;
+                _graphics.PreferredBackBufferHeight = _defaultHeight;
+                _graphics.IsFullScreen = false;
+            }
+            _graphics.ApplyChanges();
+            _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+        }
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -264,8 +314,8 @@ namespace ZooTycoonManager
             _fpsCounter.Draw(_spriteBatch);
 
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
-            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 130);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
+            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 150);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _spriteBatch.End();
