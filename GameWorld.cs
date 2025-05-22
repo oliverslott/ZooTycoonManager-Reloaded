@@ -35,6 +35,9 @@ namespace ZooTycoonManager
         private int _nextAnimalId = 1;
         private int _nextVisitorId = 1;
 
+        // Camera instance
+        private Camera _camera;
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -70,6 +73,9 @@ namespace ZooTycoonManager
             _graphics.PreferredBackBufferHeight = GRID_HEIGHT * TILE_SIZE;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+
+            // Initialize camera
+            _camera = new Camera(_graphics);
 
             // Initialize walkable map
             WalkableMap = new bool[GRID_WIDTH, GRID_HEIGHT];
@@ -150,23 +156,27 @@ namespace ZooTycoonManager
             MouseState mouse = Mouse.GetState();
             KeyboardState keyboard = Keyboard.GetState();
 
+            // Update camera
+            _camera.Update(gameTime, mouse, prevMouseState, keyboard, prevKeyboardState);
+
+            // Convert mouse position to world coordinates
+            Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+
             // Handle 'A' key press for spawning animals
             if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
             {
-                Vector2 mousePos = new Vector2(mouse.X, mouse.Y);
-                // Find the habitat that contains the mouse position
-                Habitat targetHabitat = habitats.FirstOrDefault(h => h.ContainsPosition(mousePos));
+                // Find the habitat that contains the world mouse position
+                Habitat targetHabitat = habitats.FirstOrDefault(h => h.ContainsPosition(worldMousePosition));
                 if (targetHabitat != null)
                 {
-                    targetHabitat.SpawnAnimal(mousePos);
+                    targetHabitat.SpawnAnimal(worldMousePosition);
                 }
             }
 
             // Handle 'B' key press for spawning visitors
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
-                Vector2 mousePos = new Vector2(mouse.X, mouse.Y);
-                Vector2 tilePos = PixelToTile(mousePos);
+                Vector2 tilePos = PixelToTile(worldMousePosition);
                 Vector2 spawnPos = TileToPixel(tilePos);
                 Visitor newVisitor = new Visitor(spawnPos, _nextVisitorId++);
                 newVisitor.LoadContent(Content);
@@ -190,19 +200,17 @@ namespace ZooTycoonManager
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
-                Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
-                // Make the first animal in the first habitat pathfind to the clicked position
+                // Make the first animal in the first habitat pathfind to the world mouse position
                 if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
                 {
-                    habitats[0].GetAnimals()[0].PathfindTo(clickPosition);
+                    habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
                 }
             }
 
             // Handle right mouse button for fence placement
             if (mouse.RightButton == ButtonState.Pressed && prevMouseState.RightButton != ButtonState.Pressed)
             {
-                Vector2 clickPosition = new Vector2(mouse.X, mouse.Y);
-                PlaceFence(clickPosition);
+                PlaceFence(worldMousePosition);
             }
 
             // Update all habitats and their animals
@@ -221,7 +229,9 @@ namespace ZooTycoonManager
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            // Draw game elements with camera transform
+            Matrix transform = _camera.GetTransformMatrix();
+            _spriteBatch.Begin(transformMatrix: transform, samplerState: SamplerState.PointClamp);
 
             tileRenderer.Draw(_spriteBatch, map);
 
@@ -237,9 +247,14 @@ namespace ZooTycoonManager
                 visitor.Draw(_spriteBatch);
             }
 
+            _spriteBatch.End();
+
+            // Draw UI elements without camera offset
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything";
-            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 110);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
+            Vector2 textPosition = new Vector2(10, GRID_HEIGHT * TILE_SIZE - 130);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _spriteBatch.End();
