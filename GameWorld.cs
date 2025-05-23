@@ -51,6 +51,8 @@ namespace ZooTycoonManager
         // Window state
         private bool _isFullscreen = false;
 
+        private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -315,6 +317,17 @@ namespace ZooTycoonManager
                 habitat.Update(gameTime);
             }
 
+            // Process despawning visitors
+            if (_visitorsToDespawn.Count > 0)
+            {
+                foreach (var visitorToRemove in _visitorsToDespawn)
+                {
+                    visitors.Remove(visitorToRemove);
+                    Debug.WriteLine($"Visitor {visitorToRemove.VisitorId} has been despawned.");
+                }
+                _visitorsToDespawn.Clear();
+            }
+
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
@@ -387,6 +400,29 @@ namespace ZooTycoonManager
         public int GetNextAnimalId()
         {
             return _nextAnimalId++;
+        }
+
+        public void ConfirmDespawn(Visitor visitor)
+        {
+            if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor)) // Ensure not already added and not already removed from main list
+            {
+                // Visitor should have already stopped its own update loop.
+                _visitorsToDespawn.Add(visitor);
+                Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
+            }
+            else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor)) // Standard case: visitor exists in main list and not yet in despawn queue
+            {
+                 _visitorsToDespawn.Add(visitor);
+                Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
+            }
+            else if (visitor != null && _visitorsToDespawn.Contains(visitor))
+            {
+                Debug.WriteLine($"Visitor {visitor.VisitorId} already in despawn queue. Confirmation ignored.");
+            }
+            else
+            {
+                Debug.WriteLine($"Attempted to confirm despawn for a null or already processed/removed visitor.");
+            }
         }
     }
 }
