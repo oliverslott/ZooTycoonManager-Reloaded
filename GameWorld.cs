@@ -39,6 +39,12 @@ namespace ZooTycoonManager
         private int _nextAnimalId = 1;
         private int _nextVisitorId = 1;
 
+        // Visitor spawning settings
+        private float _visitorSpawnTimer = 0f;
+        private const float VISITOR_SPAWN_INTERVAL = 10.0f; // Spawn every 10 seconds
+        private Vector2 _visitorSpawnPosition;
+        private const int VISITOR_SPAWN_REWARD = 20;
+
         // Camera instance
         private Camera _camera;
 
@@ -101,6 +107,9 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
+
+            // Initialize visitor spawn position (top-left corner)
+            _visitorSpawnPosition = TileToPixel(Vector2.Zero);
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(20000); // Starting with $20,000
@@ -236,14 +245,37 @@ namespace ZooTycoonManager
                 }
             }
 
-            // Handle 'B' key press for spawning visitors
+            // Handle automatic visitor spawning
+            bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
+            if (animalsExist)
+            {
+                _visitorSpawnTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (_visitorSpawnTimer >= VISITOR_SPAWN_INTERVAL)
+                {
+                    _visitorSpawnTimer = 0f; // Reset timer
+
+                    // Spawn visitor
+                    Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
+                    newVisitor.LoadContent(Content);
+                    visitors.Add(newVisitor);
+
+                    // Add money
+                    MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
+                    Debug.WriteLine($"Visitor spawned at {_visitorSpawnPosition}. Added ${VISITOR_SPAWN_REWARD}.");
+                }
+            }
+            else
+            {
+                _visitorSpawnTimer = 0f; // Reset timer if no animals exist to prevent instant spawn when an animal is added
+            }
+
+            // Handle 'B' key press for manually spawning visitors (debugging)
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
-                Vector2 tilePos = PixelToTile(worldMousePosition);
-                Vector2 spawnPos = TileToPixel(tilePos);
-                Visitor newVisitor = new Visitor(spawnPos, _nextVisitorId++);
+                Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
                 newVisitor.LoadContent(Content);
                 visitors.Add(newVisitor);
+                Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnPosition} for debugging.");
             }
 
             if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
