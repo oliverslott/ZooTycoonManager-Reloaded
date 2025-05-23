@@ -480,7 +480,8 @@ namespace ZooTycoonManager
             if (_isExiting) return;
 
             _isExiting = true;
-            _exitTargetPosition = GameWorld.TileToPixel(Vector2.Zero);
+            // Use the globally defined spawn/exit position from GameWorld
+            _exitTargetPosition = GameWorld.Instance.VisitorSpawnExitPosition; 
             
             // Clear current path and stop any current habitat visit
             path = null;

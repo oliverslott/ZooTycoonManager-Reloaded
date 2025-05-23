@@ -45,6 +45,9 @@ namespace ZooTycoonManager
         private Vector2 _visitorSpawnPosition;
         private const int VISITOR_SPAWN_REWARD = 20;
 
+        // Public property to access the spawn/exit position
+        public Vector2 VisitorSpawnExitPosition => _visitorSpawnPosition;
+
         // Camera instance
         private Camera _camera;
 
@@ -97,21 +100,37 @@ namespace ZooTycoonManager
             IsFixedTimeStep = false;
             TargetElapsedTime = TimeSpan.FromTicks(1);
 
+            // Initialize map first
+            map = new Map(GRID_WIDTH, GRID_HEIGHT); 
+
             // Initialize camera
             _camera = new Camera(_graphics);
             _camera.SetMapDimensions(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
 
-            // Initialize walkable map
-            WalkableMap = new bool[GRID_WIDTH, GRID_HEIGHT];
-            for (int x = 0; x < GRID_WIDTH; x++)
-                for (int y = 0; y < GRID_HEIGHT; y++)
-                    WalkableMap[x, y] = true;
+            // Initialize walkable map from the map object
+            WalkableMap = map.ToWalkableArray();
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
 
-            // Initialize visitor spawn position (top-left corner)
-            _visitorSpawnPosition = TileToPixel(Vector2.Zero);
+            // Find the top-most path tile for visitor spawning
+            Vector2 pathSpawnTile = Vector2.Zero; // Default to top-left if no path found
+            bool foundSpawn = false;
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                for (int x = 0; x < GRID_WIDTH; x++)
+                {
+                    // TextureIndex 1 is the path tile (Dirt1)
+                    if (map.Tiles[x, y].TextureIndex == 1) 
+                    {
+                        pathSpawnTile = new Vector2(x, y);
+                        foundSpawn = true;
+                        break; 
+                    }
+                }
+                if (foundSpawn) break;
+            }
+            _visitorSpawnPosition = TileToPixel(pathSpawnTile);
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
@@ -173,7 +192,7 @@ namespace ZooTycoonManager
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
-            map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens
+            // map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens -- This line is now redundant
             tileRenderer = new TileRenderer(tileTextures);
 
             // Load content for all habitats and their animals

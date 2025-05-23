@@ -26,7 +26,7 @@ namespace ZooTycoonManager
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    Tiles[x, y] = new Tile(true, 0); // grass1
+                    Tiles[x, y] = new Tile(false, 0); // grass1, now not walkable
                 }
             }
 

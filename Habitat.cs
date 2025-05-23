@@ -195,6 +195,19 @@ namespace ZooTycoonManager
                 PlaceFenceTile(new Vector2(startX, y)); // Left column
                 PlaceFenceTile(new Vector2(endX, y));   // Right column
             }
+
+            // Set tiles inside the enclosure to be walkable
+            for (int x = startX + 1; x < endX; x++)
+            {
+                for (int y = startY + 1; y < endY; y++)
+                {
+                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
+                    {
+                        GameWorld.Instance.WalkableMap[x, y] = true;
+                        Debug.WriteLine($"Set tile ({x},{y}) inside habitat to walkable.");
+                    }
+                }
+            }
         }
 
         private void PlaceFenceTile(Vector2 tilePos)
