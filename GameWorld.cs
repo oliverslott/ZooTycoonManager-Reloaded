@@ -25,6 +25,10 @@ namespace ZooTycoonManager
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
 
+        // Money Management
+        private MoneyManager _moneyManager;
+        private MoneyDisplay _moneyDisplay;
+
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
 
@@ -98,6 +102,12 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
+
+            // Initialize MoneyManager and MoneyDisplay
+            _moneyManager = new MoneyManager(20000); // Starting with $10,000
+            _moneyDisplay = new MoneyDisplay();
+            _moneyManager.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
+            _moneyManager.Notify(); // Initial notification to set initial money text
 
             // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
@@ -320,6 +330,10 @@ namespace ZooTycoonManager
             string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 150);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
+
+            // Draw current money from MoneyDisplay
+            Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
+            _spriteBatch.DrawString(_font, _moneyDisplay.MoneyText, moneyPosition, Color.Gold);
 
             _spriteBatch.End();
 
