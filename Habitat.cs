@@ -246,70 +246,41 @@ namespace ZooTycoonManager
             return false;
         }
 
-        public Vector2? GetRandomFencePosition()
+        public List<Vector2> GetWalkableVisitingSpots()
         {
-            if (fencePositions.Count == 0) return null;
-
-            // Get visitor's current position from GameWorld
-            var visitors = GameWorld.Instance.GetVisitors();
-            if (visitors.Count == 0) return null;
-
-            // Find the nearest visitor
-            Vector2? nearestPosition = null;
-            float shortestDistance = float.MaxValue;
-            Vector2? nearestFencePos = null;
-
-            foreach (var visitor in visitors)
+            HashSet<Vector2> visitingSpots = new HashSet<Vector2>();
+            if (fencePositions == null || fencePositions.Count == 0)
             {
-                Vector2 visitorPos = visitor.GetPosition();
-                foreach (var fencePos in fencePositions)
-                {
-                    float distance = Vector2.Distance(visitorPos, fencePos);
-                    if (distance < shortestDistance)
-                    {
-                        shortestDistance = distance;
-                        nearestFencePos = fencePos;
-                    }
-                }
+                return visitingSpots.ToList();
             }
 
-            if (!nearestFencePos.HasValue) return null;
-
-            // Convert to tile position
-            Vector2 tilePos = GameWorld.PixelToTile(nearestFencePos.Value);
-            
-            // Try to find a walkable position adjacent to the fence
-            int[] dx = { -1, 1, 0, 0 };
-            int[] dy = { 0, 0, -1, 1 };
-            
-            // Check each adjacent position
-            Vector2? nearestWalkablePos = null;
-            float nearestWalkableDistance = float.MaxValue;
-
-            foreach (var visitor in visitors)
+            foreach (Vector2 fencePixelPos in fencePositions)
             {
-                Vector2 visitorPos = visitor.GetPosition();
+                Vector2 fenceTilePos = GameWorld.PixelToTile(fencePixelPos);
+
+                // Check adjacent tiles (up, down, left, right)
+                int[] dx = { 0, 0, 1, -1 };
+                int[] dy = { 1, -1, 0, 0 };
+
                 for (int i = 0; i < 4; i++)
                 {
-                    int newX = (int)tilePos.X + dx[i];
-                    int newY = (int)tilePos.Y + dy[i];
-                    
-                    if (newX >= 0 && newX < GameWorld.GRID_WIDTH &&
-                        newY >= 0 && newY < GameWorld.GRID_HEIGHT &&
-                        GameWorld.Instance.WalkableMap[newX, newY])
+                    int adjacentTileX = (int)fenceTilePos.X + dx[i];
+                    int adjacentTileY = (int)fenceTilePos.Y + dy[i];
+
+                    // Check bounds
+                    if (adjacentTileX >= 0 && adjacentTileX < GameWorld.GRID_WIDTH &&
+                        adjacentTileY >= 0 && adjacentTileY < GameWorld.GRID_HEIGHT)
                     {
-                        Vector2 walkablePos = GameWorld.TileToPixel(new Vector2(newX, newY));
-                        float distance = Vector2.Distance(visitorPos, walkablePos);
-                        if (distance < nearestWalkableDistance)
+                        // Check walkability
+                        if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY])
                         {
-                            nearestWalkableDistance = distance;
-                            nearestWalkablePos = walkablePos;
+                            Vector2 adjacentPixelPos = GameWorld.TileToPixel(new Vector2(adjacentTileX, adjacentTileY));
+                            visitingSpots.Add(adjacentPixelPos);
                         }
                     }
                 }
             }
-
-            return nearestWalkablePos;
+            return visitingSpots.ToList();
         }
 
         public async Task<bool> TryEnterHabitat(Visitor visitor)

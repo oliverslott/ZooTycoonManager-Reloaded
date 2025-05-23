@@ -142,17 +142,18 @@ namespace ZooTycoonManager
                     {
                         // Pick a random unvisited habitat
                         var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
-                        var visitPosition = randomHabitat.GetRandomFencePosition();
+                        List<Vector2> availableSpots = randomHabitat.GetWalkableVisitingSpots();
                         
-                        if (visitPosition.HasValue)
+                        if (availableSpots.Count > 0)
                         {
+                            Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
                             // Try to enter the habitat
                             if (randomHabitat.TryEnterHabitatSync(this))
                             {
-                                Debug.WriteLine($"Visitor {VisitorId}: Entering habitat {randomHabitat.HabitatId} at position {visitPosition.Value}");
+                                Debug.WriteLine($"Visitor {VisitorId}: Entering habitat {randomHabitat.HabitatId} at position {visitPosition}");
                                 currentHabitat = randomHabitat;
                                 currentVisitTime = 0f;
-                                PathfindTo(visitPosition.Value);
+                                PathfindTo(visitPosition);
                                 return;
                             }
                             else
