@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace ZooTycoonManager
 {
@@ -17,6 +18,12 @@ namespace ZooTycoonManager
         private const float ZOOM_SPEED = 0.1f;
 
         private GraphicsDeviceManager _graphics;
+
+        // Map dimensions for clamping
+        private float _mapWidthInPixels;
+        private float _mapHeightInPixels;
+
+        private bool _clampToMapBoundaries = true; // Default to true
 
         public Camera(GraphicsDeviceManager graphics)
         {
@@ -40,6 +47,17 @@ namespace ZooTycoonManager
             return (screenPos - screenCenter) / _zoomScale + _cameraPosition;
         }
 
+        public void SetMapDimensions(float mapWidth, float mapHeight)
+        {
+            _mapWidthInPixels = mapWidth;
+            _mapHeightInPixels = mapHeight;
+        }
+
+        public void ToggleClamping()
+        {
+            _clampToMapBoundaries = !_clampToMapBoundaries;
+        }
+
         public void Update(GameTime gameTime, MouseState mouse, MouseState prevMouseState, KeyboardState keyboard, KeyboardState prevKeyboardState)
         {
             // Handle zoom with mouse wheel
@@ -47,7 +65,28 @@ namespace ZooTycoonManager
             if (scrollWheelDelta != 0)
             {
                 float zoomDelta = scrollWheelDelta > 0 ? ZOOM_SPEED : -ZOOM_SPEED;
-                _zoomScale = MathHelper.Clamp(_zoomScale + zoomDelta, MIN_ZOOM, MAX_ZOOM);
+                float targetZoom = _zoomScale + zoomDelta;
+
+                if (_clampToMapBoundaries)
+                {
+                    // Calculate the minimum zoom required to fit the map within the viewport
+                    float minRequiredZoomBasedOnMap = MIN_ZOOM; // Start with the default MIN_ZOOM
+                    if (_mapWidthInPixels > 0 && _graphics.PreferredBackBufferWidth > 0)
+                    {
+                        minRequiredZoomBasedOnMap = Math.Max(minRequiredZoomBasedOnMap, (float)_graphics.PreferredBackBufferWidth / _mapWidthInPixels);
+                    }
+                    if (_mapHeightInPixels > 0 && _graphics.PreferredBackBufferHeight > 0)
+                    {
+                        minRequiredZoomBasedOnMap = Math.Max(minRequiredZoomBasedOnMap, (float)_graphics.PreferredBackBufferHeight / _mapHeightInPixels);
+                    }
+
+                    // Clamp the zoom scale. If minRequiredZoomBasedOnMap > MAX_ZOOM, zoomScale will become minRequiredZoomBasedOnMap.
+                    _zoomScale = MathHelper.Clamp(targetZoom, minRequiredZoomBasedOnMap, MAX_ZOOM);
+                }
+                else
+                {
+                    _zoomScale = MathHelper.Clamp(targetZoom, MIN_ZOOM, MAX_ZOOM);
+                }
             }
 
             // Handle camera movement with arrow keys
@@ -79,6 +118,33 @@ namespace ZooTycoonManager
             else
             {
                 _isDragging = false;
+            }
+
+            // Clamp camera position to map boundaries
+            if (_clampToMapBoundaries && _mapWidthInPixels > 0 && _mapHeightInPixels > 0)
+            {
+                // Use a very small positive number for zoom if it's zero to prevent division by zero,
+                // though previous clamping should prevent _zoomScale from being <= 0.
+                float currentZoom = Math.Max(_zoomScale, 0.00001f);
+
+                float worldViewWidth = (float)_graphics.PreferredBackBufferWidth / currentZoom;
+                float worldViewHeight = (float)_graphics.PreferredBackBufferHeight / currentZoom;
+
+                // Min/Max camera positions ensure the view stays within map boundaries.
+                // The camera position is the center of the view.
+                float clampMinX = worldViewWidth / 2f;
+                float clampMaxX = _mapWidthInPixels - (worldViewWidth / 2f);
+                
+                float clampMinY = worldViewHeight / 2f;
+                float clampMaxY = _mapHeightInPixels - (worldViewHeight / 2f);
+
+                // If map is smaller than view (e.g., mapWidth < worldViewWidth), clampMaxX could be < clampMinX.
+                // In such cases, Clamp will pick clampMinX if _cameraPosition is less, or clampMaxX if greater.
+                // However, the zoom clamping logic aims to ensure worldViewWidth <= _mapWidthInPixels.
+                // If _mapWidthInPixels is very small (e.g., 0), clampMaxX will be negative.
+                // This means the camera effectively centers on the (tiny or non-existent) map dimension.
+                _cameraPosition.X = MathHelper.Clamp(_cameraPosition.X, clampMinX, clampMaxX);
+                _cameraPosition.Y = MathHelper.Clamp(_cameraPosition.Y, clampMinY, clampMaxY);
             }
         }
 

@@ -88,6 +88,7 @@ namespace ZooTycoonManager
 
             // Initialize camera
             _camera = new Camera(_graphics);
+            _camera.SetMapDimensions(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
 
             // Initialize walkable map
             WalkableMap = new bool[GRID_WIDTH, GRID_HEIGHT];
@@ -193,6 +194,12 @@ namespace ZooTycoonManager
 
             // Update camera
             _camera.Update(gameTime, mouse, prevMouseState, keyboard, prevKeyboardState);
+
+            // Handle 'C' key press for toggling camera clamping
+            if (keyboard.IsKeyDown(Keys.C) && !prevKeyboardState.IsKeyDown(Keys.C))
+            {
+                _camera.ToggleClamping();
+            }
 
             // Convert mouse position to world coordinates
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
