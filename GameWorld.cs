@@ -179,11 +179,23 @@ namespace ZooTycoonManager
         private void PlaceFence(Vector2 pixelPosition)
         {
             Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
-            
-            // Create a new habitat and place its enclosure
-            Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, _nextHabitatId++);
-            habitats.Add(newHabitat);
-            newHabitat.PlaceEnclosure(pixelPosition);
+
+            // Cost of placing a habitat
+            decimal habitatCost = 10000;
+
+            // Attempt to spend money
+            if (_moneyManager.SpendMoney(habitatCost))
+            {
+                // Create a new habitat and place its enclosure
+                Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, _nextHabitatId++);
+                habitats.Add(newHabitat);
+                newHabitat.PlaceEnclosure(pixelPosition);
+            }
+            else
+            {
+                // Optionally, provide feedback to the user that they don't have enough money
+                Debug.WriteLine("Not enough money to place a habitat.");
+            }
         }
 
         protected override void Update(GameTime gameTime)
