@@ -112,7 +112,7 @@ namespace ZooTycoonManager
             _visitorSpawnPosition = TileToPixel(Vector2.Zero);
 
             // Initialize MoneyManager and MoneyDisplay
-            MoneyManager.Instance.Initialize(20000); // Starting with $20,000
+            MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
             _moneyDisplay = new MoneyDisplay();
             MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
             MoneyManager.Instance.Notify(); // Initial notification to set initial money text
@@ -152,11 +152,12 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            var (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId) = DatabaseManager.Instance.LoadGame(Content);
+            var (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
             habitats = loadedHabitats;
             _nextHabitatId = nextHabitatId;
             _nextAnimalId = nextAnimalId;
             _nextVisitorId = nextVisitorId;
+            MoneyManager.Instance.Initialize(loadedMoney);
 
             base.Initialize();
         }

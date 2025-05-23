@@ -111,6 +111,11 @@ namespace ZooTycoonManager
                     PRIMARY KEY (visitor_id, species_id),
                     FOREIGN KEY (visitor_id) REFERENCES Visitor(visitor_id) ON DELETE CASCADE,
                     FOREIGN KEY (species_id) REFERENCES Species(species_id) ON DELETE CASCADE
+                );
+                CREATE TABLE IF NOT EXISTS GameVariables (
+                    key TEXT PRIMARY KEY,
+                    value_numeric NUMERIC,
+                    value_text TEXT
                 );";
 
             createTablesCmd.ExecuteNonQuery();
@@ -132,6 +137,16 @@ namespace ZooTycoonManager
                     transaction.Commit();
                     Debug.WriteLine("Populated default species into Species table.");
                 }
+            }
+
+            // Insert default money if not present
+            using (var transaction = _connection.BeginTransaction())
+            {
+                var insertDefaultMoneyCmd = _connection.CreateCommand();
+                insertDefaultMoneyCmd.Transaction = transaction;
+                insertDefaultMoneyCmd.CommandText = "INSERT OR IGNORE INTO GameVariables (key, value_numeric) VALUES ('CurrentMoney', 20000);";
+                insertDefaultMoneyCmd.ExecuteNonQuery();
+                transaction.Commit();
             }
         }
 
@@ -187,6 +202,13 @@ namespace ZooTycoonManager
                             Debug.WriteLine($"Warning: Visitor ID {visitorInstance.VisitorId} Name: {visitorInstance.Name} is not ISaveable and was not saved.");
                         }
                     }
+
+                    // Save current money
+                    var saveMoneyCmd = _connection.CreateCommand();
+                    saveMoneyCmd.Transaction = transaction;
+                    saveMoneyCmd.CommandText = "UPDATE GameVariables SET value_numeric = @money WHERE key = 'CurrentMoney'";
+                    saveMoneyCmd.Parameters.AddWithValue("@money", MoneyManager.Instance.CurrentMoney);
+                    saveMoneyCmd.ExecuteNonQuery();
 
                     // Now delete objects that no longer exist in the game state
                     var deleteCmd = _connection.CreateCommand();
@@ -271,16 +293,26 @@ namespace ZooTycoonManager
             }
         }
 
-        public (List<Habitat> habitats, int nextHabitatId, int nextAnimalId, int nextVisitorId) LoadGame(ContentManager content)
+        public (List<Habitat> habitats, int nextHabitatId, int nextAnimalId, int nextVisitorId, decimal currentMoney) LoadGame(ContentManager content)
         {
             Debug.WriteLine("Loading game state...");
             var loadedHabitats = new List<Habitat>();
             int nextHabitatId = 1;
             int nextAnimalId = 1;
             int nextVisitorId = 1;
+            decimal currentMoney = 20000; // Default starting money
 
             try
             {
+                // Load current money
+                var moneyCommand = _connection.CreateCommand();
+                moneyCommand.CommandText = "SELECT value_numeric FROM GameVariables WHERE key = 'CurrentMoney'";
+                var moneyResult = moneyCommand.ExecuteScalar();
+                if (moneyResult != null && moneyResult != DBNull.Value)
+                {
+                    currentMoney = Convert.ToDecimal(moneyResult);
+                }
+
                 // Load habitats
                 var command = _connection.CreateCommand();
                 command.CommandText = "SELECT habitat_id, size, max_animals, name, type, position_x, position_y FROM Habitat";
@@ -349,7 +381,7 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Error loading game state: {ex.Message}");
             }
 
-            return (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId);
+            return (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId, currentMoney);
         }
     }
 } 
