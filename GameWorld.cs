@@ -296,6 +296,13 @@ namespace ZooTycoonManager
                 _nextVisitorId = 1;
             }
 
+            // Handle 'M' key press for adding money (debugging)
+            if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
+            {
+                MoneyManager.Instance.AddMoney(100000);
+                Debug.WriteLine("Added $100,000 for debugging.");
+            }
+
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 // Make the first animal in the first habitat pathfind to the world mouse position
@@ -384,8 +391,8 @@ namespace ZooTycoonManager
             _fpsCounter.Draw(_spriteBatch);
 
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
-            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 150);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
+            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 180);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             // Draw current money from MoneyDisplay
