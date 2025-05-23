@@ -5,13 +5,37 @@ namespace ZooTycoonManager
 {
     public class MoneyManager : ISubject
     {
+        private static MoneyManager _instance;
+        private static readonly object _lock = new object();
         private List<IObserver> _observers = new List<IObserver>();
         private decimal _currentMoney;
         public decimal CurrentMoney => _currentMoney;
 
-        public MoneyManager(decimal initialMoney)
+        // Private constructor to prevent direct instantiation
+        private MoneyManager() { }
+
+        public static MoneyManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new MoneyManager();
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
+
+        public void Initialize(decimal initialMoney)
         {
             _currentMoney = initialMoney;
+            Notify(); // Notify observers of initial amount
         }
 
         public void AddMoney(decimal amount)

@@ -26,7 +26,6 @@ namespace ZooTycoonManager
         private FPSCounter _fpsCounter;  // Add FPS counter field
 
         // Money Management
-        private MoneyManager _moneyManager;
         private MoneyDisplay _moneyDisplay;
 
         // Walkable map for pathfinding
@@ -104,10 +103,10 @@ namespace ZooTycoonManager
             visitors = new List<Visitor>(); // Initialize visitors list
 
             // Initialize MoneyManager and MoneyDisplay
-            _moneyManager = new MoneyManager(20000); // Starting with $10,000
+            MoneyManager.Instance.Initialize(20000); // Starting with $20,000
             _moneyDisplay = new MoneyDisplay();
-            _moneyManager.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
-            _moneyManager.Notify(); // Initial notification to set initial money text
+            MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
+            MoneyManager.Instance.Notify(); // Initial notification to set initial money text
 
             // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
@@ -184,7 +183,7 @@ namespace ZooTycoonManager
             decimal habitatCost = 10000;
 
             // Attempt to spend money
-            if (_moneyManager.SpendMoney(habitatCost))
+            if (MoneyManager.Instance.SpendMoney(habitatCost))
             {
                 // Create a new habitat and place its enclosure
                 Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, _nextHabitatId++);

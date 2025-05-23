@@ -218,20 +218,30 @@ namespace ZooTycoonManager
         public bool SpawnAnimal(Vector2 pixelPosition)
         {
             Vector2 tilePos = GameWorld.PixelToTile(pixelPosition);
-            
+            decimal animalCost = 1000; // Cost of an animal
+
             // Only spawn if the position is walkable and within bounds
             if (tilePos.X >= 0 && tilePos.X < GameWorld.GRID_WIDTH && 
                 tilePos.Y >= 0 && tilePos.Y < GameWorld.GRID_HEIGHT &&
                 GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y])
             {
-                Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
-                
-                Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
-                newAnimal.SetPosition(spawnPos);
-                newAnimal.LoadContent(GameWorld.Instance.Content);
-                newAnimal.SetHabitat(this);
-                AddAnimal(newAnimal);
-                return true;
+                // Attempt to spend money
+                if (MoneyManager.Instance.SpendMoney(animalCost))
+                {
+                    Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
+                    
+                    Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
+                    newAnimal.SetPosition(spawnPos);
+                    newAnimal.LoadContent(GameWorld.Instance.Content);
+                    newAnimal.SetHabitat(this);
+                    AddAnimal(newAnimal);
+                    return true;
+                }
+                else
+                {
+                    Debug.WriteLine("Not enough money to spawn an animal.");
+                    return false;
+                }
             }
             return false;
         }
