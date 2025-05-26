@@ -5,17 +5,13 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ZooTycoonManager
 {
     public class Animal: ISaveable, ILoadable
     {
         Texture2D sprite;
-        Vector2 position;
         List<Node> path;
         int currentNodeIndex = 0;
         float speed = 100f;
@@ -25,14 +21,15 @@ namespace ZooTycoonManager
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 3f; // Time in seconds between random walks
 
-        private Thread _pathfindingThread;
-        private List<Node> _newlyCalculatedPath;
-        private readonly object _pathLock = new object();
+        private Thread _pathfindingWorkerThread;
+        private readonly AutoResetEvent _pathfindingRequestEvent = new AutoResetEvent(false);
+        private volatile bool _workerThreadRunning = true;
+        private Vector2 _requestedPathfindingStartPos;
+        private Vector2 _requestedPathfindingTargetPos;
+        private List<Node> _pendingPathResult;
+        private readonly object _pendingPathResultLock = new object();
 
         public bool IsPathfinding { get; private set; }
-
-        private Vector2 _pathfindingStartPos;
-        private Vector2 _pathfindingTargetPos;
 
         //Database - TODO: Can this be moved elsewhere?
         public int AnimalId { get; set; }
@@ -73,6 +70,11 @@ namespace ZooTycoonManager
             Mood = 100;
             Hunger = 0;
             Stress = 0;
+
+            _pathfindingWorkerThread = new Thread(PathfindingWorkerLoop);
+            _pathfindingWorkerThread.Name = $"Animal_{GetHashCode()}_PathWorker";
+            _pathfindingWorkerThread.IsBackground = true;
+            _pathfindingWorkerThread.Start();
         }
 
         public void SetHabitat(Habitat habitat)
@@ -117,64 +119,65 @@ namespace ZooTycoonManager
             Position = newPosition;
         }
 
-        private void PerformPathfinding()
+        private void PathfindingWorkerLoop()
         {
-            List<Node> calculatedPath = null;
-            Stopwatch stopwatch = new Stopwatch();
-            try
+            while (_workerThreadRunning)
             {
-                stopwatch.Start();
-                Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
-                Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
-                
-                calculatedPath = pathfinder.FindPath(
-                    (int)startTile.X, (int)startTile.Y,
-                    (int)targetTile.X, (int)targetTile.Y);
+                _pathfindingRequestEvent.WaitOne();
+                if (!_workerThreadRunning) break;
 
-                stopwatch.Stop();
-                Debug.WriteLine($"Pathfinding took {stopwatch.ElapsedMilliseconds} ms.");
-            }
-            catch (ThreadAbortException tae)
-            {
-                Debug.WriteLine($"Animal pathfinding thread ({Thread.CurrentThread.Name}) aborted: {tae.Message}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in animal pathfinding thread ({Thread.CurrentThread.Name}): {ex.Message}");
-            }
-            finally
-            {
-                lock (_pathLock)
+                List<Node> calculatedPath = null;
+                Stopwatch stopwatch = new Stopwatch();
+                try
                 {
-                    _newlyCalculatedPath = calculatedPath;
+                    stopwatch.Start();
+                    Vector2 startTile = GameWorld.PixelToTile(_requestedPathfindingStartPos);
+                    Vector2 targetTile = GameWorld.PixelToTile(_requestedPathfindingTargetPos);
+                    
+                    // PathfindTo method ensures 'pathfinder' member is up-to-date with WalkableMap
+                    calculatedPath = pathfinder.FindPath(
+                        (int)startTile.X, (int)startTile.Y,
+                        (int)targetTile.X, (int)targetTile.Y);
+
+                    stopwatch.Stop();
+                    Debug.WriteLine($"Animal Pathfinding (Worker {Thread.CurrentThread.Name}) took {stopwatch.ElapsedMilliseconds} ms.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in animal pathfinding worker thread ({Thread.CurrentThread.Name}): {ex.Message}");
+                }
+                finally
+                {
+                    lock (_pendingPathResultLock)
+                    {
+                        _pendingPathResult = calculatedPath;
+                    }
                 }
             }
+            Debug.WriteLine($"Animal Pathfinding Worker ({Thread.CurrentThread.Name}) exiting.");
         }
 
         public void PathfindTo(Vector2 targetDestination)
         {
             if (IsPathfinding)
             {
-                Debug.WriteLine("Animal is already pathfinding. New request ignored.");
+                Debug.WriteLine("Animal is already pathfinding or a path request is pending. New request ignored.");
                 return;
             }
 
-            // Refresh pathfinder with updated walkable map
+            // Refresh pathfinder with updated walkable map. Worker thread will use this instance.
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
 
-            IsPathfinding = true;
-            _pathfindingStartPos = Position;  // Use Position property instead of field
-            _pathfindingTargetPos = targetDestination;
+            IsPathfinding = true; // Mark that a pathfinding process has started
+            _requestedPathfindingStartPos = Position;  // Use Position property
+            _requestedPathfindingTargetPos = targetDestination;
 
-            lock (_pathLock)
+            lock (_pendingPathResultLock)
             {
-                _newlyCalculatedPath = null;
+                _pendingPathResult = null;
             }
-
-            _pathfindingThread = new Thread(new ThreadStart(PerformPathfinding));
-            _pathfindingThread.Name = $"Animal_{GetHashCode()}_Pathfinder";
-            _pathfindingThread.IsBackground = true;
-            _pathfindingThread.Start();
+            
+            _pathfindingRequestEvent.Set(); // Signal the worker thread
         }
 
         public void LoadContent(ContentManager contentManager)
@@ -186,22 +189,23 @@ namespace ZooTycoonManager
         {
             TryRandomWalk(gameTime);
 
-            if (IsPathfinding)
+            if (IsPathfinding) // If a pathfinding task was initiated
             {
-                if (_pathfindingThread != null && !_pathfindingThread.IsAlive)
+                bool pathProcessed = false;
+                lock (_pendingPathResultLock)
                 {
-                    lock (_pathLock)
+                    if (_pendingPathResult != null) // Check if the worker thread has produced a result
                     {
-                        if (_newlyCalculatedPath != null)
-                        {
-                            path = _newlyCalculatedPath;
-                            currentNodeIndex = 0;
-                        }
-                        _newlyCalculatedPath = null;
+                        path = _pendingPathResult;
+                        currentNodeIndex = 0;
+                        _pendingPathResult = null; // Clear the result
+                        pathProcessed = true;
                     }
+                }
 
-                    IsPathfinding = false;
-                    _pathfindingThread = null;
+                if (pathProcessed)
+                {
+                    IsPathfinding = false; // Pathfinding process (request -> calculation -> processing) is complete
                 }
             }
 
@@ -249,15 +253,6 @@ namespace ZooTycoonManager
         {
             if (sprite == null) return;
             spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
-        }
-
-        public void StopPathfindingThread()
-        {
-            if (_pathfindingThread != null && _pathfindingThread.IsAlive)
-            {
-                IsPathfinding = false;
-            }
-            _pathfindingThread = null;
         }
 
         public void Save(SqliteTransaction transaction)
