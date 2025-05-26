@@ -134,9 +134,6 @@ namespace ZooTycoonManager
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
-            _moneyDisplay = new MoneyDisplay();
-            MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
-            MoneyManager.Instance.Notify(); // Initial notification to set initial money text
 
             // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
@@ -188,6 +185,13 @@ namespace ZooTycoonManager
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
             _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
+
+            // Initialize MoneyDisplay here after _font is loaded
+            Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
+            _moneyDisplay = new MoneyDisplay(_font, moneyPosition, Color.Black, 2f);
+            MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
+            MoneyManager.Instance.Notify(); // Initial notification to set initial money text
+
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
@@ -418,8 +422,7 @@ namespace ZooTycoonManager
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             // Draw current money from MoneyDisplay
-            Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
-            _spriteBatch.DrawString(_font, _moneyDisplay.MoneyText, moneyPosition, Color.Gold);
+            _moneyDisplay.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
