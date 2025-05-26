@@ -440,6 +440,11 @@ namespace ZooTycoonManager
             return _nextHabitatId++;
         }
 
+        public bool GetOriginalWalkableState(int x, int y)
+        {
+            return map.IsWalkable(x, y);
+        }
+
         public void ConfirmDespawn(Visitor visitor)
         {
             if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor)) // Ensure not already added and not already removed from main list
