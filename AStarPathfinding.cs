@@ -80,21 +80,22 @@ namespace ZooTycoonManager
         {
             var neighbors = new List<Node>();
 
-            for (int x = -1; x <= 1; x++)
+            // Cardinal directions (N, S, E, W)
+            // dx and dy arrays define the change in X and Y for each direction
+            int[] dx = { 0, 0, 1, -1 }; // For E, W
+            int[] dy = { 1, -1, 0, 0 }; // For S, N (assuming Y increases downwards)
+
+            for (int i = 0; i < 4; i++) // Iterate over the 4 cardinal directions
             {
-                for (int y = -1; y <= 1; y++)
+                int checkX = node.X + dx[i];
+                int checkY = node.Y + dy[i];
+
+                // Check if the neighbor is within grid bounds
+                if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height)
                 {
-                    if (x == 0 && y == 0)
-                        continue;
-
-                    int checkX = node.X + x;
-                    int checkY = node.Y + y;
-
-                    if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height)
-                        neighbors.Add(grid[checkX, checkY]);
+                    neighbors.Add(grid[checkX, checkY]);
                 }
             }
-
             return neighbors;
         }
 
