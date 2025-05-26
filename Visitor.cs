@@ -27,16 +27,12 @@ namespace ZooTycoonManager
         private Habitat currentHabitat = null;
 
         private Thread _updateThread;
-        private Thread _pathfindingThread;
-        private List<Node> _newlyCalculatedPath;
-        private readonly object _pathLock = new object();
         private readonly object _positionLock = new object();
         private bool _isRunning = true;
         private HashSet<int> _visitedHabitatIds;
         private bool _isExiting = false;
         private Vector2 _exitTargetPosition;
 
-        public bool IsPathfinding { get; private set; }
         private Vector2 _pathfindingStartPos;
         private Vector2 _pathfindingTargetPos;
 
@@ -70,7 +66,6 @@ namespace ZooTycoonManager
         public Visitor(Vector2 spawnPosition, int visitorId = 0)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
-            IsPathfinding = false;
             Position = spawnPosition;
             VisitorId = visitorId;
             _visitedHabitatIds = new HashSet<int>();
@@ -110,17 +105,13 @@ namespace ZooTycoonManager
 
         private void TryRandomWalk(GameTime gameTime)
         {
-            if (IsPathfinding) return;
+            if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return;
+            if (_isExiting || currentHabitat != null) return;
 
             timeSinceLastRandomWalk += (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (timeSinceLastRandomWalk >= RANDOM_WALK_INTERVAL)
             {
                 timeSinceLastRandomWalk = 0f;
-
-                if (_isExiting || currentHabitat != null)
-                {
-                    return;
-                }
 
                 // Get all habitats from GameWorld
                 var allHabitats = GameWorld.Instance.GetHabitats();
@@ -191,54 +182,34 @@ namespace ZooTycoonManager
             }
         }
 
-        private void PerformPathfinding()
-        {
-            List<Node> calculatedPath = null;
-            try
-            {
-                Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
-                Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
-                
-                calculatedPath = pathfinder.FindPath(
-                    (int)startTile.X, (int)startTile.Y,
-                    (int)targetTile.X, (int)targetTile.Y);
-            }
-            catch (ThreadAbortException tae)
-            {
-                Debug.WriteLine($"Visitor pathfinding thread ({Thread.CurrentThread.Name}) aborted: {tae.Message}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in visitor pathfinding thread ({Thread.CurrentThread.Name}): {ex.Message}");
-            }
-            finally
-            {
-                lock (_pathLock)
-                {
-                    _newlyCalculatedPath = calculatedPath;
-                }
-            }
-        }
-
         public void PathfindTo(Vector2 targetDestination)
         {
-            if (IsPathfinding) return;
-
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
 
-            IsPathfinding = true;
             _pathfindingStartPos = position;
             _pathfindingTargetPos = targetDestination;
 
-            lock (_pathLock)
-            {
-                _newlyCalculatedPath = null;
-            }
+            // Perform pathfinding synchronously
+            Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
+            Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
+            
+            List<Node> calculatedPath = pathfinder.FindPath(
+                (int)startTile.X, (int)startTile.Y,
+                (int)targetTile.X, (int)targetTile.Y);
 
-            _pathfindingThread = new Thread(new ThreadStart(PerformPathfinding));
-            _pathfindingThread.Name = $"Visitor_{GetHashCode()}_Pathfinder";
-            _pathfindingThread.IsBackground = true;
-            _pathfindingThread.Start();
+            // Directly update path (no longer need _pathLock if path is only accessed by this thread)
+            path = calculatedPath;
+            currentNodeIndex = 0;
+
+            if (path != null && path.Count > 0)
+            {
+                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed. Path nodes: {path.Count}. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
+            }
+            else
+            {
+                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed but no path found. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
+                path = null; // Ensure path is null if FindPath returns null or empty
+            }
         }
 
         public void LoadContent(ContentManager contentManager)
@@ -251,7 +222,7 @@ namespace ZooTycoonManager
             // Habitat visiting logic (only if not exiting)
             if (!_isExiting && currentHabitat != null)
             {
-                if (!IsPathfinding && (path == null || path.Count == 0))
+                if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
                 {
                     currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
                     if (currentVisitTime >= VISIT_DURATION)
@@ -270,13 +241,13 @@ namespace ZooTycoonManager
             }
 
             // Attempt random walk or initiate exit (only if not already exiting and not actively pathfinding for another reason)
-            if (!_isExiting && !IsPathfinding) 
+            if (!_isExiting) 
             {
                 TryRandomWalk(gameTime);
             }
 
             // Early exit for despawn if conditions met (exiting, pathfinding done, path is invalid/finished)
-            if (_isExiting && !IsPathfinding && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
+            if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
             {
                 Debug.WriteLine($"Visitor {VisitorId} (Exiting early check): Pathfinding not active and path is null/empty or traversed. Path: {(path == null ? "null" : path.Count.ToString())}, Index: {currentNodeIndex}. Confirming despawn.");
                 _isRunning = false;
@@ -284,46 +255,9 @@ namespace ZooTycoonManager
                 return; 
             }
 
-            if (IsPathfinding)
-            {
-                if (_pathfindingThread != null && !_pathfindingThread.IsAlive) // Pathfinding just completed
-                {
-                    lock (_pathLock)
-                    {
-                        if (_newlyCalculatedPath != null)
-                        {
-                            path = _newlyCalculatedPath;
-                            currentNodeIndex = 0;
-                            Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed. Path nodes: {path.Count}. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed but _newlyCalculatedPath is null. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
-                            path = null; 
-                        }
-                        _newlyCalculatedPath = null;
-                    }
-                    IsPathfinding = false;
-                    _pathfindingThread = null;
-
-                    // If exiting and pathfinding just finished but resulted in no valid path, despawn.
-                    if (_isExiting && (path == null || path.Count == 0))
-                    {
-                        Debug.WriteLine($"Visitor {VisitorId} (Exiting post-pathfinding): No valid path found to exit. Path: {(path == null ? "null" : path.Count.ToString())}. Confirming despawn.");
-                        _isRunning = false;
-                        GameWorld.Instance.ConfirmDespawn(this);
-                        return;
-                    }
-                }
-                else // Pathfinding is still in progress
-                {
-                    // Debug.WriteLine($"Visitor {VisitorId}: Pathfinding in progress for target {_pathfindingTargetPos}. IsExiting: {_isExiting}");
-                    return; // Wait for pathfinding to complete
-                }
-            }
-
             // If we reach here, pathfinding is not in progress.
-            // If _isExiting, a valid path to the exit should now exist and not be fully traversed yet.
+            // If _isExiting, a valid path to the exit should now exist (or path is null if none found),
+            // and it should not be fully traversed yet if we passed the despawn check above.
 
             if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
             {
@@ -466,7 +400,6 @@ namespace ZooTycoonManager
 
             // Initialize other properties
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
-            IsPathfinding = false;
             path = null;
             currentNodeIndex = 0;
             timeSinceLastRandomWalk = 0f;
