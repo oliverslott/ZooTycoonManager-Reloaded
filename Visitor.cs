@@ -14,6 +14,8 @@ namespace ZooTycoonManager
     public class Visitor : ISaveable, ILoadable
     {
         private Texture2D sprite;
+        private Texture2D thoughtBubbleTexture;
+        private Texture2D animalInThoughtTexture;
         private Vector2 position;
         private List<Node> path;
         private int currentNodeIndex = 0;
@@ -112,73 +114,61 @@ namespace ZooTycoonManager
             if (timeSinceLastRandomWalk >= RANDOM_WALK_INTERVAL)
             {
                 timeSinceLastRandomWalk = 0f;
+                PerformNextActionDecision();
+            }
+        }
 
-                // Get all habitats from GameWorld
-                var allHabitats = GameWorld.Instance.GetHabitats();
+        private void PerformNextActionDecision()
+        {
+            if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return; // Already has a path
+            if (_isExiting || currentHabitat != null) return; // Exiting or currently visiting
 
-                if (allHabitats.Count > 0)
+            // Get all habitats from GameWorld
+            var allHabitats = GameWorld.Instance.GetHabitats();
+
+            if (allHabitats.Count > 0)
+            {
+                var unvisitedHabitats = allHabitats.Where(h => !_visitedHabitatIds.Contains(h.HabitatId)).ToList();
+
+                if (unvisitedHabitats.Count == 0)
                 {
-                    var unvisitedHabitats = allHabitats.Where(h => !_visitedHabitatIds.Contains(h.HabitatId)).ToList();
-
-                    if (unvisitedHabitats.Count == 0)
-                    {
-                        // All habitats have been visited
-                        //Debug.WriteLine($"Visitor {VisitorId}: All habitats visited. Initiating exit.");
-                        InitiateExit();
-                        return;
-                    }
-
-                    // 70% chance to visit an unvisited habitat, 30% chance to random walk
-                    if (random.NextDouble() < 0.7)
-                    {
-                        // Pick a random unvisited habitat
-                        var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
-                        List<Vector2> availableSpots = randomHabitat.GetWalkableVisitingSpots();
-                        
-                        if (availableSpots.Count > 0)
-                        {
-                            Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
-                            // Try to enter the habitat
-                            if (randomHabitat.TryEnterHabitatSync(this))
-                            {
-                                //Debug.WriteLine($"Visitor {VisitorId}: Entering habitat {randomHabitat.HabitatId} at position {visitPosition}");
-                                currentHabitat = randomHabitat;
-                                currentVisitTime = 0f;
-                                PathfindTo(visitPosition);
-                                return;
-                            }
-                            else
-                            {
-                                //Debug.WriteLine($"Visitor {VisitorId}: Habitat {randomHabitat.HabitatId} is full, taking random walk instead");
-                            }
-                        }
-                        else
-                        {
-                            //Debug.WriteLine($"Visitor {VisitorId}: Failed to find a valid position next to habitat {randomHabitat.HabitatId}");
-                        }
-                    }
-                    else
-                    {
-                        // Debug.WriteLine($"Visitor {VisitorId}: Deciding to take a random walk instead of visiting habitat");
-                    }
-                }
-                else
-                {
-                    // Debug.WriteLine($"Visitor {VisitorId}: No habitats available, taking random walk");
+                    InitiateExit();
+                    return;
                 }
 
-                // Fallback to random walk if no habitats or random choice
-                int randomX = random.Next(0, GameWorld.GRID_WIDTH);
-                int randomY = random.Next(0, GameWorld.GRID_HEIGHT);
+                // 70% chance to visit an unvisited habitat, 30% chance to random walk
+                if (random.NextDouble() < 0.7)
+                {
+                    var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
+                    List<Vector2> availableSpots = randomHabitat.GetWalkableVisitingSpots();
+                    
+                    if (availableSpots.Count > 0)
+                    {
+                        Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
+                        if (randomHabitat.TryEnterHabitatSync(this))
+                        {
+                            currentHabitat = randomHabitat;
+                            currentVisitTime = 0f;
+                            PathfindTo(visitPosition);
+                            return;
+                        }
+                    }
+                }
+            }
 
-                Vector2 randomTilePos = new Vector2(randomX, randomY);
+            // Fallback to random walk if no habitats or random choice or failed to enter habitat
+            List<Vector2> walkableTiles = GameWorld.Instance.GetWalkableTileCoordinates();
+
+            if (walkableTiles.Count > 0)
+            {
+                Vector2 randomTilePos = walkableTiles[random.Next(walkableTiles.Count)];
                 Vector2 randomPixelPos = GameWorld.TileToPixel(randomTilePos);
-
-                if (GameWorld.Instance.WalkableMap[randomX, randomY])
-                {
-                    //Debug.WriteLine($"Visitor {GetHashCode()}: Random walking to position {randomPixelPos}");
-                    PathfindTo(randomPixelPos);
-                }
+                PathfindTo(randomPixelPos);
+            }
+            else
+            {
+                Debug.WriteLine($"Visitor {VisitorId}: No walkable tiles found for random walk.");
+                // Optionally, decide on a different fallback action if no walkable tiles are available
             }
         }
 
@@ -215,6 +205,8 @@ namespace ZooTycoonManager
         public void LoadContent(ContentManager contentManager)
         {
             sprite = contentManager.Load<Texture2D>("Pawn_Blue_Cropped_resized");
+            thoughtBubbleTexture = contentManager.Load<Texture2D>("Thought_bubble");
+            animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
         }
 
         private void Update(GameTime gameTime)
@@ -235,6 +227,10 @@ namespace ZooTycoonManager
                             currentHabitat = null;
                             currentVisitTime = 0f;
                             //Debug.WriteLine($"Visitor {VisitorId}: Finished visiting habitat.");
+                            if (!_isExiting) // If not exiting, decide next action immediately
+                            {
+                                PerformNextActionDecision();
+                            }
                         }
                     }
                 }
@@ -327,6 +323,23 @@ namespace ZooTycoonManager
             lock (_positionLock)
             {
                 spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
+
+                // Draw thought bubble if visiting a habitat and pathfinding to it is complete
+                if (currentHabitat != null && (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && thoughtBubbleTexture != null && animalInThoughtTexture != null)
+                {
+                    // Adjust position for thought bubble (e.g., above the visitor's head)
+                    Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); // Example offset
+
+                    // Draw the thought bubble
+                    spriteBatch.Draw(thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(thoughtBubbleTexture.Width / 2, thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
+
+                    // Draw the animal texture inside the thought bubble
+                    // Adjust scale and position to fit the animal texture within the bubble
+                    float animalScale = 0.25f; // Smaller scale for the animal in the bubble
+                    Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4); // Slightly offset to center in bubble
+
+                    spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
+                }
             }
         }
 

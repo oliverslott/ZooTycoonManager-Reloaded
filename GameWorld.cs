@@ -448,6 +448,28 @@ namespace ZooTycoonManager
             return map.IsWalkable(x, y);
         }
 
+        public List<Vector2> GetWalkableTileCoordinates()
+        {
+            var walkableTiles = new List<Vector2>();
+            if (WalkableMap == null)
+            {
+                Debug.WriteLine("Warning: WalkableMap is null in GameWorld.GetWalkableTileCoordinates.");
+                return walkableTiles; // Return empty list if map not initialized
+            }
+
+            for (int x = 0; x < GRID_WIDTH; x++)
+            {
+                for (int y = 0; y < GRID_HEIGHT; y++)
+                {
+                    if (WalkableMap[x, y])
+                    {
+                        walkableTiles.Add(new Vector2(x, y));
+                    }
+                }
+            }
+            return walkableTiles;
+        }
+
         public void ConfirmDespawn(Visitor visitor)
         {
             if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor)) // Ensure not already added and not already removed from main list
