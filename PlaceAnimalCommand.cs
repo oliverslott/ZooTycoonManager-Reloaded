@@ -1,0 +1,85 @@
+using Microsoft.Xna.Framework;
+using System.Diagnostics;
+using System.Linq;
+
+namespace ZooTycoonManager
+{
+    /// <summary>
+    /// Command for placing an animal that can be undone and redone
+    /// </summary>
+    public class PlaceAnimalCommand : ICommand
+    {
+        private readonly Vector2 _position;
+        private readonly decimal _cost;
+        private Animal _createdAnimal;
+        private Habitat _targetHabitat;
+        
+        public string Description => $"Place Animal at ({_position.X:F0}, {_position.Y:F0})";
+        
+        public PlaceAnimalCommand(Vector2 position, decimal cost = 1000)
+        {
+            _position = position;
+            _cost = cost;
+        }
+        
+        public bool Execute()
+        {
+            // Find the habitat that contains the position
+            _targetHabitat = GameWorld.Instance.GetHabitats().FirstOrDefault(h => h.ContainsPosition(_position));
+            
+            if (_targetHabitat == null)
+            {
+                Debug.WriteLine("Cannot place animal: No habitat found at this position");
+                return false;
+            }
+            
+            Vector2 tilePos = GameWorld.PixelToTile(_position);
+            
+            // Check if the position is walkable and within bounds
+            if (tilePos.X < 0 || tilePos.X >= GameWorld.GRID_WIDTH || 
+                tilePos.Y < 0 || tilePos.Y >= GameWorld.GRID_HEIGHT ||
+                !GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y])
+            {
+                Debug.WriteLine("Cannot place animal: Position is not walkable");
+                return false;
+            }
+            
+            // Check if we have enough money
+            if (!MoneyManager.Instance.SpendMoney(_cost))
+            {
+                Debug.WriteLine($"Not enough money to place animal. Cost: ${_cost}, Available: ${MoneyManager.Instance.CurrentMoney}");
+                return false;
+            }
+            
+            // Create the animal
+            Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
+            _createdAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
+            _createdAnimal.SetPosition(spawnPos);
+            _createdAnimal.LoadContent(GameWorld.Instance.Content);
+            _createdAnimal.SetHabitat(_targetHabitat);
+            
+            // Add to the habitat
+            _targetHabitat.AddAnimal(_createdAnimal);
+            
+            Debug.WriteLine($"Placed animal at {_position} for ${_cost}");
+            return true;
+        }
+        
+        public void Undo()
+        {
+            if (_createdAnimal == null || _targetHabitat == null)
+            {
+                Debug.WriteLine("Cannot undo: No animal was created or no target habitat");
+                return;
+            }
+            
+            // Remove the animal from the habitat
+            _targetHabitat.GetAnimals().Remove(_createdAnimal);
+            
+            // Refund the money
+            MoneyManager.Instance.AddMoney(_cost);
+            
+            Debug.WriteLine($"Undid animal placement at {_position}, refunded ${_cost}");
+        }
+    }
+} 

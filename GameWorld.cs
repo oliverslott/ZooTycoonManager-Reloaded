@@ -213,22 +213,9 @@ namespace ZooTycoonManager
         {
             Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
 
-            // Cost of placing a habitat
-            decimal habitatCost = 10000;
-
-            // Attempt to spend money
-            if (MoneyManager.Instance.SpendMoney(habitatCost))
-            {
-                // Create a new habitat and place its enclosure
-                Habitat newHabitat = new Habitat(pixelPosition, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, _nextHabitatId++);
-                habitats.Add(newHabitat);
-                newHabitat.PlaceEnclosure(pixelPosition);
-            }
-            else
-            {
-                // Optionally, provide feedback to the user that they don't have enough money
-                Debug.WriteLine("Not enough money to place a habitat.");
-            }
+            // Create and execute the place habitat command
+            var placeHabitatCommand = new PlaceHabitatCommand(pixelPosition);
+            CommandManager.Instance.ExecuteCommand(placeHabitatCommand);
         }
 
         protected override void Update(GameTime gameTime)
@@ -262,12 +249,9 @@ namespace ZooTycoonManager
             // Handle 'A' key press for spawning animals
             if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
             {
-                // Find the habitat that contains the world mouse position
-                Habitat targetHabitat = habitats.FirstOrDefault(h => h.ContainsPosition(worldMousePosition));
-                if (targetHabitat != null)
-                {
-                    targetHabitat.SpawnAnimal(worldMousePosition);
-                }
+                // Create and execute the place animal command
+                var placeAnimalCommand = new PlaceAnimalCommand(worldMousePosition);
+                CommandManager.Instance.ExecuteCommand(placeAnimalCommand);
             }
 
             // Handle automatic visitor spawning
@@ -316,6 +300,7 @@ namespace ZooTycoonManager
                 _nextHabitatId = 1;
                 _nextAnimalId = 1;
                 _nextVisitorId = 1;
+                CommandManager.Instance.Clear(); // Clear command history when clearing everything
             }
 
             // Handle 'M' key press for adding money (debugging)
@@ -323,6 +308,20 @@ namespace ZooTycoonManager
             {
                 MoneyManager.Instance.AddMoney(100000);
                 Debug.WriteLine("Added $100,000 for debugging.");
+            }
+
+            // Handle Ctrl+Z for undo
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) && 
+                !prevKeyboardState.IsKeyDown(Keys.Z))
+            {
+                CommandManager.Instance.Undo();
+            }
+
+            // Handle Ctrl+Y for redo
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) && 
+                !prevKeyboardState.IsKeyDown(Keys.Y))
+            {
+                CommandManager.Instance.Redo();
             }
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
@@ -413,13 +412,18 @@ namespace ZooTycoonManager
             _fpsCounter.Draw(_spriteBatch);
 
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom";
-            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 180);
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
+            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             // Draw current money from MoneyDisplay
             Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
             _spriteBatch.DrawString(_font, _moneyDisplay.MoneyText, moneyPosition, Color.Gold);
+
+            // Draw undo/redo status
+            Vector2 undoRedoPosition = new Vector2(10, 40);
+            string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
+            _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
 
             _spriteBatch.End();
 
@@ -429,6 +433,11 @@ namespace ZooTycoonManager
         public int GetNextAnimalId()
         {
             return _nextAnimalId++;
+        }
+
+        public int GetNextHabitatId()
+        {
+            return _nextHabitatId++;
         }
 
         public void ConfirmDespawn(Visitor visitor)
