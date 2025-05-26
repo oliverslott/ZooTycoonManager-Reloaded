@@ -209,6 +209,39 @@ namespace ZooTycoonManager
             }
         }
 
+
+
+        /// <summary>
+        /// Removes the enclosure by reversing what PlaceEnclosure did
+        /// Simple and clean - just undoes the walkable map changes
+        /// </summary>
+        public void RemoveEnclosure()
+        {
+            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
+            int radius = GetEnclosureRadius();
+            int startX = (int)centerTile.X - radius;
+            int startY = (int)centerTile.Y - radius;
+            int endX = (int)centerTile.X + radius;
+            int endY = (int)centerTile.Y + radius;
+
+            // Restore all affected tiles to their original walkable state from the base map
+            for (int x = startX; x <= endX; x++)
+            {
+                for (int y = startY; y <= endY; y++)
+                {
+                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
+                    {
+                        // Reset to the original map's walkable state
+                        GameWorld.Instance.WalkableMap[x, y] = GameWorld.Instance.GetOriginalWalkableState(x, y);
+                    }
+                }
+            }
+
+            // Clear fence positions for rendering
+            fencePositions.Clear();
+            fenceTileCoordinates.Clear();
+        }
+
         private void PlaceFenceTile(Vector2 tilePos)
         {
             // Ensure we're within bounds
