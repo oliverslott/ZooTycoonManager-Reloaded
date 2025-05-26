@@ -162,7 +162,7 @@ namespace ZooTycoonManager
 
         public void PlaceEnclosure(Vector2 centerPixelPosition)
         {
-            Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
+            //Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
             
             CenterPosition = centerPixelPosition;
             fencePositions.Clear(); // Clear old fence pixel positions
@@ -170,7 +170,7 @@ namespace ZooTycoonManager
             
             // Convert the center position to tile coordinates
             Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
-            Debug.WriteLine($"Center tile position: {centerTile}");
+            //Debug.WriteLine($"Center tile position: {centerTile}");
 
             // Calculate the corners of the enclosure
             int radius = GetEnclosureRadius();
@@ -179,7 +179,7 @@ namespace ZooTycoonManager
             int endX = (int)centerTile.X + radius;
             int endY = (int)centerTile.Y + radius;
 
-            Debug.WriteLine($"Enclosure bounds: ({startX},{startY}) to ({endX},{endY})");
+            //Debug.WriteLine($"Enclosure bounds: ({startX},{startY}) to ({endX},{endY})");
 
             // Place the top and bottom rows
             for (int x = startX; x <= endX; x++)
@@ -203,7 +203,7 @@ namespace ZooTycoonManager
                     if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
                     {
                         GameWorld.Instance.WalkableMap[x, y] = true;
-                        Debug.WriteLine($"Set tile ({x},{y}) inside habitat to walkable.");
+                        //Debug.WriteLine($"Set tile ({x},{y}) inside habitat to walkable.");
                     }
                 }
             }
@@ -220,12 +220,12 @@ namespace ZooTycoonManager
             }
 
             Vector2 pixelPos = GameWorld.TileToPixel(tilePos);
-            Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
+            //Debug.WriteLine($"Attempting to place fence at tile: {tilePos}, pixel: {pixelPos}");
             
             GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
             AddFencePosition(pixelPos);
             fenceTileCoordinates.Add(tilePos); // Add to tile coordinates set
-            Debug.WriteLine($"Successfully placed fence at: {tilePos}");
+            //Debug.WriteLine($"Successfully placed fence at: {tilePos}");
         }
 
         public bool SpawnAnimal(Vector2 pixelPosition)

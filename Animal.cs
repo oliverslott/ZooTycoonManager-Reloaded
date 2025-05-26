@@ -140,7 +140,7 @@ namespace ZooTycoonManager
                         (int)targetTile.X, (int)targetTile.Y);
 
                     stopwatch.Stop();
-                    Debug.WriteLine($"Animal Pathfinding (Worker {Thread.CurrentThread.Name}) took {stopwatch.ElapsedMilliseconds} ms.");
+                    // Debug.WriteLine($"Animal Pathfinding (Worker {Thread.CurrentThread.Name}) took {stopwatch.ElapsedMilliseconds} ms.");
                 }
                 catch (Exception ex)
                 {

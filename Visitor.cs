@@ -123,7 +123,7 @@ namespace ZooTycoonManager
                     if (unvisitedHabitats.Count == 0)
                     {
                         // All habitats have been visited
-                        Debug.WriteLine($"Visitor {VisitorId}: All habitats visited. Initiating exit.");
+                        //Debug.WriteLine($"Visitor {VisitorId}: All habitats visited. Initiating exit.");
                         InitiateExit();
                         return;
                     }
@@ -141,7 +141,7 @@ namespace ZooTycoonManager
                             // Try to enter the habitat
                             if (randomHabitat.TryEnterHabitatSync(this))
                             {
-                                Debug.WriteLine($"Visitor {VisitorId}: Entering habitat {randomHabitat.HabitatId} at position {visitPosition}");
+                                //Debug.WriteLine($"Visitor {VisitorId}: Entering habitat {randomHabitat.HabitatId} at position {visitPosition}");
                                 currentHabitat = randomHabitat;
                                 currentVisitTime = 0f;
                                 PathfindTo(visitPosition);
@@ -149,22 +149,22 @@ namespace ZooTycoonManager
                             }
                             else
                             {
-                                Debug.WriteLine($"Visitor {VisitorId}: Habitat {randomHabitat.HabitatId} is full, taking random walk instead");
+                                //Debug.WriteLine($"Visitor {VisitorId}: Habitat {randomHabitat.HabitatId} is full, taking random walk instead");
                             }
                         }
                         else
                         {
-                            Debug.WriteLine($"Visitor {VisitorId}: Failed to find a valid position next to habitat {randomHabitat.HabitatId}");
+                            //Debug.WriteLine($"Visitor {VisitorId}: Failed to find a valid position next to habitat {randomHabitat.HabitatId}");
                         }
                     }
                     else
                     {
-                        Debug.WriteLine($"Visitor {VisitorId}: Deciding to take a random walk instead of visiting habitat");
+                        // Debug.WriteLine($"Visitor {VisitorId}: Deciding to take a random walk instead of visiting habitat");
                     }
                 }
                 else
                 {
-                    Debug.WriteLine($"Visitor {VisitorId}: No habitats available, taking random walk");
+                    // Debug.WriteLine($"Visitor {VisitorId}: No habitats available, taking random walk");
                 }
 
                 // Fallback to random walk if no habitats or random choice
@@ -176,7 +176,7 @@ namespace ZooTycoonManager
 
                 if (GameWorld.Instance.WalkableMap[randomX, randomY])
                 {
-                    Debug.WriteLine($"Visitor {GetHashCode()}: Random walking to position {randomPixelPos}");
+                    //Debug.WriteLine($"Visitor {GetHashCode()}: Random walking to position {randomPixelPos}");
                     PathfindTo(randomPixelPos);
                 }
             }
@@ -203,11 +203,11 @@ namespace ZooTycoonManager
 
             if (path != null && path.Count > 0)
             {
-                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed. Path nodes: {path.Count}. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
+                // Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed. Path nodes: {path.Count}. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
             }
             else
             {
-                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed but no path found. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
+                // Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed but no path found. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
                 path = null; // Ensure path is null if FindPath returns null or empty
             }
         }
@@ -230,11 +230,11 @@ namespace ZooTycoonManager
                         if (currentHabitat != null)
                         {
                             _visitedHabitatIds.Add(currentHabitat.HabitatId);
-                            Debug.WriteLine($"Visitor {VisitorId} marked Habitat {currentHabitat.HabitatId} as visited.");
+                            //Debug.WriteLine($"Visitor {VisitorId} marked Habitat {currentHabitat.HabitatId} as visited.");
                             currentHabitat.LeaveHabitat(this);
                             currentHabitat = null;
                             currentVisitTime = 0f;
-                            Debug.WriteLine($"Visitor {VisitorId}: Finished visiting habitat.");
+                            //Debug.WriteLine($"Visitor {VisitorId}: Finished visiting habitat.");
                         }
                     }
                 }
@@ -249,7 +249,7 @@ namespace ZooTycoonManager
             // Early exit for despawn if conditions met (exiting, pathfinding done, path is invalid/finished)
             if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
             {
-                Debug.WriteLine($"Visitor {VisitorId} (Exiting early check): Pathfinding not active and path is null/empty or traversed. Path: {(path == null ? "null" : path.Count.ToString())}, Index: {currentNodeIndex}. Confirming despawn.");
+                //Debug.WriteLine($"Visitor {VisitorId} (Exiting early check): Pathfinding not active and path is null/empty or traversed. Path: {(path == null ? "null" : path.Count.ToString())}, Index: {currentNodeIndex}. Confirming despawn.");
                 _isRunning = false;
                 GameWorld.Instance.ConfirmDespawn(this);
                 return; 
@@ -306,14 +306,14 @@ namespace ZooTycoonManager
             if (currentNodeIndex >= path.Count) // Reached end of current path
             {
                 Vector2 pathEndTargetForLog = _pathfindingTargetPos; // Grab this before path is nulled
-                Debug.WriteLine($"Visitor {VisitorId}: Reached end of path at {position}. Path target was {pathEndTargetForLog}. IsExiting: {_isExiting}");
+                //Debug.WriteLine($"Visitor {VisitorId}: Reached end of path at {position}. Path target was {pathEndTargetForLog}. IsExiting: {_isExiting}");
                 path = null; 
                 currentNodeIndex = 0;
 
                 if (_isExiting)
                 {
                     // This is the primary "successful exit" despawn point
-                    Debug.WriteLine($"Visitor {VisitorId} (Exiting success): Successfully reached exit target. Confirming despawn.");
+                    //Debug.WriteLine($"Visitor {VisitorId} (Exiting success): Successfully reached exit target. Confirming despawn.");
                     _isRunning = false;
                     GameWorld.Instance.ConfirmDespawn(this);
                     // The visitor's update loop will terminate because _isRunning is false.
@@ -374,11 +374,11 @@ namespace ZooTycoonManager
                     VALUES ($visitor_id, $name, $money, $mood, $hunger, $habitat_id, $shop_id, $position_x, $position_y);
                 ";
                 command.ExecuteNonQuery();
-                Debug.WriteLine($"Inserted Visitor: ID {VisitorId}, Name: {Name}");
+                //Debug.WriteLine($"Inserted Visitor: ID {VisitorId}, Name: {Name}");
             }
             else
             {
-                Debug.WriteLine($"Updated Visitor: ID {VisitorId}, Name: {Name}");
+                //Debug.WriteLine($"Updated Visitor: ID {VisitorId}, Name: {Name}");
             }
         }
 
@@ -427,7 +427,7 @@ namespace ZooTycoonManager
             currentVisitTime = 0f;
             timeSinceLastRandomWalk = float.MinValue;
 
-            Debug.WriteLine($"Visitor {VisitorId}: Initiating exit towards {_exitTargetPosition}.");
+            //Debug.WriteLine($"Visitor {VisitorId}: Initiating exit towards {_exitTargetPosition}.");
             PathfindTo(_exitTargetPosition);
         }
     }
