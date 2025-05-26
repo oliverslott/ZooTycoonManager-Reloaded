@@ -16,13 +16,14 @@ namespace ZooTycoonManager
         // Enclosure size constant
         public const int DEFAULT_ENCLOSURE_SIZE = 9;  // Total size of the enclosure (9x9)
         private const int MAX_VISITORS = 3;  // Maximum number of visitors allowed in a habitat
+        private const float FENCE_DRAW_SCALE = 2.67f; // Scale for drawing fences
 
         private Vector2 centerPosition;
         private int width;
         private int height;
         private List<Vector2> fencePositions;
         private List<Animal> animals;
-        private static Texture2D fenceTexture;
+        private HashSet<Vector2> fenceTileCoordinates; // Retain for habitat structure logic
         private SemaphoreSlim visitorSemaphore;  // Semaphore to control visitor access
         private HashSet<Visitor> currentVisitors;  // Track current visitors
 
@@ -64,6 +65,7 @@ namespace ZooTycoonManager
             this.animals = new List<Animal>();
             this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
             this.currentVisitors = new HashSet<Visitor>();
+            this.fenceTileCoordinates = new HashSet<Vector2>(); // Still initialize here
             CenterPosition = centerPosition;
             HabitatId = habitatId;
 
@@ -75,7 +77,8 @@ namespace ZooTycoonManager
 
         public static void LoadContent(ContentManager content)
         {
-            fenceTexture = content.Load<Texture2D>("fence");
+            // Fence textures are now loaded by FenceRenderer.LoadContent
+            // This method can be used for other habitat-specific, non-animal content in the future
         }
 
         public void AddFencePosition(Vector2 position)
@@ -129,14 +132,8 @@ namespace ZooTycoonManager
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            if (fenceTexture == null) return;
-
-            foreach (Vector2 position in fencePositions)
-            {
-                spriteBatch.Draw(fenceTexture, position, null, Color.White, 0f, 
-                    new Vector2(fenceTexture.Width / 2, fenceTexture.Height / 2), 
-                    2f, SpriteEffects.None, 0f);
-            }
+            // Call the static Draw method of FenceRenderer
+            FenceRenderer.Draw(spriteBatch, fencePositions, fenceTileCoordinates, FENCE_DRAW_SCALE);
 
             // Draw all animals in this habitat
             foreach (var animal in animals)
@@ -168,6 +165,8 @@ namespace ZooTycoonManager
             Debug.WriteLine($"Starting enclosure placement at pixel position: {centerPixelPosition}");
             
             CenterPosition = centerPixelPosition;
+            fencePositions.Clear(); // Clear old fence pixel positions
+            fenceTileCoordinates.Clear(); // Clear old fence tile coordinates
             
             // Convert the center position to tile coordinates
             Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
@@ -225,6 +224,7 @@ namespace ZooTycoonManager
             
             GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
             AddFencePosition(pixelPos);
+            fenceTileCoordinates.Add(tilePos); // Add to tile coordinates set
             Debug.WriteLine($"Successfully placed fence at: {tilePos}");
         }
 

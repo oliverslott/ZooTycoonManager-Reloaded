@@ -195,6 +195,9 @@ namespace ZooTycoonManager
             // map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens -- This line is now redundant
             tileRenderer = new TileRenderer(tileTextures);
 
+            // Load fence textures
+            FenceRenderer.LoadContent(Content);
+
             // Load content for all habitats and their animals
             foreach (var habitat in habitats)
             {
