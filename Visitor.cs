@@ -80,6 +80,8 @@ namespace ZooTycoonManager
             HabitatId = null;
             ShopId = null;
 
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make visitor act on first update
+
             // Start the update thread
             _updateThread = new Thread(UpdateLoop);
             _updateThread.Name = $"Visitor_{GetHashCode()}_Update";
@@ -415,7 +417,7 @@ namespace ZooTycoonManager
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             path = null;
             currentNodeIndex = 0;
-            timeSinceLastRandomWalk = 0f;
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make visitor act on first update
             currentVisitTime = 0f;
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;

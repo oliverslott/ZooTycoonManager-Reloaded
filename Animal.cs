@@ -71,6 +71,8 @@ namespace ZooTycoonManager
             Hunger = 0;
             Stress = 0;
 
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make animal act on first update
+
             _pathfindingWorkerThread = new Thread(PathfindingWorkerLoop);
             _pathfindingWorkerThread.Name = $"Animal_{GetHashCode()}_PathWorker";
             _pathfindingWorkerThread.IsBackground = true;
@@ -317,7 +319,7 @@ namespace ZooTycoonManager
             IsPathfinding = false;
             path = null;
             currentNodeIndex = 0;
-            timeSinceLastRandomWalk = 0f;
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make animal act on first update
         }
     }
 }
