@@ -5,14 +5,14 @@ using System;
 
 namespace ZooTycoonManager
 {
-    public class AnimalInfoPopup
+    public class EntityInfoPopup
     {
         private SpriteFont _font;
         private Texture2D _backgroundTexture;
         private Texture2D _closeButtonTexture;
         private Rectangle _popupRectangle;
         private Rectangle _closeButtonRectangle;
-        private Animal _selectedAnimal;
+        private IInspectableEntity _selectedEntity;
         private bool _isVisible;
         private GraphicsDevice _graphicsDevice;
 
@@ -23,7 +23,7 @@ namespace ZooTycoonManager
         private const float ITEM_SPACING = 5f;
         private const float LABEL_BAR_SPACING = 3f;
 
-        public AnimalInfoPopup(GraphicsDevice graphicsDevice, SpriteFont font)
+        public EntityInfoPopup(GraphicsDevice graphicsDevice, SpriteFont font)
         {
             _graphicsDevice = graphicsDevice;
             _font = font;
@@ -36,10 +36,10 @@ namespace ZooTycoonManager
             _closeButtonTexture.SetData(new[] { Color.Red });
 
             _popupRectangle = new Rectangle(
-                _graphicsDevice.Viewport.Width - 250 - PADDING, 
-                _graphicsDevice.Viewport.Height - 170 - PADDING,
-                250, 
-                170);
+                _graphicsDevice.Viewport.Width - 270 - PADDING, 
+                _graphicsDevice.Viewport.Height - 180 - PADDING,
+                270, 
+                180);
 
             _closeButtonRectangle = new Rectangle(
                 _popupRectangle.X + _popupRectangle.Width - CLOSE_BUTTON_SIZE - PADDING / 2,
@@ -48,9 +48,9 @@ namespace ZooTycoonManager
                 CLOSE_BUTTON_SIZE);
         }
 
-        public void Show(Animal animal)
+        public void Show(IInspectableEntity entity)
         {
-            _selectedAnimal = animal;
+            _selectedEntity = entity;
             _isVisible = true;
             
             _popupRectangle.X = _graphicsDevice.Viewport.Width - _popupRectangle.Width - PADDING;
@@ -63,11 +63,11 @@ namespace ZooTycoonManager
         public void Hide()
         {
             _isVisible = false;
-            if (_selectedAnimal != null)
+            if (_selectedEntity != null)
             {
-                _selectedAnimal.IsSelected = false;
+                _selectedEntity.IsSelected = false;
             }
-            _selectedAnimal = null;
+            _selectedEntity = null;
         }
 
         public bool IsVisible => _isVisible;
@@ -110,7 +110,7 @@ namespace ZooTycoonManager
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            if (!_isVisible || _selectedAnimal == null) return;
+            if (!_isVisible || _selectedEntity == null) return;
 
             spriteBatch.Draw(_backgroundTexture, _popupRectangle, Color.DarkSlateGray * 0.8f);
             spriteBatch.Draw(_closeButtonTexture, _closeButtonRectangle, Color.Red);
@@ -121,7 +121,7 @@ namespace ZooTycoonManager
 
             float leftX = _popupRectangle.X + PADDING;
 
-            string nameText = $"Name: {_selectedAnimal.Name} ({_selectedAnimal.AnimalId})";
+            string nameText = $"Name: {_selectedEntity.Name} ({_selectedEntity.Id})";
             spriteBatch.DrawString(_font, nameText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + ITEM_SPACING;
 
@@ -129,16 +129,16 @@ namespace ZooTycoonManager
             spriteBatch.DrawString(_font, moodLabelText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + LABEL_BAR_SPACING;
 
-            float moodPercentage = _selectedAnimal.Mood / 100f;
+            float moodPercentage = _selectedEntity.Mood / 100f;
             Color moodColor = Color.Lerp(Color.Red, Color.LimeGreen, moodPercentage);
-            DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), _selectedAnimal.Mood, 100, moodColor);
+            DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), _selectedEntity.Mood, 100, moodColor);
             currentY += PROGRESS_BAR_HEIGHT + ITEM_SPACING;
 
             string hungerLabelText = "Hunger:";
             spriteBatch.DrawString(_font, hungerLabelText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + LABEL_BAR_SPACING;
             
-            float displayedHunger = 100f - _selectedAnimal.Hunger;
+            float displayedHunger = 100f - _selectedEntity.Hunger;
             float invertedHungerPercentage = displayedHunger / 100f; 
             Color hungerColor = Color.Lerp(Color.Red, Color.LimeGreen, invertedHungerPercentage); 
             DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedHunger, 100, hungerColor);

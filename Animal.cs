@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace ZooTycoonManager
 {
-    public class Animal: ISaveable, ILoadable
+    public class Animal: ISaveable, ILoadable, IInspectableEntity
     {
         Texture2D sprite;
         List<Node> path;
@@ -43,6 +43,10 @@ namespace ZooTycoonManager
         public int Hunger { get; set; }
         public int Stress { get; set; }
         public int HabitatId { get; set; }
+
+        // IInspectableEntity explicit implementation for Id to resolve ambiguity if any other Id exists.
+        // For now, AnimalId is used.
+        int IInspectableEntity.Id => AnimalId;
 
         private Vector2 _position;
         private int _positionX;

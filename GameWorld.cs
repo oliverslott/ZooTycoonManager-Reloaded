@@ -56,8 +56,8 @@ namespace ZooTycoonManager
 
         private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
 
-        private AnimalInfoPopup _animalInfoPopup; // Add AnimalInfoPopup field
-        private Animal _selectedAnimal; // To keep track of the selected animal
+        private EntityInfoPopup _entityInfoPopup; // Changed from AnimalInfoPopup
+        private IInspectableEntity _selectedEntity; // Changed from Animal to IInspectableEntity
 
         public List<Habitat> GetHabitats()
         {
@@ -199,7 +199,7 @@ namespace ZooTycoonManager
             MoneyManager.Instance.Notify(); // Initial notification to set initial money text
 
             // Initialize AnimalInfoPopup here after _font is loaded
-            _animalInfoPopup = new AnimalInfoPopup(GraphicsDevice, _font);
+            _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font); // Changed from AnimalInfoPopup
 
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
@@ -338,51 +338,68 @@ namespace ZooTycoonManager
             }
 
             // Update AnimalInfoPopup
-            bool popupHandledClick = _animalInfoPopup.Update(mouse, prevMouseState);
+            bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
             {
-                // Convert mouse position to world coordinates for checking animal clicks
-                Vector2 worldMousePosForAnimalCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
-                bool animalClickedThisFrame = false;
-                Animal clickedAnimal = null;
+                // Convert mouse position to world coordinates for checking entity clicks
+                Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                bool entityClickedThisFrame = false;
+                IInspectableEntity clickedEntity = null;
 
+                // Check for animal clicks first
                 foreach (var habitat in habitats)
                 {
                     foreach (var animal in habitat.GetAnimals())
                     {
-                        if (animal.BoundingBox.Contains(worldMousePosForAnimalCheck))
+                        if (animal.BoundingBox.Contains(worldMousePosForEntityCheck))
                         {
-                            clickedAnimal = animal;
-                            animalClickedThisFrame = true;
+                            clickedEntity = animal;
+                            entityClickedThisFrame = true;
                             break;
                         }
                     }
-                    if (animalClickedThisFrame) break;
+                    if (entityClickedThisFrame) break;
                 }
 
-                if (clickedAnimal != null)
+                // If no animal was clicked, check for visitor clicks
+                if (!entityClickedThisFrame)
                 {
-                    if (_selectedAnimal != null && _selectedAnimal != clickedAnimal)
+                    foreach (var visitor in visitors)
                     {
-                        _selectedAnimal.IsSelected = false; // Deselect previous animal
+                        // Assuming Visitor has a BoundingBox similar to Animal
+                        // If not, this needs to be adjusted or Visitor needs a BoundingBox property.
+                        // For now, let's add a temporary BoundingBox for Visitor for selection purposes.
+                        // This should be properly implemented in Visitor.cs if permanent.
+                        Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
+                        if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
+                        {
+                            clickedEntity = visitor;
+                            entityClickedThisFrame = true;
+                            break;
+                        }
                     }
-                    _selectedAnimal = clickedAnimal;
-                    _selectedAnimal.IsSelected = true; // Select new animal
-                    _animalInfoPopup.Show(_selectedAnimal); // Show or update for the new animal
                 }
-                // If no animal was clicked and the popup is visible, but the click was not on the popup itself (e.g. close button), then hide the popup.
-                // And deselect the animal
-                else if (!animalClickedThisFrame && _animalInfoPopup.IsVisible && !popupHandledClick) 
+
+                if (clickedEntity != null)
                 {
-                    // Check if the click was outside the popup bounds when it's visible
-                    // This is a bit simplified; a more robust way would be to check if mouse.Position is within the popup's rectangle.
-                    // For now, if nothing is clicked and popup didn't handle it, assume it's a click outside.
-                    _animalInfoPopup.Hide();
-                    if (_selectedAnimal != null)
+                    if (_selectedEntity != null && _selectedEntity != clickedEntity)
                     {
-                        _selectedAnimal.IsSelected = false;
-                        _selectedAnimal = null;
+                        _selectedEntity.IsSelected = false; // Deselect previous entity
+                    }
+                    _selectedEntity = clickedEntity;
+                    _selectedEntity.IsSelected = true; // Select new entity
+                    _entityInfoPopup.Show(_selectedEntity); // Show or update for the new entity
+                }
+                // If no entity was clicked and the popup is visible, but the click was not on the popup itself (e.g. close button), then hide the popup.
+                // And deselect the entity
+                else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick) 
+                {
+                    _entityInfoPopup.Hide();
+                    if (_selectedEntity != null)
+                    {
+                        _selectedEntity.IsSelected = false;
+                        _selectedEntity = null;
                     }
                 }
             }
@@ -479,7 +496,7 @@ namespace ZooTycoonManager
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
 
             // Draw AnimalInfoPopup
-            _animalInfoPopup.Draw(_spriteBatch);
+            _entityInfoPopup.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
