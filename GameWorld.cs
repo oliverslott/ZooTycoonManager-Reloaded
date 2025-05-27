@@ -28,6 +28,7 @@ namespace ZooTycoonManager
         // UI
         Button shopButton;
         Texture2D shopIconTexture;
+        private ShopWindow _shopWindow;
 
         // Money Management
         private MoneyDisplay _moneyDisplay;
@@ -186,7 +187,7 @@ namespace ZooTycoonManager
 
         protected override void LoadContent()
         {
-            //_spriteBatch = new SpriteBatch(GraphicsDevice);
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
             _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
 
@@ -195,6 +196,14 @@ namespace ZooTycoonManager
 
             Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - backgroundTexture.Width - 10, 10);
             shopButton = new Button(backgroundTexture, iconTexture, shopButtonPosition);
+
+            Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
+            Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
+            SpriteFont font = Content.Load<SpriteFont>("font");
+
+            // Lav shop window
+            Vector2 shopWindowPosition = new Vector2(200, 100); // fx midt på skærmen
+            _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
 
 
             // Initialize MoneyDisplay here after _font is loaded
@@ -223,6 +232,7 @@ namespace ZooTycoonManager
 
         MouseState prevMouseState;
         KeyboardState prevKeyboardState;
+        
 
         private void PlaceFence(Vector2 pixelPosition)
         {
@@ -371,13 +381,15 @@ namespace ZooTycoonManager
                 _visitorsToDespawn.Clear();
             }
             MouseState mouseState = Mouse.GetState();
-            shopButton.Update(mouseState, prevMouseState);
+            shopButton.Update(mouseState);
 
+            // Når du klikker på shop-ikonet, viser vi vinduet
             if (shopButton.IsClicked)
             {
-                // Åben shop
-                Console.WriteLine("Shop button clicked!");
+                _shopWindow.IsVisible = !_shopWindow.IsVisible;
             }
+
+            _shopWindow.Update(gameTime, mouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
@@ -404,6 +416,7 @@ namespace ZooTycoonManager
             _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
         }
 
+        
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -426,6 +439,7 @@ namespace ZooTycoonManager
                 visitor.Draw(_spriteBatch);
             }
 
+            // VIGTIGT! Luk det første Begin!
             _spriteBatch.End();
 
             // Draw UI elements without camera offset
@@ -447,8 +461,10 @@ namespace ZooTycoonManager
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
 
-            _spriteBatch.Begin();
+            // Tegn shop knappen
             shopButton.Draw(_spriteBatch);
+            shopButton.Draw(_spriteBatch);
+            _shopWindow.Draw(_spriteBatch);
 
             _spriteBatch.End();
 

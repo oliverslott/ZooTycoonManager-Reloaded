@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 public class Button
 {
@@ -8,34 +9,48 @@ public class Button
     private Texture2D iconTexture;
     private Vector2 position;
     private Rectangle rectangle;
+    private Rectangle bounds;
+    private SpriteFont font;
 
+    public string Text { get; set; }
     public bool IsClicked { get; private set; }
 
-    public Button(Texture2D backgroundTexture, Texture2D iconTexture, Vector2 position)
+    public Button(Texture2D backgroundTexture, Texture2D iconTexture, Vector2 position, string text = null, SpriteFont font = null)
     {
         this.backgroundTexture = backgroundTexture;
         this.iconTexture = iconTexture;
         this.position = position;
-        rectangle = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
+        this.Text = text;
+        this.font = font;
+        bounds = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
     }
-
-    public void Update(MouseState mouseState, MouseState prevMouseState)
+    public void Update(MouseState mouseState)
     {
-        Rectangle mouseRect = new Rectangle(mouseState.X, mouseState.Y, 1, 1);
+        Point mousePosition = mouseState.Position;
+        IsClicked = false;
 
-        if (mouseRect.Intersects(rectangle) && mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton == ButtonState.Released)
+        if (bounds.Contains(mousePosition) && mouseState.LeftButton == ButtonState.Pressed)
         {
             IsClicked = true;
-        }
-        else
-        {
-            IsClicked = false;
         }
     }
 
     public void Draw(SpriteBatch spriteBatch)
     {
         spriteBatch.Draw(backgroundTexture, position, Color.White);
-        spriteBatch.Draw(iconTexture, position, Color.White);
+
+        if (iconTexture != null)
+        {
+            spriteBatch.Draw(iconTexture, position, Color.White);
+        }
+
+        if (!string.IsNullOrEmpty(Text) && font != null)
+        {
+            Vector2 textSize = font.MeasureString(Text);
+            Vector2 textPosition = position + new Vector2((backgroundTexture.Width - textSize.X) / 2, (backgroundTexture.Height - textSize.Y) / 2);
+            spriteBatch.DrawString(font, Text, textPosition, Color.Black);
+        }
     }
+
+   
 }
