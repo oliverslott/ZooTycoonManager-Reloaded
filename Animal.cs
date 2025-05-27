@@ -33,6 +33,8 @@ namespace ZooTycoonManager
         private readonly object _pendingPathResultLock = new object();
 
         public bool IsPathfinding { get; private set; }
+        public bool IsSelected { get; set; }
+        private static Texture2D _borderTexture;
 
         //Database - TODO: Can this be moved elsewhere?
         public int AnimalId { get; set; }
@@ -190,6 +192,11 @@ namespace ZooTycoonManager
         public void LoadContent(ContentManager contentManager)
         {
             sprite = contentManager.Load<Texture2D>("NibblingGoat");
+            if (_borderTexture == null)
+            {
+                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
+                _borderTexture.SetData(new[] { Color.White });
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -274,6 +281,21 @@ namespace ZooTycoonManager
         {
             if (sprite == null) return;
             spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+
+            if (IsSelected)
+            {
+                DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow);
+            }
+        }
+
+        private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
+        {
+            if (_borderTexture == null) return;
+
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, rectangleToBorder.Width, thicknessOfBorder), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle((rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder), rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y + rectangleToBorder.Height - thicknessOfBorder, rectangleToBorder.Width, thicknessOfBorder), borderColor);
         }
 
         public void Save(SqliteTransaction transaction)

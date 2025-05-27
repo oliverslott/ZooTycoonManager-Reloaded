@@ -57,6 +57,7 @@ namespace ZooTycoonManager
         private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
 
         private AnimalInfoPopup _animalInfoPopup; // Add AnimalInfoPopup field
+        private Animal _selectedAnimal; // To keep track of the selected animal
 
         public List<Habitat> GetHabitats()
         {
@@ -337,33 +338,53 @@ namespace ZooTycoonManager
             }
 
             // Update AnimalInfoPopup
-            _animalInfoPopup.Update(mouse, prevMouseState);
+            bool popupHandledClick = _animalInfoPopup.Update(mouse, prevMouseState);
 
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !_animalInfoPopup.IsVisible) // Only process animal clicks if popup is not visible or not interacting with popup close
+            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
             {
                 // Convert mouse position to world coordinates for checking animal clicks
                 Vector2 worldMousePosForAnimalCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
-                bool animalClicked = false;
+                bool animalClickedThisFrame = false;
+                Animal clickedAnimal = null;
+
                 foreach (var habitat in habitats)
                 {
                     foreach (var animal in habitat.GetAnimals())
                     {
                         if (animal.BoundingBox.Contains(worldMousePosForAnimalCheck))
                         {
-                            _animalInfoPopup.Show(animal);
-                            animalClicked = true;
+                            clickedAnimal = animal;
+                            animalClickedThisFrame = true;
                             break;
                         }
                     }
-                    if (animalClicked) break;
+                    if (animalClickedThisFrame) break;
                 }
 
-                // If no animal was clicked and the popup was not interacted with, existing left-click logic for pathfinding (or other future uses) can go here.
-                // For now, the example pathfinding for the first animal is removed to avoid conflict.
-                // if (!animalClicked && habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
-                // {
-                //     habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
-                // }
+                if (clickedAnimal != null)
+                {
+                    if (_selectedAnimal != null && _selectedAnimal != clickedAnimal)
+                    {
+                        _selectedAnimal.IsSelected = false; // Deselect previous animal
+                    }
+                    _selectedAnimal = clickedAnimal;
+                    _selectedAnimal.IsSelected = true; // Select new animal
+                    _animalInfoPopup.Show(_selectedAnimal); // Show or update for the new animal
+                }
+                // If no animal was clicked and the popup is visible, but the click was not on the popup itself (e.g. close button), then hide the popup.
+                // And deselect the animal
+                else if (!animalClickedThisFrame && _animalInfoPopup.IsVisible && !popupHandledClick) 
+                {
+                    // Check if the click was outside the popup bounds when it's visible
+                    // This is a bit simplified; a more robust way would be to check if mouse.Position is within the popup's rectangle.
+                    // For now, if nothing is clicked and popup didn't handle it, assume it's a click outside.
+                    _animalInfoPopup.Hide();
+                    if (_selectedAnimal != null)
+                    {
+                        _selectedAnimal.IsSelected = false;
+                        _selectedAnimal = null;
+                    }
+                }
             }
 
             // Handle right mouse button for fence placement

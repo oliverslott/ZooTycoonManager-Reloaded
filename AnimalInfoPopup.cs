@@ -63,14 +63,18 @@ namespace ZooTycoonManager
         public void Hide()
         {
             _isVisible = false;
+            if (_selectedAnimal != null)
+            {
+                _selectedAnimal.IsSelected = false;
+            }
             _selectedAnimal = null;
         }
 
         public bool IsVisible => _isVisible;
 
-        public void Update(MouseState mouseState, MouseState prevMouseState)
+        public bool Update(MouseState mouseState, MouseState prevMouseState)
         {
-            if (!_isVisible) return;
+            if (!_isVisible) return false;
 
             _popupRectangle.X = _graphicsDevice.Viewport.Width - _popupRectangle.Width - PADDING;
             _popupRectangle.Y = _graphicsDevice.Viewport.Height - _popupRectangle.Height - PADDING;
@@ -82,8 +86,10 @@ namespace ZooTycoonManager
                 if (_closeButtonRectangle.Contains(mouseState.Position))
                 {
                     Hide();
+                    return true;
                 }
             }
+            return false;
         }
 
         private void DrawProgressBar(SpriteBatch spriteBatch, Vector2 barDrawPosition, float currentValue, float maxValue, Color fillColor)
