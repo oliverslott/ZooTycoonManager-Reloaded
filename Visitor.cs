@@ -40,6 +40,9 @@ namespace ZooTycoonManager
 
         private static Texture2D _borderTexture; // Added for selection border
 
+        private const float HUNGER_INCREASE_RATE = 0.2f; // Hunger points per second (adjust as needed)
+        private float _uncommittedHungerPoints = 0f;
+
         // IInspectableEntity implementation
         public bool IsSelected { get; set; } // Added for IInspectableEntity
         int IInspectableEntity.Id => VisitorId; // Explicit implementation for Id
@@ -242,6 +245,20 @@ namespace ZooTycoonManager
 
         private void Update(GameTime gameTime)
         {
+            // Increase hunger over time
+            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_uncommittedHungerPoints >= 1.0f)
+            {
+                int wholePointsToAdd = (int)_uncommittedHungerPoints;
+                Hunger += wholePointsToAdd;
+                if (Hunger > 100)
+                {
+                    Hunger = 100;
+                }
+                _uncommittedHungerPoints -= wholePointsToAdd;
+            }
+
             // Habitat visiting logic (only if not exiting)
             if (!_isExiting && currentHabitat != null)
             {
@@ -467,6 +484,7 @@ namespace ZooTycoonManager
             currentVisitTime = 0f;
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;
+            _uncommittedHungerPoints = 0f; // Initialize hunger points on load
         }
 
         public void InitiateExit()
