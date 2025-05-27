@@ -115,7 +115,7 @@ namespace ZooTycoonManager
 
             float leftX = _popupRectangle.X + PADDING;
 
-            string nameText = $"Name: {_selectedAnimal.Name}";
+            string nameText = $"Name: {_selectedAnimal.Name} ({_selectedAnimal.AnimalId})";
             spriteBatch.DrawString(_font, nameText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + ITEM_SPACING;
 

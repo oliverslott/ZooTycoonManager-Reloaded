@@ -21,6 +21,9 @@ namespace ZooTycoonManager
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 3f; // Time in seconds between random walks
 
+        private const float HUNGER_INCREASE_RATE = 0.5f; // Hunger points per second
+        private float _uncommittedHungerPoints = 0f; // New field for accurate hunger accumulation
+
         private Thread _pathfindingWorkerThread;
         private readonly AutoResetEvent _pathfindingRequestEvent = new AutoResetEvent(false);
         private volatile bool _workerThreadRunning = true;
@@ -193,6 +196,20 @@ namespace ZooTycoonManager
         {
             TryRandomWalk(gameTime);
 
+            // Increase hunger over time more accurately
+            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_uncommittedHungerPoints >= 1.0f)
+            {
+                int wholePointsToAdd = (int)_uncommittedHungerPoints;
+                Hunger += wholePointsToAdd;
+                if (Hunger > 100)
+                {
+                    Hunger = 100;
+                }
+                _uncommittedHungerPoints -= wholePointsToAdd; // Subtract the whole points that were added
+            }
+
             if (IsPathfinding) // If a pathfinding task was initiated
             {
                 bool pathProcessed = false;
@@ -322,6 +339,7 @@ namespace ZooTycoonManager
             path = null;
             currentNodeIndex = 0;
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make animal act on first update
+            _uncommittedHungerPoints = 0f; // Initialize _uncommittedHungerPoints if necessary for loaded animals, though 0f is fine.
         }
     }
 }
