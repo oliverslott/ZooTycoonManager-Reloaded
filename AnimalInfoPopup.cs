@@ -138,9 +138,10 @@ namespace ZooTycoonManager
             spriteBatch.DrawString(_font, hungerLabelText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + LABEL_BAR_SPACING;
             
-            float hungerPercentage = _selectedAnimal.Hunger / 100f; 
-            Color hungerColor = Color.Lerp(Color.LimeGreen, Color.Red, hungerPercentage); 
-            DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), _selectedAnimal.Hunger, 100, hungerColor);
+            float displayedHunger = 100f - _selectedAnimal.Hunger;
+            float invertedHungerPercentage = displayedHunger / 100f; 
+            Color hungerColor = Color.Lerp(Color.Red, Color.LimeGreen, invertedHungerPercentage); 
+            DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedHunger, 100, hungerColor);
         }
     }
 } 
