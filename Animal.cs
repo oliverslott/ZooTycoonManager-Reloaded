@@ -59,6 +59,8 @@ namespace ZooTycoonManager
         public int PositionX => _positionX;
         public int PositionY => _positionY;
 
+        public Rectangle BoundingBox => new Rectangle((int)(Position.X - 8 * 2), (int)(Position.Y - 8 * 2), 16 * 2, 16 * 2); // Sprite is 16x16, scaled by 2, origin is 8,8
+
         public Animal(int animalId = 0)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);

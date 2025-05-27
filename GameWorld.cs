@@ -56,6 +56,8 @@ namespace ZooTycoonManager
 
         private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
 
+        private AnimalInfoPopup _animalInfoPopup; // Add AnimalInfoPopup field
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -135,6 +137,9 @@ namespace ZooTycoonManager
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
 
+            // Initialize AnimalInfoPopup - Font will be loaded in LoadContent
+            // _animalInfoPopup = new AnimalInfoPopup(GraphicsDevice, _font);
+
             // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
         }
@@ -191,6 +196,9 @@ namespace ZooTycoonManager
             _moneyDisplay = new MoneyDisplay(_font, moneyPosition, Color.Black, 2f);
             MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
             MoneyManager.Instance.Notify(); // Initial notification to set initial money text
+
+            // Initialize AnimalInfoPopup here after _font is loaded
+            _animalInfoPopup = new AnimalInfoPopup(GraphicsDevice, _font);
 
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
@@ -328,13 +336,34 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
+            // Update AnimalInfoPopup
+            _animalInfoPopup.Update(mouse, prevMouseState);
+
+            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !_animalInfoPopup.IsVisible) // Only process animal clicks if popup is not visible or not interacting with popup close
             {
-                // Make the first animal in the first habitat pathfind to the world mouse position
-                if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
+                // Convert mouse position to world coordinates for checking animal clicks
+                Vector2 worldMousePosForAnimalCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                bool animalClicked = false;
+                foreach (var habitat in habitats)
                 {
-                    habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
+                    foreach (var animal in habitat.GetAnimals())
+                    {
+                        if (animal.BoundingBox.Contains(worldMousePosForAnimalCheck))
+                        {
+                            _animalInfoPopup.Show(animal);
+                            animalClicked = true;
+                            break;
+                        }
+                    }
+                    if (animalClicked) break;
                 }
+
+                // If no animal was clicked and the popup was not interacted with, existing left-click logic for pathfinding (or other future uses) can go here.
+                // For now, the example pathfinding for the first animal is removed to avoid conflict.
+                // if (!animalClicked && habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
+                // {
+                //     habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
+                // }
             }
 
             // Handle right mouse button for fence placement
@@ -427,6 +456,9 @@ namespace ZooTycoonManager
             Vector2 undoRedoPosition = new Vector2(10, 40);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
+
+            // Draw AnimalInfoPopup
+            _animalInfoPopup.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
