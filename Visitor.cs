@@ -147,12 +147,25 @@ namespace ZooTycoonManager
                     if (availableSpots.Count > 0)
                     {
                         Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
-                        if (randomHabitat.TryEnterHabitatSync(this))
+                        if (randomHabitat.TryEnterHabitatSync(this)) // Visitor successfully "claims" a spot
                         {
-                            currentHabitat = randomHabitat;
-                            currentVisitTime = 0f;
-                            PathfindTo(visitPosition);
-                            return;
+                            PathfindTo(visitPosition); // Attempt to find a path
+
+                            if (path == null || path.Count == 0) // Pathfinding failed (PathfindTo sets path to null or empty if no path found)
+                            {
+                                // Pathfinding failed. Release the claimed spot.
+                                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot {visitPosition} from {Position} failed. Releasing spot.");
+                                randomHabitat.LeaveHabitat(this);
+                                // currentHabitat remains null. Visitor will fall through to try another action (e.g., random walk).
+                            }
+                            else
+                            {
+                                // Pathfinding successful. Commit to visiting.
+                                currentHabitat = randomHabitat;
+                                currentVisitTime = 0f; // Reset visit timer, it will start upon arrival.
+                                Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot {visitPosition} from {Position}. Path length: {path.Count}");
+                                return; // Exit PerformNextActionDecision, committed to this path.
+                            }
                         }
                     }
                 }
