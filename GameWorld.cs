@@ -1,8 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -24,6 +24,10 @@ namespace ZooTycoonManager
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
+
+        // UI
+        Button shopButton;
+        Texture2D shopIconTexture;
 
         // Money Management
         private MoneyDisplay _moneyDisplay;
@@ -182,9 +186,16 @@ namespace ZooTycoonManager
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            //_spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
             _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
+
+            Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
+            Texture2D iconTexture = Content.Load<Texture2D>("Regular_07");       // Brug det rigtige navn
+
+            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - backgroundTexture.Width - 10, 10);
+            shopButton = new Button(backgroundTexture, iconTexture, shopButtonPosition);
+
 
             // Initialize MoneyDisplay here after _font is loaded
             Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
@@ -359,6 +370,14 @@ namespace ZooTycoonManager
                 }
                 _visitorsToDespawn.Clear();
             }
+            MouseState mouseState = Mouse.GetState();
+            shopButton.Update(mouseState, prevMouseState);
+
+            if (shopButton.IsClicked)
+            {
+                // Åben shop
+                Console.WriteLine("Shop button clicked!");
+            }
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
@@ -427,6 +446,9 @@ namespace ZooTycoonManager
             Vector2 undoRedoPosition = new Vector2(10, 40);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
+
+            _spriteBatch.Begin();
+            shopButton.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
