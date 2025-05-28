@@ -18,13 +18,14 @@ namespace ZooTycoonManager
         // Visitor Spawn Tile Configuration
         public const int VISITOR_SPAWN_TILE_X = 20;
         public const int VISITOR_SPAWN_TILE_Y = 0;
+        public const int ROAD_TEXTURE_INDEX = 1; // Added for road placement logic
 
         private static GameWorld _instance;
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         private SpriteFont _font;  // Add font field
-        Map map;
+        public Map map { get; private set; }
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
@@ -57,6 +58,9 @@ namespace ZooTycoonManager
 
         // Window state
         private bool _isFullscreen = false;
+
+        // Road placement mode
+        private bool _isPlacingRoadModeActive = false;
 
         private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
 
@@ -235,6 +239,13 @@ namespace ZooTycoonManager
                 _camera.ToggleClamping();
             }
 
+            // Handle 'P' key press for toggling road placement mode
+            if (keyboard.IsKeyDown(Keys.P) && !prevKeyboardState.IsKeyDown(Keys.P))
+            {
+                _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
+                Debug.WriteLine($"Road placement mode active: {_isPlacingRoadModeActive}");
+            }
+
             // Convert mouse position to world coordinates
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
@@ -279,6 +290,20 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnPosition} for debugging.");
             }
 
+            // Handle road placement with dragging or animal pathfinding on click
+            if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed)
+            {
+                PlaceRoadTile(PixelToTile(worldMousePosition));
+            }
+            else if (!_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
+            {
+                // Make the first animal in the first habitat pathfind to the world mouse position
+                if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
+                {
+                    habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
+                }
+            }
+
             if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
             {
                 DatabaseManager.Instance.SaveGame(habitats);
@@ -314,15 +339,6 @@ namespace ZooTycoonManager
                 !prevKeyboardState.IsKeyDown(Keys.Y))
             {
                 CommandManager.Instance.Redo();
-            }
-
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
-            {
-                // Make the first animal in the first habitat pathfind to the world mouse position
-                if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
-                {
-                    habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
-                }
             }
 
             // Handle right mouse button for fence placement
@@ -404,7 +420,7 @@ namespace ZooTycoonManager
             _fpsCounter.Draw(_spriteBatch);
 
             // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
@@ -478,6 +494,51 @@ namespace ZooTycoonManager
             else
             {
                 Debug.WriteLine($"Attempted to confirm despawn for a null or already processed/removed visitor.");
+            }
+        }
+
+        private void PlaceRoadTile(Vector2 tilePosition)
+        {
+            int x = (int)tilePosition.X;
+            int y = (int)tilePosition.Y;
+
+            if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT)
+            {
+                // Check if the tile is already the desired road tile
+                if (map.Tiles[x, y].Walkable && map.Tiles[x, y].TextureIndex == ROAD_TEXTURE_INDEX)
+                {
+                    return; // Do nothing if it's already a road tile
+                }
+
+                // Get the original tile state before creating the command
+                Tile originalTile = map.Tiles[x, y];
+
+                // Create and execute the place road command
+                var placeRoadCommand = new PlaceRoadCommand(tilePosition, originalTile);
+                CommandManager.Instance.ExecuteCommand(placeRoadCommand);
+            }
+            else
+            {
+                Debug.WriteLine($"Attempted to place road tile out of bounds at ({x}, {y})");
+            }
+        }
+
+        public void UpdateTile(int x, int y, bool walkable, int textureIndex)
+        {
+            if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT)
+            {
+                map.Tiles[x, y].Walkable = walkable;
+                map.Tiles[x, y].TextureIndex = textureIndex;
+
+                if (WalkableMap != null)
+                {
+                    WalkableMap[x, y] = walkable;
+                }
+                // Debug.WriteLine($"Updated tile ({x},{y}) to Walkable: {walkable}, Texture: {textureIndex}");
+            }
+            else
+            {
+                Debug.WriteLine($"Attempted to update tile out of bounds at ({x}, {y})");
             }
         }
     }
