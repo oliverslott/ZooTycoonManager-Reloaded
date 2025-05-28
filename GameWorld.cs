@@ -20,6 +20,10 @@ namespace ZooTycoonManager
         public const int VISITOR_SPAWN_TILE_Y = 0;
         public const int ROAD_TEXTURE_INDEX = 1; // Added for road placement logic
 
+        // Visitor Exit Tile Configuration
+        public const int VISITOR_EXIT_TILE_X = GRID_WIDTH - 20; // Example: 80 if GRID_WIDTH is 100
+        public const int VISITOR_EXIT_TILE_Y = 0;
+
         private static GameWorld _instance;
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
@@ -48,10 +52,12 @@ namespace ZooTycoonManager
         private float _visitorSpawnTimer = 0f;
         private const float VISITOR_SPAWN_INTERVAL = 10.0f; // Spawn every 10 seconds
         private Vector2 _visitorSpawnPosition;
+        private Vector2 _visitorExitPosition; // Added for separate exit
         private const int VISITOR_SPAWN_REWARD = 20;
 
         // Public property to access the spawn/exit position
-        public Vector2 VisitorSpawnExitPosition => _visitorSpawnPosition;
+        public Vector2 VisitorSpawnPosition => _visitorSpawnPosition; // Renamed from VisitorSpawnExitPosition
+        public Vector2 VisitorExitPosition => _visitorExitPosition; // New property for exit
 
         // Camera instance
         private Camera _camera;
@@ -123,6 +129,7 @@ namespace ZooTycoonManager
 
             // Set visitor spawn/exit to tile (0,0)
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
+            _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); // Initialize new exit position
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
