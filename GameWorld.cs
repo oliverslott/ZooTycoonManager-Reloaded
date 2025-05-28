@@ -39,6 +39,10 @@ namespace ZooTycoonManager
         private List<Vector2> _staticTreePositions;
         private const int NUMBER_OF_STATIC_TREES = 1000; // Adjust as needed
 
+        // Boundary Fences
+        private List<Vector2> _boundaryFencePixelPositions;
+        private HashSet<Vector2> _boundaryFenceTileCoordinates; // To store tile coordinates for connected textures
+
         // Money Management
         private MoneyDisplay _moneyDisplay;
 
@@ -131,6 +135,8 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
+            _boundaryFencePixelPositions = new List<Vector2>(); // Initialize boundary fence list
+            _boundaryFenceTileCoordinates = new HashSet<Vector2>(); // Initialize boundary fence tile coordinates set
 
             // Set visitor spawn/exit to tile (0,0)
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
@@ -158,8 +164,8 @@ namespace ZooTycoonManager
         public static Vector2 PixelToTile(Vector2 pixelPos)
         {
             return new Vector2(
-                (int)(pixelPos.X / TILE_SIZE),
-                (int)(pixelPos.Y / TILE_SIZE)
+                (int)Math.Floor(pixelPos.X / TILE_SIZE),
+                (int)Math.Floor(pixelPos.Y / TILE_SIZE)
             );
         }
 
@@ -205,6 +211,7 @@ namespace ZooTycoonManager
 
             // Load fence textures
             FenceRenderer.LoadContent(Content);
+            InitializeBoundaryFences(); // Initialize boundary fences
 
             // Load tree texture
             _treeTexture = Content.Load<Texture2D>("tree1");
@@ -423,6 +430,14 @@ namespace ZooTycoonManager
                 {
                     _spriteBatch.Draw(_treeTexture, treePos, Color.White);
                 }
+            }
+
+            // Draw boundary fences
+            if (_boundaryFencePixelPositions != null && _boundaryFencePixelPositions.Count > 0)
+            {
+                // Pass an empty HashSet for tile coordinates to use default fence texture and a scale of 1.0f
+                // FenceRenderer.Draw(_spriteBatch, _boundaryFencePixelPositions, new HashSet<Vector2>(), 1.0f);
+                FenceRenderer.Draw(_spriteBatch, _boundaryFencePixelPositions, _boundaryFenceTileCoordinates, 2.67f); // Use populated tile coordinates and habitat fence scale
             }
 
             // Draw road preview if in road placement mode
@@ -658,6 +673,54 @@ namespace ZooTycoonManager
                 {
                     Debug.WriteLine("Could not find a suitable position for a static tree after several attempts.");
                 }
+            }
+        }
+
+        private void InitializeBoundaryFences()
+        {
+            _boundaryFencePixelPositions.Clear();
+            _boundaryFenceTileCoordinates.Clear(); // Clear the tile coordinates set as well
+
+            // Top border (y = -1), from x = -1 to GRID_WIDTH
+            for (int x = -1; x <= GRID_WIDTH; x++)
+            {
+                // Skip fence at visitor spawn and exit locations on the top border
+                if (x == VISITOR_SPAWN_TILE_X && -1 == VISITOR_SPAWN_TILE_Y -1) 
+                {
+                    continue;
+                }
+                if (x == VISITOR_EXIT_TILE_X && -1 == VISITOR_EXIT_TILE_Y -1) 
+                {
+                    continue;
+                }
+
+                Vector2 tilePos = new Vector2(x, -1);
+                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTileCoordinates.Add(tilePos);
+            }
+
+            // Bottom border (y = GRID_HEIGHT), from x = -1 to GRID_WIDTH
+            for (int x = -1; x <= GRID_WIDTH; x++)
+            {
+                Vector2 tilePos = new Vector2(x, GRID_HEIGHT);
+                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTileCoordinates.Add(tilePos);
+            }
+
+            // Left border (x = -1), from y = 0 to GRID_HEIGHT - 1 (corners are covered by top/bottom)
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                Vector2 tilePos = new Vector2(-1, y);
+                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTileCoordinates.Add(tilePos);
+            }
+
+            // Right border (x = GRID_WIDTH), from y = 0 to GRID_HEIGHT - 1 (corners are covered by top/bottom)
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                Vector2 tilePos = new Vector2(GRID_WIDTH, y);
+                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTileCoordinates.Add(tilePos);
             }
         }
     }

@@ -29,13 +29,25 @@ namespace ZooTycoonManager
             int endY = map.Height + bufferTiles;
 
             Texture2D grassTexture = tileTextures[0]; // Assuming grass is always at index 0
+            Texture2D dirtTexture = tileTextures[1]; // Assuming dirt is always at index 1
 
             for (int x = startX; x < endX; x++)
             {
                 for (int y = startY; y < endY; y++)
                 {
+                    bool isSpawnDirtLocation = (y == -1 && x == GameWorld.VISITOR_SPAWN_TILE_X);
+                    bool isExitDirtLocation = (y == -1 && x == GameWorld.VISITOR_EXIT_TILE_X);
+
+                    if (isSpawnDirtLocation || isExitDirtLocation)
+                    {
+                        spriteBatch.Draw(
+                            dirtTexture,
+                            new Vector2(x * tileSize, y * tileSize),
+                            Color.White
+                        );
+                    }
                     // If within the original map boundaries, draw the actual map tile
-                    if (x >= 0 && x < map.Width && y >= 0 && y < map.Height)
+                    else if (x >= 0 && x < map.Width && y >= 0 && y < map.Height)
                     {
                         Tile tile = map.Tiles[x, y];
                         Texture2D texture = tileTextures[tile.TextureIndex];
@@ -45,7 +57,7 @@ namespace ZooTycoonManager
                             Color.White
                         );
                     }
-                    else // Otherwise, if outside the map, draw a grass tile
+                    else // Otherwise, if outside the map and not a special dirt spot, draw a grass tile
                     {
                         spriteBatch.Draw(
                             grassTexture,
