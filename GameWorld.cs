@@ -399,6 +399,27 @@ namespace ZooTycoonManager
 
             tileRenderer.Draw(_spriteBatch, map);
 
+            // Draw road preview if in road placement mode
+            if (_isPlacingRoadModeActive)
+            {
+                MouseState mouse = Mouse.GetState();
+                Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                Vector2 tilePreviewPosition = PixelToTile(worldMousePosition);
+
+                // Ensure preview is within bounds
+                if (tilePreviewPosition.X >= 0 && tilePreviewPosition.X < GRID_WIDTH &&
+                    tilePreviewPosition.Y >= 0 && tilePreviewPosition.Y < GRID_HEIGHT)
+                {
+                    Rectangle destinationRectangle = new Rectangle(
+                        (int)tilePreviewPosition.X * TILE_SIZE,
+                        (int)tilePreviewPosition.Y * TILE_SIZE,
+                        TILE_SIZE,
+                        TILE_SIZE
+                    );
+                    _spriteBatch.Draw(tileTextures[ROAD_TEXTURE_INDEX], destinationRectangle, Color.White * 0.5f); // 50% transparency
+                }
+            }
+
             // Draw all habitats and their animals
             foreach (var habitat in habitats)
             {
