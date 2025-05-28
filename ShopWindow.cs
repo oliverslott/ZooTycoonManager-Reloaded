@@ -16,6 +16,7 @@ namespace ZooTycoonManager
         private Texture2D backgroundTexture;
         private List<Button> buttons;
         private Vector2 position;
+        private Rectangle backgroundRect;
 
         public bool IsVisible { get; set; }
 
@@ -29,26 +30,35 @@ namespace ZooTycoonManager
 
             string[] buttonTexts = { "Buildings", "Habitats", "Animals", "Zookeepers" };
 
-            // Placer knapperne pænt
+            int padding = 10;
+            int spacing = 10;
+            int buttonHeight = buttonTexture.Height;
+            int buttonWidth = buttonTexture.Width;
+            int backgroundWidth = buttonWidth + padding * 2;
+            int backgroundHeight = buttonTexts.Length * buttonHeight + (buttonTexts.Length - 1) * spacing + padding * 2;
+
+            backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
+
+            // Justér knappernes positioner:
+            buttons.Clear();
             for (int i = 0; i < buttonTexts.Length; i++)
             {
-                Vector2 buttonPosition = position + new Vector2(10, 10 + i * (buttonTexture.Height + 10));
+                Vector2 buttonPosition = new Vector2(position.X + padding, position.Y + padding + i * (buttonHeight + spacing));
                 buttons.Add(new Button(buttonTexture, null, buttonPosition, buttonTexts[i], font));
             }
         }
 
-        public void Update(GameTime gameTime, MouseState mouseState)
+        public void Update(GameTime gameTime, MouseState mouse, MouseState prevMouse)
         {
             if (!IsVisible)
                 return;
 
             foreach (var button in buttons)
             {
-                button.Update(mouseState);
+                button.Update(mouse, prevMouse);
                 if (button.IsClicked)
                 {
                     Console.WriteLine($"Clicked {button.Text}");
-                    // Du kan tilføje logik her for at åbne under-menuer
                 }
             }
         }
@@ -58,7 +68,7 @@ namespace ZooTycoonManager
             if (!IsVisible)
                 return;
 
-            spriteBatch.Draw(backgroundTexture, position, Color.White);
+            spriteBatch.Draw(backgroundTexture, backgroundRect, Color.White);
 
             foreach (var button in buttons)
             {

@@ -202,7 +202,7 @@ namespace ZooTycoonManager
             SpriteFont font = Content.Load<SpriteFont>("font");
 
             // Lav shop window
-            Vector2 shopWindowPosition = new Vector2(1050, 90); // fx midt på skærmen
+            Vector2 shopWindowPosition = new Vector2(1070, 90); // fx midt på skærmen
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
 
 
@@ -381,7 +381,7 @@ namespace ZooTycoonManager
                 _visitorsToDespawn.Clear();
             }
             MouseState mouseState = Mouse.GetState();
-            shopButton.Update(mouseState);
+            shopButton.Update(mouseState, prevMouseState);
 
             // Når du klikker på shop-ikonet, viser vi vinduet
             if (shopButton.IsClicked)
@@ -389,7 +389,7 @@ namespace ZooTycoonManager
                 _shopWindow.IsVisible = !_shopWindow.IsVisible;
             }
 
-            _shopWindow.Update(gameTime, mouseState);
+            _shopWindow.Update(gameTime, mouseState, prevMouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;

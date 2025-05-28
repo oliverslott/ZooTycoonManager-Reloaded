@@ -24,12 +24,14 @@ public class Button
         this.font = font;
         bounds = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
     }
-    public void Update(MouseState mouseState)
+    public void Update(MouseState current, MouseState previous)
     {
-        Point mousePosition = mouseState.Position;
+        Point mousePosition = current.Position;
         IsClicked = false;
 
-        if (bounds.Contains(mousePosition) && mouseState.LeftButton == ButtonState.Pressed)
+        if (bounds.Contains(mousePosition) &&
+            current.LeftButton == ButtonState.Pressed &&
+            previous.LeftButton == ButtonState.Released)
         {
             IsClicked = true;
         }
