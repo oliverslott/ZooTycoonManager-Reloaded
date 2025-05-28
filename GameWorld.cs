@@ -15,6 +15,10 @@ namespace ZooTycoonManager
         public const int GRID_WIDTH = 100;
         public const int GRID_HEIGHT = 100;
 
+        // Visitor Spawn Tile Configuration
+        public const int VISITOR_SPAWN_TILE_X = 20;
+        public const int VISITOR_SPAWN_TILE_Y = 0;
+
         private static GameWorld _instance;
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
@@ -113,24 +117,8 @@ namespace ZooTycoonManager
             habitats = new List<Habitat>();
             visitors = new List<Visitor>(); // Initialize visitors list
 
-            // Find the top-most path tile for visitor spawning
-            Vector2 pathSpawnTile = Vector2.Zero; // Default to top-left if no path found
-            bool foundSpawn = false;
-            for (int y = 0; y < GRID_HEIGHT; y++)
-            {
-                for (int x = 0; x < GRID_WIDTH; x++)
-                {
-                    // TextureIndex 1 is the path tile (Dirt1)
-                    if (map.Tiles[x, y].TextureIndex == 1) 
-                    {
-                        pathSpawnTile = new Vector2(x, y);
-                        foundSpawn = true;
-                        break; 
-                    }
-                }
-                if (foundSpawn) break;
-            }
-            _visitorSpawnPosition = TileToPixel(pathSpawnTile);
+            // Set visitor spawn/exit to tile (0,0)
+            _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
