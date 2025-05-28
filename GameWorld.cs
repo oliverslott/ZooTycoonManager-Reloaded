@@ -24,6 +24,7 @@ namespace ZooTycoonManager
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
+        private Texture2D _habitatPreviewTexture;
 
         // UI
         Button shopButton;
@@ -39,6 +40,14 @@ namespace ZooTycoonManager
 
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
+
+        private enum PlacementMode
+        {
+            None,
+            PlaceMediumHabitat
+        }
+
+        private PlacementMode _currentPlacement = PlacementMode.None;
 
         // Fence and enclosure management
         private bool isPlacingEnclosure = true;
@@ -213,6 +222,8 @@ namespace ZooTycoonManager
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
             _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
+            _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
+
 
             Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
             Texture2D iconTexture = Content.Load<Texture2D>("Regular_07");       // Brug det rigtige navn
@@ -386,10 +397,19 @@ namespace ZooTycoonManager
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
-                // Make the first animal in the first habitat pathfind to the world mouse position
-                if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
+                Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+
+                if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
                 {
-                    habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
+                    // Placer habitat via kommando
+                    var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
+                    CommandManager.Instance.ExecuteCommand(command);
+
+                    _currentPlacement = PlacementMode.None; // Exit placement mode
+                }
+                else
+                {
+                    // evt. eksisterende logik for andre klik
                 }
             }
 
@@ -518,6 +538,38 @@ namespace ZooTycoonManager
             string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
+            if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+            {
+                Vector2 mousePos = Mouse.GetState().Position.ToVector2();
+                Vector2 worldMouse = _camera.ScreenToWorld(mousePos);
+
+                // Snap til nærmeste tile
+                Vector2 snappedTile = new Vector2(
+                    (int)(worldMouse.X / TILE_SIZE),
+                    (int)(worldMouse.Y / TILE_SIZE)
+                );
+
+                Vector2 snappedPos = new Vector2(
+                    snappedTile.X * TILE_SIZE,
+                    snappedTile.Y * TILE_SIZE
+                );
+
+                int habitatSize = Habitat.DEFAULT_ENCLOSURE_SIZE; // fx 5
+                int previewPixelSize = (int)(habitatSize * TILE_SIZE * 1.25f); // 5% større
+                //int previewPixelSize = 165;
+
+                // Justér til midten af habitat
+                Vector2 previewTopLeft = snappedPos + new Vector2(TILE_SIZE / 2) - new Vector2(previewPixelSize / 2);
+
+                Rectangle destRect = new Rectangle(
+                    (int)previewTopLeft.X,
+                    (int)previewTopLeft.Y,
+                    previewPixelSize,
+                    previewPixelSize
+                );
+
+                _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f); // Halvgennemsigtig
+            }
 
             // Draw current money from MoneyDisplay
             _moneyDisplay.Draw(_spriteBatch);
@@ -629,6 +681,19 @@ namespace ZooTycoonManager
                 case "Zookeepers": _zookeeperMenu.IsVisible = true; break;
             }
 
+        }
+        public void StartHabitatPlacement(string size)
+        {
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            if (size == "Medium")
+            {
+                _currentPlacement = PlacementMode.PlaceMediumHabitat;
+                Console.WriteLine("Placement mode: Medium Habitat activated");
+            }
         }
     }
 }

@@ -51,7 +51,12 @@ namespace ZooTycoonManager
             {
                 button.Update(current, previous);
                 if (button.IsClicked)
-                    Console.WriteLine($"Clicked {button.Text}");
+                {
+                    if (button.Text == "Medium")
+                    {
+                        GameWorld.Instance.StartHabitatPlacement("Medium");
+                    }
+                }
             }
         }
 
