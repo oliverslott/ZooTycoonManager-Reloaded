@@ -37,7 +37,7 @@ namespace ZooTycoonManager
         // Static Tree Deco
         private Texture2D _treeTexture;
         private List<Vector2> _staticTreePositions;
-        private const int NUMBER_OF_STATIC_TREES = 200; // Adjust as needed
+        private const int NUMBER_OF_STATIC_TREES = 1000; // Adjust as needed
 
         // Money Management
         private MoneyDisplay _moneyDisplay;
