@@ -116,6 +116,11 @@ namespace ZooTycoonManager
                     key TEXT PRIMARY KEY,
                     value_numeric NUMERIC,
                     value_text TEXT
+                );
+                CREATE TABLE IF NOT EXISTS RoadTiles (
+                    tile_x INTEGER NOT NULL,
+                    tile_y INTEGER NOT NULL,
+                    PRIMARY KEY (tile_x, tile_y)
                 );";
 
             createTablesCmd.ExecuteNonQuery();
@@ -268,6 +273,29 @@ namespace ZooTycoonManager
                         deleteCmd.ExecuteNonQuery();
                     }
 
+                    // Clear and save road tiles
+                    deleteCmd.CommandText = "DELETE FROM RoadTiles";
+                    deleteCmd.ExecuteNonQuery();
+
+                    var saveRoadTileCmd = _connection.CreateCommand();
+                    saveRoadTileCmd.Transaction = transaction;
+                    saveRoadTileCmd.CommandText = "INSERT INTO RoadTiles (tile_x, tile_y) VALUES (@x, @y)";
+
+                    for (int x = 0; x < GameWorld.GRID_WIDTH; x++)
+                    {
+                        for (int y = 0; y < GameWorld.GRID_HEIGHT; y++)
+                        {
+                            if (GameWorld.Instance.map.Tiles[x,y].Walkable && 
+                                GameWorld.Instance.map.Tiles[x,y].TextureIndex == GameWorld.ROAD_TEXTURE_INDEX)
+                            {
+                                saveRoadTileCmd.Parameters.Clear();
+                                saveRoadTileCmd.Parameters.AddWithValue("@x", x);
+                                saveRoadTileCmd.Parameters.AddWithValue("@y", y);
+                                saveRoadTileCmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
                     transaction.Commit();
                     Debug.WriteLine("Game state saved successfully.");
                 }
@@ -370,6 +398,28 @@ namespace ZooTycoonManager
                         if (visitor.VisitorId >= nextVisitorId)
                         {
                             nextVisitorId = visitor.VisitorId + 1;
+                        }
+                    }
+                }
+
+                // Load road tiles
+                command.CommandText = "SELECT tile_x, tile_y FROM RoadTiles";
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int tileX = reader.GetInt32(0);
+                        int tileY = reader.GetInt32(1);
+                        // Ensure GameWorld and its map are ready before calling UpdateTile
+                        // This assumes GameWorld.Instance and GameWorld.Instance.map are initialized
+                        // by the time LoadGame is called and before this section runs.
+                        if (GameWorld.Instance != null && GameWorld.Instance.map != null)
+                        {
+                           GameWorld.Instance.UpdateTile(tileX, tileY, true, GameWorld.ROAD_TEXTURE_INDEX);
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"Warning: Could not load road tile at ({tileX},{tileY}) because GameWorld or map is not initialized.");
                         }
                     }
                 }
