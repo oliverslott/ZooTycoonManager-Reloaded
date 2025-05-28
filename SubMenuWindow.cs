@@ -3,81 +3,68 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Vector2 = Microsoft.Xna.Framework.Vector2;
-
+using Color = Microsoft.Xna.Framework.Color;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 namespace ZooTycoonManager
 {
-    public class ShopWindow
+    public class SubMenuWindow
     {
         private Texture2D backgroundTexture;
-        private List<Button> buttons;
-        private Vector2 position;
+        private List<Button> buttons = new List<Button>();
         private Rectangle backgroundRect;
+        private Vector2 position;
 
         public bool IsVisible { get; set; }
 
-        public ShopWindow(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position)
+        public SubMenuWindow(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position, string[] options)
         {
             this.backgroundTexture = backgroundTexture;
             this.position = position;
             IsVisible = false;
 
-            buttons = new List<Button>();
-
-            string[] buttonTexts = { "Buildings", "Habitats", "Animals", "Zookeepers" };
-
             int padding = 10;
-            int spacing = 10;
+            int spacing = 1;
             int buttonHeight = buttonTexture.Height;
             int buttonWidth = buttonTexture.Width;
+
             int backgroundWidth = buttonWidth + padding * 2;
-            int backgroundHeight = buttonTexts.Length * buttonHeight + (buttonTexts.Length - 1) * spacing + padding * 2;
+            int backgroundHeight = options.Length * buttonHeight + (options.Length - 1) * spacing + padding * 2;
 
             backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
 
-            // Justér knappernes positioner:
-            buttons.Clear();
-            for (int i = 0; i < buttonTexts.Length; i++)
+            for (int i = 0; i < options.Length; i++)
             {
-                Vector2 buttonPosition = new Vector2(position.X + padding, position.Y + padding + i * (buttonHeight + spacing));
-                buttons.Add(new Button(buttonTexture, null, buttonPosition, buttonTexts[i], font));
+                Vector2 btnPos = new Vector2(position.X + padding, position.Y + padding + i * (buttonHeight + spacing));
+                buttons.Add(new Button(buttonTexture, null, btnPos, options[i], font));
             }
         }
 
-        public void Update(GameTime gameTime, MouseState mouse, MouseState prevMouse)
+        public void Update(MouseState current, MouseState previous)
         {
-            if (!IsVisible)
-                return;
+            if (!IsVisible) return;
 
             foreach (var button in buttons)
             {
-                button.Update(mouse, prevMouse);
+                button.Update(current, previous);
                 if (button.IsClicked)
-                {
-                    if (button.Text == "Buildings") GameWorld.Instance.ShowSubMenu("Buildings");
-                    else if (button.Text == "Habitats") GameWorld.Instance.ShowSubMenu("Habitats");
-                    else if (button.Text == "Animals") GameWorld.Instance.ShowSubMenu("Animals");
-                    else if (button.Text == "Zookeepers") GameWorld.Instance.ShowSubMenu("Zookeepers");
-                }
+                    Console.WriteLine($"Clicked {button.Text}");
             }
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            if (!IsVisible)
-                return;
+            if (!IsVisible) return;
 
             spriteBatch.Draw(backgroundTexture, backgroundRect, Color.White);
-
             foreach (var button in buttons)
-            {
                 button.Draw(spriteBatch);
-            }
         }
+
+        public void HideAll() => IsVisible = false;
 
         public void Reposition(Vector2 newPosition)
         {

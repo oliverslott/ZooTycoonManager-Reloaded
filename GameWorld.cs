@@ -29,6 +29,10 @@ namespace ZooTycoonManager
         Button shopButton;
         Texture2D shopIconTexture;
         private ShopWindow _shopWindow;
+        SubMenuWindow _buildingsMenu;
+        SubMenuWindow _habitatMenu;
+        SubMenuWindow _animalMenu;
+        SubMenuWindow _zookeeperMenu;
 
         // Money Management
         private MoneyDisplay _moneyDisplay;
@@ -97,7 +101,7 @@ namespace ZooTycoonManager
             _graphics.IsFullScreen = false;
             Window.AllowUserResizing = true;
             _graphics.ApplyChanges();
-            
+
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -106,7 +110,7 @@ namespace ZooTycoonManager
             TargetElapsedTime = TimeSpan.FromTicks(1);
 
             // Initialize map first
-            map = new Map(GRID_WIDTH, GRID_HEIGHT); 
+            map = new Map(GRID_WIDTH, GRID_HEIGHT);
 
             // Initialize camera
             _camera = new Camera(_graphics);
@@ -126,11 +130,11 @@ namespace ZooTycoonManager
                 for (int x = 0; x < GRID_WIDTH; x++)
                 {
                     // TextureIndex 1 is the path tile (Dirt1)
-                    if (map.Tiles[x, y].TextureIndex == 1) 
+                    if (map.Tiles[x, y].TextureIndex == 1)
                     {
                         pathSpawnTile = new Vector2(x, y);
                         foundSpawn = true;
-                        break; 
+                        break;
                     }
                 }
                 if (foundSpawn) break;
@@ -162,6 +166,15 @@ namespace ZooTycoonManager
                     30
 );
                 shopButton.SetPosition(newShopButtonPos);
+                Vector2 newSubMenuPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                90
+);
+
+                _buildingsMenu.Reposition(newSubMenuPos);
+                _habitatMenu.Reposition(newSubMenuPos);
+                _animalMenu.Reposition(newSubMenuPos);
+                _zookeeperMenu.Reposition(newSubMenuPos);
             }
         }
 
@@ -211,6 +224,18 @@ namespace ZooTycoonManager
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
             SpriteFont font = Content.Load<SpriteFont>("font");
 
+            string[] buildings = { "Tiles", "Visitor Shop", "Tree", "Waterhole" };
+            string[] habitattype = { "Small", "Medium", "Large" };
+            string[] animals = { "Buffalo", "Turtle", "Chimpanzee", "Camel", "Orangutang", "Kangaroo", "Wolf", "Bear", "Elephant", "Polarbear" };
+            string[] zookeepers = { "Experienced Zookeeper" };
+
+            Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
+
+            _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, buildings);
+            _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, habitattype);
+            _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, animals);
+            _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, zookeepers);
+
             // Lav shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90); // fx midt på skærmen
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
@@ -242,7 +267,7 @@ namespace ZooTycoonManager
 
         MouseState prevMouseState;
         KeyboardState prevKeyboardState;
-        
+
 
         private void PlaceFence(Vector2 pixelPosition)
         {
@@ -346,14 +371,14 @@ namespace ZooTycoonManager
             }
 
             // Handle Ctrl+Z for undo
-            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) && 
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) &&
                 !prevKeyboardState.IsKeyDown(Keys.Z))
             {
                 CommandManager.Instance.Undo();
             }
 
             // Handle Ctrl+Y for redo
-            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) && 
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) &&
                 !prevKeyboardState.IsKeyDown(Keys.Y))
             {
                 CommandManager.Instance.Redo();
@@ -396,10 +421,21 @@ namespace ZooTycoonManager
             // Når du klikker på shop-ikonet, viser vi vinduet
             if (shopButton.IsClicked)
             {
+                // Toggle shop window
                 _shopWindow.IsVisible = !_shopWindow.IsVisible;
+
+                // Luk alle under-menuer, uanset hvad
+                _buildingsMenu.IsVisible = false;
+                _habitatMenu.IsVisible = false;
+                _animalMenu.IsVisible = false;
+                _zookeeperMenu.IsVisible = false;
             }
 
             _shopWindow.Update(gameTime, mouseState, prevMouseState);
+            _buildingsMenu.Update(mouseState, prevMouseState);
+            _habitatMenu.Update(mouseState, prevMouseState);
+            _animalMenu.Update(mouseState, prevMouseState);
+            _zookeeperMenu.Update(mouseState, prevMouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
@@ -434,9 +470,19 @@ namespace ZooTycoonManager
                 30
 );
             shopButton.SetPosition(newShopButtonPos);
+            Vector2 newSubMenuPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                90
+);
+
+            _buildingsMenu.Reposition(newSubMenuPos);
+            _habitatMenu.Reposition(newSubMenuPos);
+            _animalMenu.Reposition(newSubMenuPos);
+            _zookeeperMenu.Reposition(newSubMenuPos);
+
         }
 
-        
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -485,6 +531,10 @@ namespace ZooTycoonManager
             shopButton.Draw(_spriteBatch);
             shopButton.Draw(_spriteBatch);
             _shopWindow.Draw(_spriteBatch);
+            _buildingsMenu.Draw(_spriteBatch);
+            _habitatMenu.Draw(_spriteBatch);
+            _animalMenu.Draw(_spriteBatch);
+            _zookeeperMenu.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
@@ -538,7 +588,7 @@ namespace ZooTycoonManager
             }
             else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor)) // Standard case: visitor exists in main list and not yet in despawn queue
             {
-                 _visitorsToDespawn.Add(visitor);
+                _visitorsToDespawn.Add(visitor);
                 Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
             }
             else if (visitor != null && _visitorsToDespawn.Contains(visitor))
@@ -549,6 +599,36 @@ namespace ZooTycoonManager
             {
                 Debug.WriteLine($"Attempted to confirm despawn for a null or already processed/removed visitor.");
             }
+        }
+        public void ShowSubMenu(string type)
+        {
+            // Hvis den allerede er åben → luk den
+            if ((type == "Buildings" && _buildingsMenu.IsVisible) ||
+                (type == "Habitats" && _habitatMenu.IsVisible) ||
+                (type == "Animals" && _animalMenu.IsVisible) ||
+                (type == "Zookeepers" && _zookeeperMenu.IsVisible))
+            {
+                _buildingsMenu.IsVisible = false;
+                _habitatMenu.IsVisible = false;
+                _animalMenu.IsVisible = false;
+                _zookeeperMenu.IsVisible = false;
+                return;
+            }
+
+            // Ellers → vis den ønskede og luk de andre
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            switch (type)
+            {
+                case "Buildings": _buildingsMenu.IsVisible = true; break;
+                case "Habitats": _habitatMenu.IsVisible = true; break;
+                case "Animals": _animalMenu.IsVisible = true; break;
+                case "Zookeepers": _zookeeperMenu.IsVisible = true; break;
+            }
+
         }
     }
 }
