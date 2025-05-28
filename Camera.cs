@@ -16,6 +16,7 @@ namespace ZooTycoonManager
         private const float MIN_ZOOM = 0.1f;
         private const float MAX_ZOOM = 2.0f;
         private const float ZOOM_SPEED = 0.1f;
+        public const float CAMERA_BOUNDS_BUFFER = 10 * GameWorld.TILE_SIZE; // Extra space camera can see
 
         private GraphicsDeviceManager _graphics;
 
@@ -130,19 +131,19 @@ namespace ZooTycoonManager
                 float worldViewWidth = (float)_graphics.PreferredBackBufferWidth / currentZoom;
                 float worldViewHeight = (float)_graphics.PreferredBackBufferHeight / currentZoom;
 
-                // Min/Max camera positions ensure the view stays within map boundaries.
+                // Min/Max camera positions ensure the view stays within map boundaries, plus the buffer.
                 // The camera position is the center of the view.
-                float clampMinX = worldViewWidth / 2f;
-                float clampMaxX = _mapWidthInPixels - (worldViewWidth / 2f);
+                // Original map corners are (0,0) and (_mapWidthInPixels, _mapHeightInPixels)
                 
-                float clampMinY = worldViewHeight / 2f;
-                float clampMaxY = _mapHeightInPixels - (worldViewHeight / 2f);
+                float clampMinX = (worldViewWidth / 2f) - CAMERA_BOUNDS_BUFFER;
+                float clampMaxX = _mapWidthInPixels - (worldViewWidth / 2f) + CAMERA_BOUNDS_BUFFER;
+                
+                float clampMinY = (worldViewHeight / 2f) - CAMERA_BOUNDS_BUFFER;
+                float clampMaxY = _mapHeightInPixels - (worldViewHeight / 2f) + CAMERA_BOUNDS_BUFFER;
 
                 // If map is smaller than view (e.g., mapWidth < worldViewWidth), clampMaxX could be < clampMinX.
                 // In such cases, Clamp will pick clampMinX if _cameraPosition is less, or clampMaxX if greater.
-                // However, the zoom clamping logic aims to ensure worldViewWidth <= _mapWidthInPixels.
-                // If _mapWidthInPixels is very small (e.g., 0), clampMaxX will be negative.
-                // This means the camera effectively centers on the (tiny or non-existent) map dimension.
+                // However, the zoom clamping logic aims to ensure worldViewWidth <= _mapWidthInPixels + 2 * CAMERA_BOUNDS_BUFFER (effectively).
                 _cameraPosition.X = MathHelper.Clamp(_cameraPosition.X, clampMinX, clampMaxX);
                 _cameraPosition.Y = MathHelper.Clamp(_cameraPosition.Y, clampMinY, clampMaxY);
             }

@@ -34,6 +34,11 @@ namespace ZooTycoonManager
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
 
+        // Static Tree Deco
+        private Texture2D _treeTexture;
+        private List<Vector2> _staticTreePositions;
+        private const int NUMBER_OF_STATIC_TREES = 200; // Adjust as needed
+
         // Money Management
         private MoneyDisplay _moneyDisplay;
 
@@ -196,10 +201,14 @@ namespace ZooTycoonManager
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
             // map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens -- This line is now redundant
-            tileRenderer = new TileRenderer(tileTextures);
+            tileRenderer = new TileRenderer(tileTextures, TILE_SIZE);
 
             // Load fence textures
             FenceRenderer.LoadContent(Content);
+
+            // Load tree texture
+            _treeTexture = Content.Load<Texture2D>("tree1");
+            InitializeStaticTrees();
 
             // Load content for all habitats and their animals
             foreach (var habitat in habitats)
@@ -406,6 +415,16 @@ namespace ZooTycoonManager
 
             tileRenderer.Draw(_spriteBatch, map);
 
+            // Draw static trees first, so they are behind other elements like roads/habitats if they overlap visually
+            // in the expanded view area.
+            if (_treeTexture != null && _staticTreePositions != null)
+            {
+                foreach (var treePos in _staticTreePositions)
+                {
+                    _spriteBatch.Draw(_treeTexture, treePos, Color.White);
+                }
+            }
+
             // Draw road preview if in road placement mode
             if (_isPlacingRoadModeActive)
             {
@@ -567,6 +586,78 @@ namespace ZooTycoonManager
             else
             {
                 Debug.WriteLine($"Attempted to update tile out of bounds at ({x}, {y})");
+            }
+        }
+
+        private void InitializeStaticTrees()
+        {
+            _staticTreePositions = new List<Vector2>();
+            Random random = new Random();
+
+            float mapWidthPixels = GRID_WIDTH * TILE_SIZE;
+            float mapHeightPixels = GRID_HEIGHT * TILE_SIZE;
+
+            // Define the extended boundary for tree placement
+            float minX_bounds = -Camera.CAMERA_BOUNDS_BUFFER;
+            float maxX_bounds = mapWidthPixels + Camera.CAMERA_BOUNDS_BUFFER;
+            float minY_bounds = -Camera.CAMERA_BOUNDS_BUFFER;
+            float maxY_bounds = mapHeightPixels + Camera.CAMERA_BOUNDS_BUFFER;
+
+            // Define the main grid area (where trees should NOT spawn)
+            Rectangle gridArea = new Rectangle(0, 0, (int)mapWidthPixels, (int)mapHeightPixels);
+
+            for (int i = 0; i < NUMBER_OF_STATIC_TREES; i++)
+            {
+                float x_center, y_center;
+                bool positionFound = false;
+                int attempts = 0;
+
+                while (!positionFound && attempts < 200) // Limit attempts to prevent infinite loop
+                {
+                    // Determine which border to place the tree on
+                    int borderChoice = random.Next(4); // 0: top, 1: bottom, 2: left, 3: right
+
+                    if (borderChoice == 0) // Top border (outside main grid)
+                    {
+                        x_center = (float)(random.NextDouble() * (maxX_bounds - minX_bounds) + minX_bounds); 
+                        y_center = (float)(random.NextDouble() * (gridArea.Top - minY_bounds) + minY_bounds); 
+                    }
+                    else if (borderChoice == 1) // Bottom border
+                    {
+                        x_center = (float)(random.NextDouble() * (maxX_bounds - minX_bounds) + minX_bounds);
+                        y_center = (float)(gridArea.Bottom + random.NextDouble() * (maxY_bounds - gridArea.Bottom));
+                    }
+                    else if (borderChoice == 2) // Left border
+                    {
+                        x_center = (float)(random.NextDouble() * (gridArea.Left - minX_bounds) + minX_bounds);
+                        y_center = (float)(random.NextDouble() * (maxY_bounds - minY_bounds) + minY_bounds); 
+                    }
+                    else // Right border
+                    {
+                        x_center = (float)(gridArea.Right + random.NextDouble() * (maxX_bounds - gridArea.Right));
+                        y_center = (float)(random.NextDouble() * (maxY_bounds - minY_bounds) + minY_bounds);
+                    }
+
+                    // Calculate tree's bounding box based on its center
+                    // The draw position is top-left, so we need to calculate it from the center for placement logic
+                    float treeHalfWidth = _treeTexture.Width / 2f;
+                    float treeHalfHeight = _treeTexture.Height / 2f;
+                    
+                    Vector2 topLeftDrawPosition = new Vector2(x_center - treeHalfWidth, y_center - treeHalfHeight);
+                    Rectangle treeBounds = new Rectangle((int)topLeftDrawPosition.X, (int)topLeftDrawPosition.Y, _treeTexture.Width, _treeTexture.Height);
+
+                    // Check if the tree's bounding box intersects with the grid area
+                    if (!treeBounds.Intersects(gridArea))
+                    {
+                        _staticTreePositions.Add(topLeftDrawPosition);
+                        positionFound = true;
+                    }
+                    attempts++;
+                }
+                if (!positionFound)
+                {
+                    Debug.WriteLine("Could not find a suitable position for a static tree after several attempts.");
+                }
             }
         }
     }
