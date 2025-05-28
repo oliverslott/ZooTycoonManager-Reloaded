@@ -524,20 +524,6 @@ namespace ZooTycoonManager
             {
                 visitor.Draw(_spriteBatch);
             }
-
-            // VIGTIGT! Luk det første Begin!
-            _spriteBatch.End();
-
-            // Draw UI elements without camera offset
-            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-            // Draw FPS counter
-            _fpsCounter.Draw(_spriteBatch);
-
-            // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
-            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
-            _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
             if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
             {
                 Vector2 mousePos = Mouse.GetState().Position.ToVector2();
@@ -570,6 +556,21 @@ namespace ZooTycoonManager
 
                 _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f); // Halvgennemsigtig
             }
+
+            // VIGTIGT! Luk det første Begin!
+            _spriteBatch.End();
+
+            // Draw UI elements without camera offset
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            // Draw FPS counter
+            _fpsCounter.Draw(_spriteBatch);
+
+            // Draw instructions at the bottom of the screen
+            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
+            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
+            _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
+            
 
             // Draw current money from MoneyDisplay
             _moneyDisplay.Draw(_spriteBatch);
