@@ -663,7 +663,7 @@ namespace ZooTycoonManager
             string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
-            
+
 
             // Draw current money from MoneyDisplay
             _moneyDisplay.Draw(_spriteBatch);
@@ -822,8 +822,8 @@ namespace ZooTycoonManager
 
                     if (borderChoice == 0) // Top border (outside main grid)
                     {
-                        x_center = (float)(random.NextDouble() * (maxX_bounds - minX_bounds) + minX_bounds); 
-                        y_center = (float)(random.NextDouble() * (gridArea.Top - minY_bounds) + minY_bounds); 
+                        x_center = (float)(random.NextDouble() * (maxX_bounds - minX_bounds) + minX_bounds);
+                        y_center = (float)(random.NextDouble() * (gridArea.Top - minY_bounds) + minY_bounds);
                     }
                     else if (borderChoice == 1) // Bottom border
                     {
@@ -833,7 +833,7 @@ namespace ZooTycoonManager
                     else if (borderChoice == 2) // Left border
                     {
                         x_center = (float)(random.NextDouble() * (gridArea.Left - minX_bounds) + minX_bounds);
-                        y_center = (float)(random.NextDouble() * (maxY_bounds - minY_bounds) + minY_bounds); 
+                        y_center = (float)(random.NextDouble() * (maxY_bounds - minY_bounds) + minY_bounds);
                     }
                     else // Right border
                     {
@@ -845,7 +845,7 @@ namespace ZooTycoonManager
                     // The draw position is top-left, so we need to calculate it from the center for placement logic
                     float treeHalfWidth = _treeTexture.Width / 2f;
                     float treeHalfHeight = _treeTexture.Height / 2f;
-                    
+
                     Vector2 topLeftDrawPosition = new Vector2(x_center - treeHalfWidth, y_center - treeHalfHeight);
                     Rectangle treeBounds = new Rectangle((int)topLeftDrawPosition.X, (int)topLeftDrawPosition.Y, _treeTexture.Width, _treeTexture.Height);
 
@@ -873,11 +873,11 @@ namespace ZooTycoonManager
             for (int x = -1; x <= GRID_WIDTH; x++)
             {
                 // Skip fence at visitor spawn and exit locations on the top border
-                if (x == VISITOR_SPAWN_TILE_X && -1 == VISITOR_SPAWN_TILE_Y -1) 
+                if (x == VISITOR_SPAWN_TILE_X && -1 == VISITOR_SPAWN_TILE_Y - 1)
                 {
                     continue;
                 }
-                if (x == VISITOR_EXIT_TILE_X && -1 == VISITOR_EXIT_TILE_Y -1) 
+                if (x == VISITOR_EXIT_TILE_X && -1 == VISITOR_EXIT_TILE_Y - 1)
                 {
                     continue;
                 }
@@ -909,6 +909,8 @@ namespace ZooTycoonManager
                 Vector2 tilePos = new Vector2(GRID_WIDTH, y);
                 _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
                 _boundaryFenceTileCoordinates.Add(tilePos);
+            }
+        }
         public void ShowSubMenu(string type)
         {
             // Hvis den allerede er åben → luk den
