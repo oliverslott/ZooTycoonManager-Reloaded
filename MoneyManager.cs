@@ -10,8 +10,6 @@ namespace ZooTycoonManager
         private List<IObserver> _observers = new List<IObserver>();
         private decimal _currentMoney;
         public decimal CurrentMoney => _currentMoney;
-
-        // Private constructor to prevent direct instantiation
         private MoneyManager() { }
 
         public static MoneyManager Instance
@@ -35,14 +33,13 @@ namespace ZooTycoonManager
         public void Initialize(decimal initialMoney)
         {
             _currentMoney = initialMoney;
-            Notify(); // Notify observers of initial amount
+            Notify();
         }
 
         public void AddMoney(decimal amount)
         {
             if (amount < 0)
             {
-                // Or throw new ArgumentOutOfRangeException(nameof(amount), "Amount to add cannot be negative.");
                 return; 
             }
             _currentMoney += amount;
@@ -53,7 +50,6 @@ namespace ZooTycoonManager
         {
             if (amount < 0)
             {
-                // Or throw new ArgumentOutOfRangeException(nameof(amount), "Amount to spend cannot be negative.");
                 return false;
             }
 
@@ -63,7 +59,7 @@ namespace ZooTycoonManager
                 Notify();
                 return true;
             }
-            return false; // Not enough money
+            return false;
         }
 
         public void Attach(IObserver observer)

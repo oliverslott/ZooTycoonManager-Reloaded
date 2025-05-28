@@ -41,7 +41,6 @@ namespace ZooTycoonManager
                 _elapsedTime = 0;
             }
 
-            // Update position when window is resized
             UpdatePosition();
         }
 

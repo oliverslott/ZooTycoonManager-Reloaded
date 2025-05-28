@@ -10,29 +10,26 @@ namespace ZooTycoonManager
 {
     public class GameWorld : Game
     {
-        // Tile and grid settings
-        public const int TILE_SIZE = 32; // Size of each tile in pixels
+        public const int TILE_SIZE = 32;
         public const int GRID_WIDTH = 100;
         public const int GRID_HEIGHT = 100;
 
-        // Visitor Spawn Tile Configuration
         public const int VISITOR_SPAWN_TILE_X = 20;
         public const int VISITOR_SPAWN_TILE_Y = 0;
-        public const int ROAD_TEXTURE_INDEX = 1; // Added for road placement logic
+        public const int ROAD_TEXTURE_INDEX = 1;
 
-        // Visitor Exit Tile Configuration
-        public const int VISITOR_EXIT_TILE_X = GRID_WIDTH - 20; // Example: 80 if GRID_WIDTH is 100
+        public const int VISITOR_EXIT_TILE_X = GRID_WIDTH - 20;
         public const int VISITOR_EXIT_TILE_Y = 0;
 
         private static GameWorld _instance;
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private SpriteFont _font;  // Add font field
+        private SpriteFont _font;
         public Map map { get; private set; }
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
-        private FPSCounter _fpsCounter;  // Add FPS counter field
+        private FPSCounter _fpsCounter; 
         private Texture2D _habitatPreviewTexture;
 
         // UI
@@ -44,19 +41,15 @@ namespace ZooTycoonManager
         SubMenuWindow _animalMenu;
         SubMenuWindow _zookeeperMenu;
 
-        // Static Tree Deco
         private Texture2D _treeTexture;
         private List<Vector2> _staticTreePositions;
-        private const int NUMBER_OF_STATIC_TREES = 1000; // Adjust as needed
+        private const int NUMBER_OF_STATIC_TREES = 1000;
 
-        // Boundary Fences
         private List<Vector2> _boundaryFencePixelPositions;
-        private HashSet<Vector2> _boundaryFenceTileCoordinates; // To store tile coordinates for connected textures
+        private HashSet<Vector2> _boundaryFenceTileCoordinates;
 
-        // Money Management
         private MoneyDisplay _moneyDisplay;
 
-        // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
 
         private enum PlacementMode
@@ -67,38 +60,31 @@ namespace ZooTycoonManager
 
         private PlacementMode _currentPlacement = PlacementMode.None;
 
-        // Fence and enclosure management
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
-        private List<Visitor> visitors; // Add visitors list
+        private List<Visitor> visitors;
         private int _nextHabitatId = 1;
         private int _nextAnimalId = 1;
         private int _nextVisitorId = 1;
 
-        // Visitor spawning settings
         private float _visitorSpawnTimer = 0f;
-        private const float VISITOR_SPAWN_INTERVAL = 10.0f; // Spawn every 10 seconds
+        private const float VISITOR_SPAWN_INTERVAL = 10.0f;
         private Vector2 _visitorSpawnPosition;
-        private Vector2 _visitorExitPosition; // Added for separate exit
+        private Vector2 _visitorExitPosition;
         private const int VISITOR_SPAWN_REWARD = 20;
+        public Vector2 VisitorSpawnPosition => _visitorSpawnPosition;
+        public Vector2 VisitorExitPosition => _visitorExitPosition;
 
-        // Public property to access the spawn/exit position
-        public Vector2 VisitorSpawnPosition => _visitorSpawnPosition; // Renamed from VisitorSpawnExitPosition
-        public Vector2 VisitorExitPosition => _visitorExitPosition; // New property for exit
-
-        // Camera instance
         private Camera _camera;
 
-        // Window state
         private bool _isFullscreen = false;
 
-        // Road placement mode
         private bool _isPlacingRoadModeActive = false;
 
-        private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
+        private List<Visitor> _visitorsToDespawn = new List<Visitor>();
 
-        private EntityInfoPopup _entityInfoPopup; // Changed from AnimalInfoPopup
-        private IInspectableEntity _selectedEntity; // Changed from Animal to IInspectableEntity
+        private EntityInfoPopup _entityInfoPopup;
+        private IInspectableEntity _selectedEntity;
 
         public List<Habitat> GetHabitats()
         {
@@ -140,36 +126,29 @@ namespace ZooTycoonManager
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            // Set to use monitor refresh rate instead of fixed 60 FPS
             IsFixedTimeStep = false;
             TargetElapsedTime = TimeSpan.FromTicks(1);
 
-            // Initialize map first
             map = new Map(GRID_WIDTH, GRID_HEIGHT);
 
-            // Initialize camera
             _camera = new Camera(_graphics);
             _camera.SetMapDimensions(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
 
-            // Initialize walkable map from the map object
             WalkableMap = map.ToWalkableArray();
 
             habitats = new List<Habitat>();
-            visitors = new List<Visitor>(); // Initialize visitors list
-            _boundaryFencePixelPositions = new List<Vector2>(); // Initialize boundary fence list
-            _boundaryFenceTileCoordinates = new HashSet<Vector2>(); // Initialize boundary fence tile coordinates set
+            visitors = new List<Visitor>();
+            _boundaryFencePixelPositions = new List<Vector2>();
+            _boundaryFenceTileCoordinates = new HashSet<Vector2>();
 
-            // Set visitor spawn/exit to tile (0,0)
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
-            _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); // Initialize new exit position
-            // Find the top-most path tile for visitor spawning
-            Vector2 pathSpawnTile = Vector2.Zero; // Default to top-left if no path found
+            _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); 
+            Vector2 pathSpawnTile = Vector2.Zero;
             bool foundSpawn = false;
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
                 for (int x = 0; x < GRID_WIDTH; x++)
                 {
-                    // TextureIndex 1 is the path tile (Dirt1)
                     if (map.Tiles[x, y].TextureIndex == 1)
                     {
                         pathSpawnTile = new Vector2(x, y);
@@ -181,13 +160,8 @@ namespace ZooTycoonManager
             }
             _visitorSpawnPosition = TileToPixel(pathSpawnTile);
 
-            // Initialize MoneyManager and MoneyDisplay
-            MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
+            MoneyManager.Instance.Initialize(0);
 
-            // Initialize AnimalInfoPopup - Font will be loaded in LoadContent
-            // _animalInfoPopup = new AnimalInfoPopup(GraphicsDevice, _font);
-
-            // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
         }
 
@@ -221,7 +195,7 @@ namespace ZooTycoonManager
             }
         }
 
-        // Convert pixel position to tile position
+
         public static Vector2 PixelToTile(Vector2 pixelPos)
         {
             return new Vector2(
@@ -230,7 +204,7 @@ namespace ZooTycoonManager
             );
         }
 
-        // Convert tile position to pixel position (center of tile)
+
         public static Vector2 TileToPixel(Vector2 tilePos)
         {
             return new Vector2(
@@ -254,8 +228,8 @@ namespace ZooTycoonManager
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _font = Content.Load<SpriteFont>("font");  // Load the font
-            _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
+            _font = Content.Load<SpriteFont>("font"); 
+            _fpsCounter = new FPSCounter(_font, _graphics);
             _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
 
 
@@ -299,18 +273,14 @@ namespace ZooTycoonManager
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
 
-            // map = new Map(GRID_WIDTH, GRID_HEIGHT); // yo, this is where the size happens -- This line is now redundant
             tileRenderer = new TileRenderer(tileTextures, TILE_SIZE);
 
-            // Load fence textures
             FenceRenderer.LoadContent(Content);
-            InitializeBoundaryFences(); // Initialize boundary fences
+            InitializeBoundaryFences(); 
 
-            // Load tree texture
             _treeTexture = Content.Load<Texture2D>("tree1");
             InitializeStaticTrees();
 
-            // Load content for all habitats and their animals
             foreach (var habitat in habitats)
             {
                 habitat.LoadAnimalContent(Content);
@@ -347,48 +317,40 @@ namespace ZooTycoonManager
                 ToggleFullscreen();
             }
 
-            // Update camera
             _camera.Update(gameTime, mouse, prevMouseState, keyboard, prevKeyboardState);
 
-            // Handle 'C' key press for toggling camera clamping
             if (keyboard.IsKeyDown(Keys.C) && !prevKeyboardState.IsKeyDown(Keys.C))
             {
                 _camera.ToggleClamping();
             }
 
-            // Handle 'P' key press for toggling road placement mode
             if (keyboard.IsKeyDown(Keys.P) && !prevKeyboardState.IsKeyDown(Keys.P))
             {
                 _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
                 Debug.WriteLine($"Road placement mode active: {_isPlacingRoadModeActive}");
             }
 
-            // Convert mouse position to world coordinates
+
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
-            // Handle 'A' key press for spawning animals
             if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
             {
-                // Create and execute the place animal command
                 var placeAnimalCommand = new PlaceAnimalCommand(worldMousePosition);
                 CommandManager.Instance.ExecuteCommand(placeAnimalCommand);
             }
 
-            // Handle automatic visitor spawning
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
             {
                 _visitorSpawnTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (_visitorSpawnTimer >= VISITOR_SPAWN_INTERVAL)
                 {
-                    _visitorSpawnTimer = 0f; // Reset timer
+                    _visitorSpawnTimer = 0f; 
 
-                    // Spawn visitor
                     Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
                     newVisitor.LoadContent(Content);
                     visitors.Add(newVisitor);
 
-                    // Add money
                     MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
                     Debug.WriteLine($"Visitor spawned at {_visitorSpawnPosition}. Added ${VISITOR_SPAWN_REWARD}.");
                 }
@@ -398,7 +360,6 @@ namespace ZooTycoonManager
                 _visitorSpawnTimer = 0f; // Reset timer if no animals exist to prevent instant spawn when an animal is added
             }
 
-            // Handle 'B' key press for manually spawning visitors (debugging)
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
                 Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
@@ -407,14 +368,12 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnPosition} for debugging.");
             }
 
-            // Handle road placement with dragging or animal pathfinding on click
             if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed)
             {
                 PlaceRoadTile(PixelToTile(worldMousePosition));
             }
             else if (!_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
-                // Make the first animal in the first habitat pathfind to the world mouse position
                 if (habitats.Count > 0 && habitats[0].GetAnimals().Count > 0)
                 {
                     habitats[0].GetAnimals()[0].PathfindTo(worldMousePosition);
@@ -426,7 +385,6 @@ namespace ZooTycoonManager
                 DatabaseManager.Instance.SaveGame(habitats);
             }
 
-            // Handle 'O' key press for clearing everything
             if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
             {
                 habitats.Clear();
@@ -437,28 +395,24 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Clear(); // Clear command history when clearing everything
             }
 
-            // Handle 'M' key press for adding money (debugging)
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
             {
                 MoneyManager.Instance.AddMoney(100000);
                 Debug.WriteLine("Added $100,000 for debugging.");
             }
 
-            // Handle Ctrl+Z for undo
             if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) &&
                 !prevKeyboardState.IsKeyDown(Keys.Z))
             {
                 CommandManager.Instance.Undo();
             }
 
-            // Handle Ctrl+Y for redo
             if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) &&
                 !prevKeyboardState.IsKeyDown(Keys.Y))
             {
                 CommandManager.Instance.Redo();
             }
 
-            // Update AnimalInfoPopup
             bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
@@ -467,11 +421,10 @@ namespace ZooTycoonManager
 
                 if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
                 {
-                    // Placer habitat via kommando
                     var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
                     CommandManager.Instance.ExecuteCommand(command);
 
-                    _currentPlacement = PlacementMode.None; // Exit placement mode
+                    _currentPlacement = PlacementMode.None; 
                 }
                 else
                 {
@@ -496,15 +449,10 @@ namespace ZooTycoonManager
                         if (entityClickedThisFrame) break;
                     }
 
-                    // If no animal was clicked, check for visitor clicks
                     if (!entityClickedThisFrame)
                     {
                         foreach (var visitor in visitors)
                         {
-                            // Assuming Visitor has a BoundingBox similar to Animal
-                            // If not, this needs to be adjusted or Visitor needs a BoundingBox property.
-                            // For now, let's add a temporary BoundingBox for Visitor for selection purposes.
-                            // This should be properly implemented in Visitor.cs if permanent.
                             Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
                             if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
                             {
@@ -519,14 +467,13 @@ namespace ZooTycoonManager
                     {
                         if (_selectedEntity != null && _selectedEntity != clickedEntity)
                         {
-                            _selectedEntity.IsSelected = false; // Deselect previous entity
+                            _selectedEntity.IsSelected = false; 
                         }
                         _selectedEntity = clickedEntity;
-                        _selectedEntity.IsSelected = true; // Select new entity
-                        _entityInfoPopup.Show(_selectedEntity); // Show or update for the new entity
+                        _selectedEntity.IsSelected = true;
+                        _entityInfoPopup.Show(_selectedEntity);
                     }
-                    // If no entity was clicked and the popup is visible, but the click was not on the popup itself (e.g. close button), then hide the popup.
-                    // And deselect the entity
+
                     else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick)
                     {
                         _entityInfoPopup.Hide();
@@ -537,21 +484,14 @@ namespace ZooTycoonManager
                         }
                     }
                 }
-            }
+            }            
 
-            // Handle right mouse button for fence placement
-            if (mouse.RightButton == ButtonState.Pressed && prevMouseState.RightButton != ButtonState.Pressed)
-            {
-                PlaceFence(worldMousePosition);
-            }
 
-            // Update all habitats and their animals
             foreach (var habitat in habitats)
             {
                 habitat.Update(gameTime);
             }
 
-            // Process despawning visitors
             if (_visitorsToDespawn.Count > 0)
             {
                 foreach (var visitorToRemove in _visitorsToDespawn)
@@ -725,22 +665,18 @@ namespace ZooTycoonManager
             // VIGTIGT! Luk det første Begin!
             _spriteBatch.End();
 
-            // Draw UI elements without camera offset
+            //Begin ui:
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            // Draw FPS counter
+
             _fpsCounter.Draw(_spriteBatch);
 
-            // Draw instructions at the bottom of the screen
-            string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
+            string instructions = "Press 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
-
-            // Draw current money from MoneyDisplay
             _moneyDisplay.Draw(_spriteBatch);
 
-            // Draw undo/redo status
             Vector2 undoRedoPosition = new Vector2(10, 40);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
@@ -782,7 +718,7 @@ namespace ZooTycoonManager
             if (WalkableMap == null)
             {
                 Debug.WriteLine("Warning: WalkableMap is null in GameWorld.GetWalkableTileCoordinates.");
-                return walkableTiles; // Return empty list if map not initialized
+                return walkableTiles;
             }
 
             for (int x = 0; x < GRID_WIDTH; x++)
@@ -800,13 +736,12 @@ namespace ZooTycoonManager
 
         public void ConfirmDespawn(Visitor visitor)
         {
-            if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor)) // Ensure not already added and not already removed from main list
+            if (visitor != null && !_visitorsToDespawn.Contains(visitor) && !visitors.Contains(visitor)) 
             {
-                // Visitor should have already stopped its own update loop.
                 _visitorsToDespawn.Add(visitor);
                 Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
             }
-            else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor)) // Standard case: visitor exists in main list and not yet in despawn queue
+            else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor)) 
             {
                 _visitorsToDespawn.Add(visitor);
                 Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
@@ -828,16 +763,14 @@ namespace ZooTycoonManager
 
             if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT)
             {
-                // Check if the tile is already the desired road tile
                 if (map.Tiles[x, y].Walkable && map.Tiles[x, y].TextureIndex == ROAD_TEXTURE_INDEX)
                 {
-                    return; // Do nothing if it's already a road tile
+                    return;
                 }
 
-                // Get the original tile state before creating the command
+
                 Tile originalTile = map.Tiles[x, y];
 
-                // Create and execute the place road command
                 var placeRoadCommand = new PlaceRoadCommand(tilePosition, originalTile);
                 CommandManager.Instance.ExecuteCommand(placeRoadCommand);
             }
@@ -858,7 +791,6 @@ namespace ZooTycoonManager
                 {
                     WalkableMap[x, y] = walkable;
                 }
-                // Debug.WriteLine($"Updated tile ({x},{y}) to Walkable: {walkable}, Texture: {textureIndex}");
             }
             else
             {
@@ -874,13 +806,11 @@ namespace ZooTycoonManager
             float mapWidthPixels = GRID_WIDTH * TILE_SIZE;
             float mapHeightPixels = GRID_HEIGHT * TILE_SIZE;
 
-            // Define the extended boundary for tree placement
             float minX_bounds = -Camera.CAMERA_BOUNDS_BUFFER;
             float maxX_bounds = mapWidthPixels + Camera.CAMERA_BOUNDS_BUFFER;
             float minY_bounds = -Camera.CAMERA_BOUNDS_BUFFER;
             float maxY_bounds = mapHeightPixels + Camera.CAMERA_BOUNDS_BUFFER;
 
-            // Define the main grid area (where trees should NOT spawn)
             Rectangle gridArea = new Rectangle(0, 0, (int)mapWidthPixels, (int)mapHeightPixels);
 
             for (int i = 0; i < NUMBER_OF_STATIC_TREES; i++)
@@ -889,12 +819,11 @@ namespace ZooTycoonManager
                 bool positionFound = false;
                 int attempts = 0;
 
-                while (!positionFound && attempts < 200) // Limit attempts to prevent infinite loop
+                while (!positionFound && attempts < 200) 
                 {
-                    // Determine which border to place the tree on
-                    int borderChoice = random.Next(4); // 0: top, 1: bottom, 2: left, 3: right
+                    int borderChoice = random.Next(4); 
 
-                    if (borderChoice == 0) // Top border (outside main grid)
+                    if (borderChoice == 0) // Top border
                     {
                         x_center = (float)(random.NextDouble() * (maxX_bounds - minX_bounds) + minX_bounds);
                         y_center = (float)(random.NextDouble() * (gridArea.Top - minY_bounds) + minY_bounds);
@@ -915,15 +844,12 @@ namespace ZooTycoonManager
                         y_center = (float)(random.NextDouble() * (maxY_bounds - minY_bounds) + minY_bounds);
                     }
 
-                    // Calculate tree's bounding box based on its center
-                    // The draw position is top-left, so we need to calculate it from the center for placement logic
                     float treeHalfWidth = _treeTexture.Width / 2f;
                     float treeHalfHeight = _treeTexture.Height / 2f;
 
                     Vector2 topLeftDrawPosition = new Vector2(x_center - treeHalfWidth, y_center - treeHalfHeight);
                     Rectangle treeBounds = new Rectangle((int)topLeftDrawPosition.X, (int)topLeftDrawPosition.Y, _treeTexture.Width, _treeTexture.Height);
 
-                    // Check if the tree's bounding box intersects with the grid area
                     if (!treeBounds.Intersects(gridArea))
                     {
                         _staticTreePositions.Add(topLeftDrawPosition);
@@ -941,12 +867,10 @@ namespace ZooTycoonManager
         private void InitializeBoundaryFences()
         {
             _boundaryFencePixelPositions.Clear();
-            _boundaryFenceTileCoordinates.Clear(); // Clear the tile coordinates set as well
+            _boundaryFenceTileCoordinates.Clear();
 
-            // Top border (y = -1), from x = -1 to GRID_WIDTH
             for (int x = -1; x <= GRID_WIDTH; x++)
             {
-                // Skip fence at visitor spawn and exit locations on the top border
                 if (x == VISITOR_SPAWN_TILE_X && -1 == VISITOR_SPAWN_TILE_Y - 1)
                 {
                     continue;
@@ -961,7 +885,6 @@ namespace ZooTycoonManager
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
-            // Bottom border (y = GRID_HEIGHT), from x = -1 to GRID_WIDTH
             for (int x = -1; x <= GRID_WIDTH; x++)
             {
                 Vector2 tilePos = new Vector2(x, GRID_HEIGHT);
@@ -969,7 +892,6 @@ namespace ZooTycoonManager
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
-            // Left border (x = -1), from y = 0 to GRID_HEIGHT - 1 (corners are covered by top/bottom)
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
                 Vector2 tilePos = new Vector2(-1, y);
@@ -977,7 +899,6 @@ namespace ZooTycoonManager
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
-            // Right border (x = GRID_WIDTH), from y = 0 to GRID_HEIGHT - 1 (corners are covered by top/bottom)
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
                 Vector2 tilePos = new Vector2(GRID_WIDTH, y);

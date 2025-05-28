@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
-using System.Diagnostics; // Required for Debug.WriteLine if you plan to move debugging messages here
+using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
@@ -31,7 +31,7 @@ namespace ZooTycoonManager
 
         public static void Draw(SpriteBatch spriteBatch, IEnumerable<Vector2> fencePixelPositions, HashSet<Vector2> fenceTileCoordinates, float scale)
         {
-            if (fenceTexture == null) // Basic check, assumes all textures are loaded if one is.
+            if (fenceTexture == null)
             {
                 Debug.WriteLine("FenceRenderer.Draw called before textures were loaded or textures are missing.");
                 return;
@@ -43,9 +43,8 @@ namespace ZooTycoonManager
                 bool hasLeft = fenceTileCoordinates.Contains(new Vector2(tilePos.X - 1, tilePos.Y));
                 bool hasRight = fenceTileCoordinates.Contains(new Vector2(tilePos.X + 1, tilePos.Y));
                 bool hasBottom = fenceTileCoordinates.Contains(new Vector2(tilePos.X, tilePos.Y + 1));
-                // bool hasTop = fenceTileCoordinates.Contains(new Vector2(tilePos.X, tilePos.Y - 1)); // For future use
 
-                Texture2D currentFenceTexture = fenceTexture; // Default
+                Texture2D currentFenceTexture = fenceTexture;
 
                 if (hasLeft && hasRight && hasBottom)
                 {

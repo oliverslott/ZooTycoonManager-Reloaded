@@ -19,12 +19,12 @@ namespace ZooTycoonManager
         private Vector2 position;
         private List<Node> path;
         private int currentNodeIndex = 0;
-        private float speed = 80f; // Slightly slower than animals
+        private float speed = 80f;
         private AStarPathfinding pathfinder;
         private Random random = new Random();
         private float timeSinceLastRandomWalk = 0f;
-        private const float RANDOM_WALK_INTERVAL = 5f; // Longer interval than animals
-        private const float VISIT_DURATION = 4f;  // How long to stay at a habitat
+        private const float RANDOM_WALK_INTERVAL = 5f;
+        private const float VISIT_DURATION = 4f;
         private float currentVisitTime = 0f;
         private Habitat currentHabitat = null;
 
@@ -38,16 +38,15 @@ namespace ZooTycoonManager
         private Vector2 _pathfindingStartPos;
         private Vector2 _pathfindingTargetPos;
 
-        private static Texture2D _borderTexture; // Added for selection border
+        private static Texture2D _borderTexture;
 
-        private const float HUNGER_INCREASE_RATE = 0.2f; // Hunger points per second (adjust as needed)
+        private const float HUNGER_INCREASE_RATE = 0.2f;
         private float _uncommittedHungerPoints = 0f;
 
-        // IInspectableEntity implementation
-        public bool IsSelected { get; set; } // Added for IInspectableEntity
-        int IInspectableEntity.Id => VisitorId; // Explicit implementation for Id
+        public bool IsSelected { get; set; }
+        int IInspectableEntity.Id => VisitorId;
 
-        // Database properties
+        // Database
         public int VisitorId { get; set; }
         public string Name { get; set; }
         public int Money { get; set; }
@@ -64,7 +63,6 @@ namespace ZooTycoonManager
             private set
             {
                 position = value;
-                // Update database position properties with tile coordinates
                 Vector2 tilePos = GameWorld.PixelToTile(value);
                 _positionX = (int)tilePos.X;
                 _positionY = (int)tilePos.Y;
@@ -74,7 +72,6 @@ namespace ZooTycoonManager
         public int PositionX => _positionX;
         public int PositionY => _positionY;
 
-        // BoundingBox for selection, similar to Animal
         public Rectangle BoundingBox => new Rectangle((int)(Position.X - 16), (int)(Position.Y - 16), 32, 32);
 
         public Visitor(Vector2 spawnPosition, int visitorId = 0)
@@ -84,7 +81,6 @@ namespace ZooTycoonManager
             VisitorId = visitorId;
             _visitedHabitatIds = new HashSet<int>();
 
-            // Initialize default values
             Name = "Visitor";
             Money = 100;
             Mood = 100;
@@ -92,9 +88,8 @@ namespace ZooTycoonManager
             HabitatId = null;
             ShopId = null;
 
-            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make visitor act on first update
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
 
-            // Start the update thread
             _updateThread = new Thread(UpdateLoop);
             _updateThread.Name = $"Visitor_{GetHashCode()}_Update";
             _updateThread.IsBackground = true;
@@ -115,7 +110,7 @@ namespace ZooTycoonManager
                 lastUpdate = currentTime;
 
                 Update(gameTime);
-                Thread.Sleep(16); // Approximately 60 FPS
+                Thread.Sleep(16); // 60 fps
             }
         }
 
@@ -134,10 +129,9 @@ namespace ZooTycoonManager
 
         private void PerformNextActionDecision()
         {
-            if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return; // Already has a path
-            if (_isExiting || currentHabitat != null) return; // Exiting or currently visiting
+            if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return;
+            if (_isExiting || currentHabitat != null) return;
 
-            // Get all habitats from GameWorld
             var allHabitats = GameWorld.Instance.GetHabitats();
 
             if (allHabitats.Count > 0)
@@ -150,7 +144,6 @@ namespace ZooTycoonManager
                     return;
                 }
 
-                // 70% chance to visit an unvisited habitat, 30% chance to random walk
                 if (random.NextDouble() < 0.7)
                 {
                     var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
@@ -159,31 +152,28 @@ namespace ZooTycoonManager
                     if (availableSpots.Count > 0)
                     {
                         Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
-                        if (randomHabitat.TryEnterHabitatSync(this)) // Visitor successfully "claims" a spot
+                        if (randomHabitat.TryEnterHabitatSync(this))
                         {
-                            PathfindTo(visitPosition); // Attempt to find a path
+                            PathfindTo(visitPosition);
 
-                            if (path == null || path.Count == 0) // Pathfinding failed (PathfindTo sets path to null or empty if no path found)
+                            if (path == null || path.Count == 0)
                             {
-                                // Pathfinding failed. Release the claimed spot.
                                 Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot {visitPosition} from {Position} failed. Releasing spot.");
                                 randomHabitat.LeaveHabitat(this);
-                                // currentHabitat remains null. Visitor will fall through to try another action (e.g., random walk).
                             }
                             else
                             {
-                                // Pathfinding successful. Commit to visiting.
                                 currentHabitat = randomHabitat;
-                                currentVisitTime = 0f; // Reset visit timer, it will start upon arrival.
+                                currentVisitTime = 0f;
                                 Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot {visitPosition} from {Position}. Path length: {path.Count}");
-                                return; // Exit PerformNextActionDecision, committed to this path.
+                                return;
                             }
                         }
                     }
                 }
             }
 
-            // Fallback to random walk if no habitats or random choice or failed to enter habitat
+
             List<Vector2> walkableTiles = GameWorld.Instance.GetWalkableTileCoordinates();
 
             if (walkableTiles.Count > 0)
@@ -195,7 +185,6 @@ namespace ZooTycoonManager
             else
             {
                 Debug.WriteLine($"Visitor {VisitorId}: No walkable tiles found for random walk.");
-                // Optionally, decide on a different fallback action if no walkable tiles are available
             }
         }
 
@@ -206,7 +195,6 @@ namespace ZooTycoonManager
             _pathfindingStartPos = position;
             _pathfindingTargetPos = targetDestination;
 
-            // Perform pathfinding synchronously
             Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
             Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
             
@@ -214,18 +202,16 @@ namespace ZooTycoonManager
                 (int)startTile.X, (int)startTile.Y,
                 (int)targetTile.X, (int)targetTile.Y);
 
-            // Directly update path (no longer need _pathLock if path is only accessed by this thread)
             path = calculatedPath;
             currentNodeIndex = 0;
 
             if (path != null && path.Count > 0)
             {
-                // Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed. Path nodes: {path.Count}. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
+
             }
             else
             {
-                // Debug.WriteLine($"Visitor {VisitorId}: Pathfinding completed but no path found. Target: {_pathfindingTargetPos}. Current Pos: {position}. IsExiting: {_isExiting}");
-                path = null; // Ensure path is null if FindPath returns null or empty
+                path = null;
             }
         }
 
@@ -235,7 +221,7 @@ namespace ZooTycoonManager
             thoughtBubbleTexture = contentManager.Load<Texture2D>("Thought_bubble");
             animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
 
-            // Load border texture if not already loaded (shared across instances)
+
             if (_borderTexture == null)
             {
                 _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
@@ -245,7 +231,6 @@ namespace ZooTycoonManager
 
         private void Update(GameTime gameTime)
         {
-            // Increase hunger over time
             _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (_uncommittedHungerPoints >= 1.0f)
@@ -259,7 +244,6 @@ namespace ZooTycoonManager
                 _uncommittedHungerPoints -= wholePointsToAdd;
             }
 
-            // Habitat visiting logic (only if not exiting)
             if (!_isExiting && currentHabitat != null)
             {
                 if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
@@ -270,12 +254,10 @@ namespace ZooTycoonManager
                         if (currentHabitat != null)
                         {
                             _visitedHabitatIds.Add(currentHabitat.HabitatId);
-                            //Debug.WriteLine($"Visitor {VisitorId} marked Habitat {currentHabitat.HabitatId} as visited.");
                             currentHabitat.LeaveHabitat(this);
                             currentHabitat = null;
                             currentVisitTime = 0f;
-                            //Debug.WriteLine($"Visitor {VisitorId}: Finished visiting habitat.");
-                            if (!_isExiting) // If not exiting, decide next action immediately
+                            if (!_isExiting)
                             {
                                 PerformNextActionDecision();
                             }
@@ -284,37 +266,27 @@ namespace ZooTycoonManager
                 }
             }
 
-            // Attempt random walk or initiate exit (only if not already exiting and not actively pathfinding for another reason)
+
             if (!_isExiting) 
             {
                 TryRandomWalk(gameTime);
             }
 
-            // Early exit for despawn if conditions met (exiting, pathfinding done, path is invalid/finished)
+
             if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
             {
-                //Debug.WriteLine($"Visitor {VisitorId} (Exiting early check): Pathfinding not active and path is null/empty or traversed. Path: {(path == null ? "null" : path.Count.ToString())}, Index: {currentNodeIndex}. Confirming despawn.");
                 _isRunning = false;
                 GameWorld.Instance.ConfirmDespawn(this);
                 return; 
             }
 
-            // If we reach here, pathfinding is not in progress.
-            // If _isExiting, a valid path to the exit should now exist (or path is null if none found),
-            // and it should not be fully traversed yet if we passed the despawn check above.
-
             if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
             {
-                // This is a general return if no path is active (e.g., idle, or path just finished and waiting for next action)
-                // If _isExiting, the despawn logic should have been caught by the earlier checks.
                 return;
             }
 
-            // Movement logic
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             float remainingMoveThisFrame = speed * deltaTime;
-            // Vector2 currentTileForLog = GameWorld.PixelToTile(position);
-            // Debug.WriteLine($"Visitor {VisitorId}: Moving. PathNodes: {path.Count}, CurIdx: {currentNodeIndex}, TargetNode: ({path[currentNodeIndex].X},{path[currentNodeIndex].Y}), CurrentTile: ({currentTileForLog.X},{currentTileForLog.Y}), IsExiting: {_isExiting}");
 
 
             while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
@@ -347,20 +319,16 @@ namespace ZooTycoonManager
                 }
             }
 
-            if (currentNodeIndex >= path.Count) // Reached end of current path
+            if (currentNodeIndex >= path.Count) 
             {
-                Vector2 pathEndTargetForLog = _pathfindingTargetPos; // Grab this before path is nulled
-                //Debug.WriteLine($"Visitor {VisitorId}: Reached end of path at {position}. Path target was {pathEndTargetForLog}. IsExiting: {_isExiting}");
+                Vector2 pathEndTargetForLog = _pathfindingTargetPos;
                 path = null; 
                 currentNodeIndex = 0;
 
                 if (_isExiting)
                 {
-                    // This is the primary "successful exit" despawn point
-                    //Debug.WriteLine($"Visitor {VisitorId} (Exiting success): Successfully reached exit target. Confirming despawn.");
                     _isRunning = false;
                     GameWorld.Instance.ConfirmDespawn(this);
-                    // The visitor's update loop will terminate because _isRunning is false.
                 }
             }
         }
@@ -372,24 +340,18 @@ namespace ZooTycoonManager
             {
                 spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
 
-                // Draw thought bubble if visiting a habitat and pathfinding to it is complete
                 if (currentHabitat != null && (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && thoughtBubbleTexture != null && animalInThoughtTexture != null)
                 {
-                    // Adjust position for thought bubble (e.g., above the visitor's head)
-                    Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); // Example offset
+                    Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); 
 
-                    // Draw the thought bubble
                     spriteBatch.Draw(thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(thoughtBubbleTexture.Width / 2, thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
 
-                    // Draw the animal texture inside the thought bubble
-                    // Adjust scale and position to fit the animal texture within the bubble
-                    float animalScale = 0.25f; // Smaller scale for the animal in the bubble
-                    Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4); // Slightly offset to center in bubble
+                    Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
 
                     spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
                 }
 
-                // Draw selection border if selected
+
                 if (IsSelected)
                 {
                     DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow); 
@@ -397,7 +359,7 @@ namespace ZooTycoonManager
             }
         }
 
-        // Method to draw border, similar to Animal.cs
+
         private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
         {
             if (_borderTexture == null) return;
@@ -452,11 +414,6 @@ namespace ZooTycoonManager
                     VALUES ($visitor_id, $name, $money, $mood, $hunger, $habitat_id, $shop_id, $position_x, $position_y);
                 ";
                 command.ExecuteNonQuery();
-                //Debug.WriteLine($"Inserted Visitor: ID {VisitorId}, Name: {Name}");
-            }
-            else
-            {
-                //Debug.WriteLine($"Updated Visitor: ID {VisitorId}, Name: {Name}");
             }
         }
 
@@ -472,19 +429,18 @@ namespace ZooTycoonManager
             int posX = reader.GetInt32(7);
             int posY = reader.GetInt32(8);
 
-            // Convert tile position to pixel position
+
             Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
             Position = pixelPos;
 
-            // Initialize other properties
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             path = null;
             currentNodeIndex = 0;
-            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make visitor act on first update
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
             currentVisitTime = 0f;
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;
-            _uncommittedHungerPoints = 0f; // Initialize hunger points on load
+            _uncommittedHungerPoints = 0f;
         }
 
         public void InitiateExit()
@@ -492,10 +448,9 @@ namespace ZooTycoonManager
             if (_isExiting) return;
 
             _isExiting = true;
-            // Use the globally defined spawn/exit position from GameWorld
+
             _exitTargetPosition = GameWorld.Instance.VisitorExitPosition;
             
-            // Clear current path and stop any current habitat visit
             path = null;
             currentNodeIndex = 0;
             if (currentHabitat != null)
@@ -506,7 +461,7 @@ namespace ZooTycoonManager
             currentVisitTime = 0f;
             timeSinceLastRandomWalk = float.MinValue;
 
-            //Debug.WriteLine($"Visitor {VisitorId}: Initiating exit towards {_exitTargetPosition}.");
+
             PathfindTo(_exitTargetPosition);
         }
     }

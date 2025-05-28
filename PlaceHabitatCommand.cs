@@ -3,10 +3,6 @@ using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
-    /// <summary>
-    /// Simple habitat command that just reverses the placement operation
-    /// Much cleaner than tracking state!
-    /// </summary>
     public class PlaceHabitatCommand : ICommand
     {
         private readonly Vector2 _position;
@@ -23,14 +19,12 @@ namespace ZooTycoonManager
         
         public bool Execute()
         {
-            // Check if we have enough money
             if (!MoneyManager.Instance.SpendMoney(_cost))
             {
                 Debug.WriteLine($"Not enough money to place habitat. Cost: ${_cost}, Available: ${MoneyManager.Instance.CurrentMoney}");
                 return false;
             }
             
-            // Create the habitat and let it place itself normally
             _createdHabitat = new Habitat(_position, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE, 
                 GameWorld.Instance.GetNextHabitatId());
             _createdHabitat.PlaceEnclosure(_position);
@@ -48,18 +42,15 @@ namespace ZooTycoonManager
                 return;
             }
             
-            // If there are animals in the habitat, we need to handle them
             if (_createdHabitat.GetAnimals().Count > 0)
             {
                 Debug.WriteLine("Cannot undo habitat placement: Habitat contains animals. Remove animals first.");
                 return;
             }
             
-            // Simply remove the habitat and let it clean up after itself
             GameWorld.Instance.GetHabitats().Remove(_createdHabitat);
-            _createdHabitat.RemoveEnclosure(); // New method that reverses PlaceEnclosure
+            _createdHabitat.RemoveEnclosure(); 
             
-            // Refund the money
             MoneyManager.Instance.AddMoney(_cost);
             
             Debug.WriteLine($"Undid habitat placement at {_position}, refunded ${_cost}");

@@ -26,11 +26,11 @@ namespace ZooTycoonManager
             {
                 for (int y = 0; y < Height; y++)
                 {
-                    Tiles[x, y] = new Tile(false, 0); // grass1, now not walkable
+                    Tiles[x, y] = new Tile(false, 0);
                 }
             }
-            Tiles[GameWorld.VISITOR_SPAWN_TILE_X, GameWorld.VISITOR_SPAWN_TILE_Y] = new Tile(true, 1); // dirt road at spawn
-            Tiles[GameWorld.VISITOR_EXIT_TILE_X, GameWorld.VISITOR_EXIT_TILE_Y] = new Tile(true, 1); // dirt road at exit
+            Tiles[GameWorld.VISITOR_SPAWN_TILE_X, GameWorld.VISITOR_SPAWN_TILE_Y] = new Tile(true, 1);
+            Tiles[GameWorld.VISITOR_EXIT_TILE_X, GameWorld.VISITOR_EXIT_TILE_Y] = new Tile(true, 1);
         }
 
         public bool IsWalkable(int x, int y)

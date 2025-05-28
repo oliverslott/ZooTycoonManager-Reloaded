@@ -3,9 +3,6 @@ using System.Diagnostics;
 
 namespace ZooTycoonManager
 {
-    /// <summary>
-    /// Manages command execution, undo, and redo operations
-    /// </summary>
     public class CommandManager
     {
         private static CommandManager _instance;
@@ -14,7 +11,7 @@ namespace ZooTycoonManager
         private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
         private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
         
-        private const int MAX_UNDO_HISTORY = 50; // Limit undo history to prevent memory issues
+        private const int MAX_UNDO_HISTORY = 50;
         
         public static CommandManager Instance
         {
@@ -35,27 +32,19 @@ namespace ZooTycoonManager
         }
         
         private CommandManager() { }
-        
-        /// <summary>
-        /// Execute a command and add it to the undo stack
-        /// </summary>
-        /// <param name="command">The command to execute</param>
         public void ExecuteCommand(ICommand command)
         {
             try
             {
                 bool success = command.Execute();
                 
-                // Only add to undo stack if the command executed successfully
                 if (success)
                 {
-                    // Add to undo stack
                     _undoStack.Push(command);
                     
-                    // Clear redo stack since we've executed a new command
                     _redoStack.Clear();
                     
-                    // Limit undo history
+
                     if (_undoStack.Count > MAX_UNDO_HISTORY)
                     {
                         var tempStack = new Stack<ICommand>();
@@ -82,11 +71,7 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Exception while executing command: {command.Description}. Error: {ex.Message}");
             }
         }
-        
-        /// <summary>
-        /// Undo the last command
-        /// </summary>
-        /// <returns>True if undo was successful, false if no commands to undo</returns>
+
         public bool Undo()
         {
             if (_undoStack.Count == 0)
@@ -110,11 +95,7 @@ namespace ZooTycoonManager
                 return false;
             }
         }
-        
-        /// <summary>
-        /// Redo the last undone command
-        /// </summary>
-        /// <returns>True if redo was successful, false if no commands to redo</returns>
+
         public bool Redo()
         {
             if (_redoStack.Count == 0)
@@ -136,7 +117,6 @@ namespace ZooTycoonManager
                 }
                 else
                 {
-                    // Put the command back on the redo stack if it failed
                     _redoStack.Push(command);
                     Debug.WriteLine($"Failed to redo command: {command.Description}");
                     return false;
@@ -148,36 +128,21 @@ namespace ZooTycoonManager
                 return false;
             }
         }
-        
-        /// <summary>
-        /// Check if undo is available
-        /// </summary>
+
         public bool CanUndo => _undoStack.Count > 0;
         
-        /// <summary>
-        /// Check if redo is available
-        /// </summary>
         public bool CanRedo => _redoStack.Count > 0;
-        
-        /// <summary>
-        /// Get the description of the next command that would be undone
-        /// </summary>
+
         public string GetUndoDescription()
         {
             return _undoStack.Count > 0 ? _undoStack.Peek().Description : "Nothing to undo";
         }
-        
-        /// <summary>
-        /// Get the description of the next command that would be redone
-        /// </summary>
+
         public string GetRedoDescription()
         {
             return _redoStack.Count > 0 ? _redoStack.Peek().Description : "Nothing to redo";
         }
-        
-        /// <summary>
-        /// Clear all command history
-        /// </summary>
+
         public void Clear()
         {
             _undoStack.Clear();

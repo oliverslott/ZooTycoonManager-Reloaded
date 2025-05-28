@@ -155,6 +155,145 @@ namespace ZooTycoonManager
             }
         }
 
+        private void SaveHabitats(SqliteTransaction transaction, List<Habitat> habitats)
+        {
+            foreach (Habitat habitatInstance in habitats)
+            {
+                Debug.WriteLine($"Attempting to save Habitat ID: {habitatInstance.HabitatId}, Name: {habitatInstance.Name}, Type: {habitatInstance.Type}");
+                if (habitatInstance is ISaveable saveableObject)
+                {
+                    saveableObject.Save(transaction);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Habitat ID {habitatInstance.HabitatId} Name: {habitatInstance.Name} is not ISaveable and was not saved.");
+                }
+            }
+        }
+
+        private void SaveAnimals(SqliteTransaction transaction, List<Habitat> habitats)
+        {
+            foreach (Animal animalInstance in habitats.SelectMany(x => x.GetAnimals()))
+            {
+                Debug.WriteLine($"Attempting to save Animal ID: {animalInstance.AnimalId}, Name: {animalInstance.Name}, HabitatID: {animalInstance.HabitatId}");
+                if (animalInstance is ISaveable saveableObject)
+                {
+                    saveableObject.Save(transaction);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Animal ID {animalInstance.AnimalId} Name: {animalInstance.Name} is not ISaveable and was not saved.");
+                }
+            }
+        }
+
+        private void SaveVisitors(SqliteTransaction transaction)
+        {
+            foreach (Visitor visitorInstance in GameWorld.Instance.GetVisitors())
+            {
+                Debug.WriteLine($"Attempting to save Visitor ID: {visitorInstance.VisitorId}, Name: {visitorInstance.Name}");
+                if (visitorInstance is ISaveable saveableObject)
+                {
+                    saveableObject.Save(transaction);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Visitor ID {visitorInstance.VisitorId} Name: {visitorInstance.Name} is not ISaveable and was not saved.");
+                }
+            }
+        }
+
+        private void SaveCurrentMoney(SqliteTransaction transaction)
+        {
+            var saveMoneyCmd = _connection.CreateCommand();
+            saveMoneyCmd.Transaction = transaction;
+            saveMoneyCmd.CommandText = "UPDATE GameVariables SET value_numeric = @money WHERE key = 'CurrentMoney'";
+            saveMoneyCmd.Parameters.AddWithValue("@money", MoneyManager.Instance.CurrentMoney);
+            saveMoneyCmd.ExecuteNonQuery();
+        }
+
+        private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds)
+        {
+            var deleteCmd = _connection.CreateCommand();
+            deleteCmd.Transaction = transaction;
+
+            deleteCmd.CommandText = @"
+                DELETE FROM [Transaction] 
+                WHERE visitor_id NOT IN (SELECT visitor_id FROM Visitor)";
+            deleteCmd.ExecuteNonQuery();
+
+            deleteCmd.CommandText = @"
+                DELETE FROM VisitorFavoriteSpecies 
+                WHERE visitor_id NOT IN (SELECT visitor_id FROM Visitor)";
+            deleteCmd.ExecuteNonQuery();
+
+            if (currentAnimalIds.Any())
+            {
+                deleteCmd.CommandText = @"
+                    DELETE FROM Animal 
+                    WHERE animal_id NOT IN (" + string.Join(",", currentAnimalIds) + ")";
+                deleteCmd.ExecuteNonQuery();
+            }
+            else
+            {
+                deleteCmd.CommandText = "DELETE FROM Animal";
+                deleteCmd.ExecuteNonQuery();
+            }
+
+            if (currentVisitorIds.Any())
+            {
+                deleteCmd.CommandText = @"
+                    DELETE FROM Visitor 
+                    WHERE visitor_id NOT IN (" + string.Join(",", currentVisitorIds) + ")";
+                deleteCmd.ExecuteNonQuery();
+            }
+            else
+            {
+                deleteCmd.CommandText = "DELETE FROM Visitor";
+                deleteCmd.ExecuteNonQuery();
+            }
+
+            if (currentHabitatIds.Any())
+            {
+                deleteCmd.CommandText = @"
+                    DELETE FROM Habitat 
+                    WHERE habitat_id NOT IN (" + string.Join(",", currentHabitatIds) + ")";
+                deleteCmd.ExecuteNonQuery();
+            }
+            else
+            {
+                deleteCmd.CommandText = "DELETE FROM Habitat";
+                deleteCmd.ExecuteNonQuery();
+            }
+        }
+
+        private void SaveRoadTiles(SqliteTransaction transaction)
+        {
+            var deleteCmd = _connection.CreateCommand();
+            deleteCmd.Transaction = transaction;
+            deleteCmd.CommandText = "DELETE FROM RoadTiles";
+            deleteCmd.ExecuteNonQuery();
+
+            var saveRoadTileCmd = _connection.CreateCommand();
+            saveRoadTileCmd.Transaction = transaction;
+            saveRoadTileCmd.CommandText = "INSERT INTO RoadTiles (tile_x, tile_y) VALUES (@x, @y)";
+
+            for (int x = 0; x < GameWorld.GRID_WIDTH; x++)
+            {
+                for (int y = 0; y < GameWorld.GRID_HEIGHT; y++)
+                {
+                    if (GameWorld.Instance.map.Tiles[x,y].Walkable && 
+                        GameWorld.Instance.map.Tiles[x,y].TextureIndex == GameWorld.ROAD_TEXTURE_INDEX)
+                    {
+                        saveRoadTileCmd.Parameters.Clear();
+                        saveRoadTileCmd.Parameters.AddWithValue("@x", x);
+                        saveRoadTileCmd.Parameters.AddWithValue("@y", y);
+                        saveRoadTileCmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
         public void SaveGame(List<Habitat> habitats)
         {
             Debug.WriteLine("Save Game button clicked. Saving game state...");
@@ -162,139 +301,16 @@ namespace ZooTycoonManager
             {
                 try
                 {
-                    // Get all current IDs from the game state
                     var currentHabitatIds = habitats.Select(h => h.HabitatId).ToList();
                     var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
                     var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
 
-                    // First save all current game state
-                    foreach (Habitat habitatInstance in habitats)
-                    {
-                        Debug.WriteLine($"Attempting to save Habitat ID: {habitatInstance.HabitatId}, Name: {habitatInstance.Name}, Type: {habitatInstance.Type}");
-                        if (habitatInstance is ISaveable saveableObject)
-                        {
-                            saveableObject.Save(transaction);
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Warning: Habitat ID {habitatInstance.HabitatId} Name: {habitatInstance.Name} is not ISaveable and was not saved.");
-                        }
-                    }
-
-                    foreach (Animal animalInstance in habitats.SelectMany(x => x.GetAnimals()))
-                    {
-                        Debug.WriteLine($"Attempting to save Animal ID: {animalInstance.AnimalId}, Name: {animalInstance.Name}, HabitatID: {animalInstance.HabitatId}");
-                        if (animalInstance is ISaveable saveableObject)
-                        {
-                            saveableObject.Save(transaction);
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Warning: Animal ID {animalInstance.AnimalId} Name: {animalInstance.Name} is not ISaveable and was not saved.");
-                        }
-                    }
-
-                    // Save visitors
-                    foreach (Visitor visitorInstance in GameWorld.Instance.GetVisitors())
-                    {
-                        Debug.WriteLine($"Attempting to save Visitor ID: {visitorInstance.VisitorId}, Name: {visitorInstance.Name}");
-                        if (visitorInstance is ISaveable saveableObject)
-                        {
-                            saveableObject.Save(transaction);
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Warning: Visitor ID {visitorInstance.VisitorId} Name: {visitorInstance.Name} is not ISaveable and was not saved.");
-                        }
-                    }
-
-                    // Save current money
-                    var saveMoneyCmd = _connection.CreateCommand();
-                    saveMoneyCmd.Transaction = transaction;
-                    saveMoneyCmd.CommandText = "UPDATE GameVariables SET value_numeric = @money WHERE key = 'CurrentMoney'";
-                    saveMoneyCmd.Parameters.AddWithValue("@money", MoneyManager.Instance.CurrentMoney);
-                    saveMoneyCmd.ExecuteNonQuery();
-
-                    // Now delete objects that no longer exist in the game state
-                    var deleteCmd = _connection.CreateCommand();
-                    deleteCmd.Transaction = transaction;
-
-                    // Delete transactions for removed visitors
-                    deleteCmd.CommandText = @"
-                        DELETE FROM [Transaction] 
-                        WHERE visitor_id NOT IN (SELECT visitor_id FROM Visitor)";
-                    deleteCmd.ExecuteNonQuery();
-
-                    // Delete visitor favorite species for removed visitors
-                    deleteCmd.CommandText = @"
-                        DELETE FROM VisitorFavoriteSpecies 
-                        WHERE visitor_id NOT IN (SELECT visitor_id FROM Visitor)";
-                    deleteCmd.ExecuteNonQuery();
-
-                    // Delete animals that no longer exist
-                    if (currentAnimalIds.Any())
-                    {
-                        deleteCmd.CommandText = @"
-                            DELETE FROM Animal 
-                            WHERE animal_id NOT IN (" + string.Join(",", currentAnimalIds) + ")";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        deleteCmd.CommandText = "DELETE FROM Animal";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-
-                    // Delete visitors that no longer exist
-                    if (currentVisitorIds.Any())
-                    {
-                        deleteCmd.CommandText = @"
-                            DELETE FROM Visitor 
-                            WHERE visitor_id NOT IN (" + string.Join(",", currentVisitorIds) + ")";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        deleteCmd.CommandText = "DELETE FROM Visitor";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-
-                    // Delete habitats that no longer exist
-                    if (currentHabitatIds.Any())
-                    {
-                        deleteCmd.CommandText = @"
-                            DELETE FROM Habitat 
-                            WHERE habitat_id NOT IN (" + string.Join(",", currentHabitatIds) + ")";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-                    else
-                    {
-                        deleteCmd.CommandText = "DELETE FROM Habitat";
-                        deleteCmd.ExecuteNonQuery();
-                    }
-
-                    // Clear and save road tiles
-                    deleteCmd.CommandText = "DELETE FROM RoadTiles";
-                    deleteCmd.ExecuteNonQuery();
-
-                    var saveRoadTileCmd = _connection.CreateCommand();
-                    saveRoadTileCmd.Transaction = transaction;
-                    saveRoadTileCmd.CommandText = "INSERT INTO RoadTiles (tile_x, tile_y) VALUES (@x, @y)";
-
-                    for (int x = 0; x < GameWorld.GRID_WIDTH; x++)
-                    {
-                        for (int y = 0; y < GameWorld.GRID_HEIGHT; y++)
-                        {
-                            if (GameWorld.Instance.map.Tiles[x,y].Walkable && 
-                                GameWorld.Instance.map.Tiles[x,y].TextureIndex == GameWorld.ROAD_TEXTURE_INDEX)
-                            {
-                                saveRoadTileCmd.Parameters.Clear();
-                                saveRoadTileCmd.Parameters.AddWithValue("@x", x);
-                                saveRoadTileCmd.Parameters.AddWithValue("@y", y);
-                                saveRoadTileCmd.ExecuteNonQuery();
-                            }
-                        }
-                    }
+                    SaveHabitats(transaction, habitats);
+                    SaveAnimals(transaction, habitats);
+                    SaveVisitors(transaction);
+                    SaveCurrentMoney(transaction);
+                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds);
+                    SaveRoadTiles(transaction);
 
                     transaction.Commit();
                     Debug.WriteLine("Game state saved successfully.");
@@ -321,114 +337,139 @@ namespace ZooTycoonManager
             }
         }
 
+        private decimal LoadCurrentMoney()
+        {
+            decimal currentMoney = 20000;
+            var moneyCommand = _connection.CreateCommand();
+            moneyCommand.CommandText = "SELECT value_numeric FROM GameVariables WHERE key = 'CurrentMoney'";
+            var moneyResult = moneyCommand.ExecuteScalar();
+            if (moneyResult != null && moneyResult != DBNull.Value)
+            {
+                currentMoney = Convert.ToDecimal(moneyResult);
+            }
+            return currentMoney;
+        }
+
+        private List<Habitat> LoadHabitats(ContentManager content, out int nextHabitatId)
+        {
+            var loadedHabitats = new List<Habitat>();
+            nextHabitatId = 1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT habitat_id, size, max_animals, name, type, position_x, position_y FROM Habitat";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var habitat = new Habitat(Vector2.Zero, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+                    habitat.Load(reader);
+                    loadedHabitats.Add(habitat);
+
+                    if (habitat.HabitatId >= nextHabitatId)
+                    {
+                        nextHabitatId = habitat.HabitatId + 1;
+                    }
+                }
+            }
+            return loadedHabitats;
+        }
+
+        private void LoadAnimals(ContentManager content, List<Habitat> loadedHabitats, out int nextAnimalId)
+        {
+            nextAnimalId = 1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y FROM Animal";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var animal = new Animal();
+                    animal.Load(reader);
+                    animal.LoadContent(content);
+
+                    var habitat = loadedHabitats.FirstOrDefault(h => h.HabitatId == animal.HabitatId);
+                    if (habitat != null)
+                    {
+                        animal.SetHabitat(habitat);
+                        habitat.AddAnimal(animal);
+                    }
+
+                    if (animal.AnimalId >= nextAnimalId)
+                    {
+                        nextAnimalId = animal.AnimalId + 1;
+                    }
+                }
+            }
+        }
+
+        private void LoadVisitors(ContentManager content, out int nextVisitorId)
+        {
+            nextVisitorId = 1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT visitor_id, name, money, mood, hunger, habitat_id, shop_id, position_x, position_y FROM Visitor";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var visitor = new Visitor(Vector2.Zero);
+                    visitor.Load(reader);
+                    visitor.LoadContent(content);
+                    GameWorld.Instance.GetVisitors().Add(visitor);
+
+                    if (visitor.VisitorId >= nextVisitorId)
+                    {
+                        nextVisitorId = visitor.VisitorId + 1;
+                    }
+                }
+            }
+        }
+
+        private void LoadRoadTiles()
+        {
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT tile_x, tile_y FROM RoadTiles";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    int tileX = reader.GetInt32(0);
+                    int tileY = reader.GetInt32(1);
+                    if (GameWorld.Instance != null && GameWorld.Instance.map != null)
+                    {
+                       GameWorld.Instance.UpdateTile(tileX, tileY, true, GameWorld.ROAD_TEXTURE_INDEX);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Warning: Could not load road tile at ({tileX},{tileY}) because GameWorld or map is not initialized.");
+                    }
+                }
+            }
+        }
+
         public (List<Habitat> habitats, int nextHabitatId, int nextAnimalId, int nextVisitorId, decimal currentMoney) LoadGame(ContentManager content)
         {
             Debug.WriteLine("Loading game state...");
-            var loadedHabitats = new List<Habitat>();
-            int nextHabitatId = 1;
-            int nextAnimalId = 1;
-            int nextVisitorId = 1;
-            decimal currentMoney = 20000; // Default starting money
+            List<Habitat> loadedHabitats;
+            int nextHabitatId, nextAnimalId, nextVisitorId;
+            decimal currentMoney;
 
             try
             {
-                // Load current money
-                var moneyCommand = _connection.CreateCommand();
-                moneyCommand.CommandText = "SELECT value_numeric FROM GameVariables WHERE key = 'CurrentMoney'";
-                var moneyResult = moneyCommand.ExecuteScalar();
-                if (moneyResult != null && moneyResult != DBNull.Value)
-                {
-                    currentMoney = Convert.ToDecimal(moneyResult);
-                }
-
-                // Load habitats
-                var command = _connection.CreateCommand();
-                command.CommandText = "SELECT habitat_id, size, max_animals, name, type, position_x, position_y FROM Habitat";
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var habitat = new Habitat(Vector2.Zero, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
-                        habitat.Load(reader);
-                        loadedHabitats.Add(habitat);
-
-                        if (habitat.HabitatId >= nextHabitatId)
-                        {
-                            nextHabitatId = habitat.HabitatId + 1;
-                        }
-                    }
-                }
-
-                // Load animals
-                command.CommandText = "SELECT animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y FROM Animal";
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var animal = new Animal();
-                        animal.Load(reader);
-                        animal.LoadContent(content);
-
-                        // Find the habitat and add the animal to it
-                        var habitat = loadedHabitats.FirstOrDefault(h => h.HabitatId == animal.HabitatId);
-                        if (habitat != null)
-                        {
-                            animal.SetHabitat(habitat);
-                            habitat.AddAnimal(animal);
-                        }
-
-                        if (animal.AnimalId >= nextAnimalId)
-                        {
-                            nextAnimalId = animal.AnimalId + 1;
-                        }
-                    }
-                }
-
-                // Load visitors
-                command.CommandText = "SELECT visitor_id, name, money, mood, hunger, habitat_id, shop_id, position_x, position_y FROM Visitor";
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var visitor = new Visitor(Vector2.Zero);
-                        visitor.Load(reader);
-                        visitor.LoadContent(content);
-                        GameWorld.Instance.GetVisitors().Add(visitor);
-
-                        if (visitor.VisitorId >= nextVisitorId)
-                        {
-                            nextVisitorId = visitor.VisitorId + 1;
-                        }
-                    }
-                }
-
-                // Load road tiles
-                command.CommandText = "SELECT tile_x, tile_y FROM RoadTiles";
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        int tileX = reader.GetInt32(0);
-                        int tileY = reader.GetInt32(1);
-                        // Ensure GameWorld and its map are ready before calling UpdateTile
-                        // This assumes GameWorld.Instance and GameWorld.Instance.map are initialized
-                        // by the time LoadGame is called and before this section runs.
-                        if (GameWorld.Instance != null && GameWorld.Instance.map != null)
-                        {
-                           GameWorld.Instance.UpdateTile(tileX, tileY, true, GameWorld.ROAD_TEXTURE_INDEX);
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"Warning: Could not load road tile at ({tileX},{tileY}) because GameWorld or map is not initialized.");
-                        }
-                    }
-                }
+                currentMoney = LoadCurrentMoney();
+                loadedHabitats = LoadHabitats(content, out nextHabitatId);
+                LoadAnimals(content, loadedHabitats, out nextAnimalId);
+                LoadVisitors(content, out nextVisitorId);
+                LoadRoadTiles();
 
                 Debug.WriteLine("Game state loaded successfully.");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading game state: {ex.Message}");
+                loadedHabitats = new List<Habitat>();
+                nextHabitatId = 1;
+                nextAnimalId = 1;
+                nextVisitorId = 1;
+                currentMoney = 20000;
             }
 
             return (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId, currentMoney);
