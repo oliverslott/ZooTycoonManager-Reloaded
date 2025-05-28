@@ -75,5 +75,27 @@ namespace ZooTycoonManager
                 button.Draw(spriteBatch);
             }
         }
+
+        public void Reposition(Vector2 newPosition)
+        {
+            position = newPosition;
+
+            int padding = 10;
+            int spacing = 10;
+            int buttonHeight = buttons[0].GetHeight();
+            int buttonWidth = buttons[0].GetWidth();
+
+            int backgroundWidth = buttonWidth + padding * 2;
+            int backgroundHeight = buttons.Count * buttonHeight + (buttons.Count - 1) * spacing + padding * 2;
+
+            backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
+
+            // Re-position buttons
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                Vector2 newButtonPos = new Vector2(position.X + padding, position.Y + padding + i * (buttonHeight + spacing));
+                buttons[i].SetPosition(newButtonPos);
+            }
+        }
     }
 }

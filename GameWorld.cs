@@ -152,6 +152,16 @@ namespace ZooTycoonManager
                 _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+                Vector2 newShopPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    90
+);
+                _shopWindow.Reposition(newShopPos);
+                Vector2 newShopButtonPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
+                    30
+);
+                shopButton.SetPosition(newShopButtonPos);
             }
         }
 
@@ -414,6 +424,16 @@ namespace ZooTycoonManager
             }
             _graphics.ApplyChanges();
             _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+            Vector2 newShopPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    90
+);
+            _shopWindow.Reposition(newShopPos);
+            Vector2 newShopButtonPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
+                30
+);
+            shopButton.SetPosition(newShopButtonPos);
         }
 
         

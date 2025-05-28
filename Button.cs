@@ -11,6 +11,8 @@ public class Button
     private Rectangle rectangle;
     private Rectangle bounds;
     private SpriteFont font;
+    public int GetWidth() => backgroundTexture.Width;
+    public int GetHeight() => backgroundTexture.Height;
 
     public string Text { get; set; }
     public bool IsClicked { get; private set; }
@@ -53,6 +55,11 @@ public class Button
             spriteBatch.DrawString(font, Text, textPosition, Color.Black);
         }
     }
+    public void SetPosition(Vector2 newPosition)
+    {
+        position = newPosition;
+        bounds = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
+    }
 
-   
+
 }
