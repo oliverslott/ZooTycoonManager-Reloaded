@@ -1,8 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -33,6 +33,16 @@ namespace ZooTycoonManager
         TileRenderer tileRenderer;
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
+        private Texture2D _habitatPreviewTexture;
+
+        // UI
+        Button shopButton;
+        Texture2D shopIconTexture;
+        private ShopWindow _shopWindow;
+        SubMenuWindow _buildingsMenu;
+        SubMenuWindow _habitatMenu;
+        SubMenuWindow _animalMenu;
+        SubMenuWindow _zookeeperMenu;
 
         // Static Tree Deco
         private Texture2D _treeTexture;
@@ -48,6 +58,14 @@ namespace ZooTycoonManager
 
         // Walkable map for pathfinding
         public bool[,] WalkableMap { get; private set; }
+
+        private enum PlacementMode
+        {
+            None,
+            PlaceMediumHabitat
+        }
+
+        private PlacementMode _currentPlacement = PlacementMode.None;
 
         // Fence and enclosure management
         private bool isPlacingEnclosure = true;
@@ -115,7 +133,7 @@ namespace ZooTycoonManager
             _graphics.IsFullScreen = false;
             Window.AllowUserResizing = true;
             _graphics.ApplyChanges();
-            
+
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
@@ -124,7 +142,7 @@ namespace ZooTycoonManager
             TargetElapsedTime = TimeSpan.FromTicks(1);
 
             // Initialize map first
-            map = new Map(GRID_WIDTH, GRID_HEIGHT); 
+            map = new Map(GRID_WIDTH, GRID_HEIGHT);
 
             // Initialize camera
             _camera = new Camera(_graphics);
@@ -141,6 +159,24 @@ namespace ZooTycoonManager
             // Set visitor spawn/exit to tile (0,0)
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
             _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); // Initialize new exit position
+            // Find the top-most path tile for visitor spawning
+            Vector2 pathSpawnTile = Vector2.Zero; // Default to top-left if no path found
+            bool foundSpawn = false;
+            for (int y = 0; y < GRID_HEIGHT; y++)
+            {
+                for (int x = 0; x < GRID_WIDTH; x++)
+                {
+                    // TextureIndex 1 is the path tile (Dirt1)
+                    if (map.Tiles[x, y].TextureIndex == 1)
+                    {
+                        pathSpawnTile = new Vector2(x, y);
+                        foundSpawn = true;
+                        break;
+                    }
+                }
+                if (foundSpawn) break;
+            }
+            _visitorSpawnPosition = TileToPixel(pathSpawnTile);
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
@@ -157,6 +193,25 @@ namespace ZooTycoonManager
                 _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+                Vector2 newShopPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    90
+);
+                _shopWindow.Reposition(newShopPos);
+                Vector2 newShopButtonPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
+                    30
+);
+                shopButton.SetPosition(newShopButtonPos);
+                Vector2 newSubMenuPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                90
+);
+
+                _buildingsMenu.Reposition(newSubMenuPos);
+                _habitatMenu.Reposition(newSubMenuPos);
+                _animalMenu.Reposition(newSubMenuPos);
+                _zookeeperMenu.Reposition(newSubMenuPos);
             }
         }
 
@@ -195,6 +250,35 @@ namespace ZooTycoonManager
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");  // Load the font
             _fpsCounter = new FPSCounter(_font, _graphics);  // Initialize FPS counter with graphics manager
+            _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
+
+
+            Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
+            Texture2D iconTexture = Content.Load<Texture2D>("Regular_07");       // Brug det rigtige navn
+
+            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - backgroundTexture.Width - 10, 30);
+            shopButton = new Button(backgroundTexture, iconTexture, shopButtonPosition);
+
+            Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
+            Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
+            SpriteFont font = Content.Load<SpriteFont>("font");
+
+            string[] buildings = { "Tiles", "Visitor Shop", "Tree", "Waterhole" };
+            string[] habitattype = { "Small", "Medium", "Large" };
+            string[] animals = { "Buffalo", "Turtle", "Chimpanzee", "Camel", "Orangutang", "Kangaroo", "Wolf", "Bear", "Elephant", "Polarbear" };
+            string[] zookeepers = { "Experienced Zookeeper" };
+
+            Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
+
+            _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, buildings);
+            _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, habitattype);
+            _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, animals);
+            _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, zookeepers);
+
+            // Lav shop window
+            Vector2 shopWindowPosition = new Vector2(1070, 90); // fx midt på skærmen
+            _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
+
 
             // Initialize MoneyDisplay here after _font is loaded
             Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
@@ -227,6 +311,7 @@ namespace ZooTycoonManager
 
         MouseState prevMouseState;
         KeyboardState prevKeyboardState;
+
 
         private void PlaceFence(Vector2 pixelPosition)
         {
@@ -351,17 +436,35 @@ namespace ZooTycoonManager
             }
 
             // Handle Ctrl+Z for undo
-            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) && 
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) &&
                 !prevKeyboardState.IsKeyDown(Keys.Z))
             {
                 CommandManager.Instance.Undo();
             }
 
             // Handle Ctrl+Y for redo
-            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) && 
+            if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Y) &&
                 !prevKeyboardState.IsKeyDown(Keys.Y))
             {
                 CommandManager.Instance.Redo();
+            }
+
+            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
+            {
+                Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+
+                if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+                {
+                    // Placer habitat via kommando
+                    var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
+                    CommandManager.Instance.ExecuteCommand(command);
+
+                    _currentPlacement = PlacementMode.None; // Exit placement mode
+                }
+                else
+                {
+                    // evt. eksisterende logik for andre klik
+                }
             }
 
             // Handle right mouse button for fence placement
@@ -386,6 +489,27 @@ namespace ZooTycoonManager
                 }
                 _visitorsToDespawn.Clear();
             }
+            MouseState mouseState = Mouse.GetState();
+            shopButton.Update(mouseState, prevMouseState);
+
+            // Når du klikker på shop-ikonet, viser vi vinduet
+            if (shopButton.IsClicked)
+            {
+                // Toggle shop window
+                _shopWindow.IsVisible = !_shopWindow.IsVisible;
+
+                // Luk alle under-menuer, uanset hvad
+                _buildingsMenu.IsVisible = false;
+                _habitatMenu.IsVisible = false;
+                _animalMenu.IsVisible = false;
+                _zookeeperMenu.IsVisible = false;
+            }
+
+            _shopWindow.Update(gameTime, mouseState, prevMouseState);
+            _buildingsMenu.Update(mouseState, prevMouseState);
+            _habitatMenu.Update(mouseState, prevMouseState);
+            _animalMenu.Update(mouseState, prevMouseState);
+            _zookeeperMenu.Update(mouseState, prevMouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
@@ -410,7 +534,28 @@ namespace ZooTycoonManager
             }
             _graphics.ApplyChanges();
             _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
+            Vector2 newShopPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    90
+);
+            _shopWindow.Reposition(newShopPos);
+            Vector2 newShopButtonPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
+                30
+);
+            shopButton.SetPosition(newShopButtonPos);
+            Vector2 newSubMenuPos = new Vector2(
+                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                90
+);
+
+            _buildingsMenu.Reposition(newSubMenuPos);
+            _habitatMenu.Reposition(newSubMenuPos);
+            _animalMenu.Reposition(newSubMenuPos);
+            _zookeeperMenu.Reposition(newSubMenuPos);
+
         }
+
 
         protected override void Draw(GameTime gameTime)
         {
@@ -472,7 +617,40 @@ namespace ZooTycoonManager
             {
                 visitor.Draw(_spriteBatch);
             }
+            if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+            {
+                Vector2 mousePos = Mouse.GetState().Position.ToVector2();
+                Vector2 worldMouse = _camera.ScreenToWorld(mousePos);
 
+                // Snap til nærmeste tile
+                Vector2 snappedTile = new Vector2(
+                    (int)(worldMouse.X / TILE_SIZE),
+                    (int)(worldMouse.Y / TILE_SIZE)
+                );
+
+                Vector2 snappedPos = new Vector2(
+                    snappedTile.X * TILE_SIZE,
+                    snappedTile.Y * TILE_SIZE
+                );
+
+                int habitatSize = Habitat.DEFAULT_ENCLOSURE_SIZE; // fx 5
+                int previewPixelSize = (int)(habitatSize * TILE_SIZE * 1.25f); // 5% større
+                //int previewPixelSize = 165;
+
+                // Justér til midten af habitat
+                Vector2 previewTopLeft = snappedPos + new Vector2(TILE_SIZE / 2) - new Vector2(previewPixelSize / 2);
+
+                Rectangle destRect = new Rectangle(
+                    (int)previewTopLeft.X,
+                    (int)previewTopLeft.Y,
+                    previewPixelSize,
+                    previewPixelSize
+                );
+
+                _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f); // Halvgennemsigtig
+            }
+
+            // VIGTIGT! Luk det første Begin!
             _spriteBatch.End();
 
             // Draw UI elements without camera offset
@@ -485,6 +663,7 @@ namespace ZooTycoonManager
             string instructions = "Press right click for habitat\nPress 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
+            
 
             // Draw current money from MoneyDisplay
             _moneyDisplay.Draw(_spriteBatch);
@@ -493,6 +672,15 @@ namespace ZooTycoonManager
             Vector2 undoRedoPosition = new Vector2(10, 40);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
+
+            // Tegn shop knappen
+            shopButton.Draw(_spriteBatch);
+            shopButton.Draw(_spriteBatch);
+            _shopWindow.Draw(_spriteBatch);
+            _buildingsMenu.Draw(_spriteBatch);
+            _habitatMenu.Draw(_spriteBatch);
+            _animalMenu.Draw(_spriteBatch);
+            _zookeeperMenu.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
@@ -546,7 +734,7 @@ namespace ZooTycoonManager
             }
             else if (visitor != null && visitors.Contains(visitor) && !_visitorsToDespawn.Contains(visitor)) // Standard case: visitor exists in main list and not yet in despawn queue
             {
-                 _visitorsToDespawn.Add(visitor);
+                _visitorsToDespawn.Add(visitor);
                 Debug.WriteLine($"Visitor {visitor.VisitorId} confirmed exit and added to despawn queue.");
             }
             else if (visitor != null && _visitorsToDespawn.Contains(visitor))
@@ -721,6 +909,47 @@ namespace ZooTycoonManager
                 Vector2 tilePos = new Vector2(GRID_WIDTH, y);
                 _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
                 _boundaryFenceTileCoordinates.Add(tilePos);
+        public void ShowSubMenu(string type)
+        {
+            // Hvis den allerede er åben → luk den
+            if ((type == "Buildings" && _buildingsMenu.IsVisible) ||
+                (type == "Habitats" && _habitatMenu.IsVisible) ||
+                (type == "Animals" && _animalMenu.IsVisible) ||
+                (type == "Zookeepers" && _zookeeperMenu.IsVisible))
+            {
+                _buildingsMenu.IsVisible = false;
+                _habitatMenu.IsVisible = false;
+                _animalMenu.IsVisible = false;
+                _zookeeperMenu.IsVisible = false;
+                return;
+            }
+
+            // Ellers → vis den ønskede og luk de andre
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            switch (type)
+            {
+                case "Buildings": _buildingsMenu.IsVisible = true; break;
+                case "Habitats": _habitatMenu.IsVisible = true; break;
+                case "Animals": _animalMenu.IsVisible = true; break;
+                case "Zookeepers": _zookeeperMenu.IsVisible = true; break;
+            }
+
+        }
+        public void StartHabitatPlacement(string size)
+        {
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            if (size == "Medium")
+            {
+                _currentPlacement = PlacementMode.PlaceMediumHabitat;
+                Console.WriteLine("Placement mode: Medium Habitat activated");
             }
         }
     }
