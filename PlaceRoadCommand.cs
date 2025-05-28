@@ -28,6 +28,16 @@ namespace ZooTycoonManager
                 return false;
             }
 
+            // Check if the tile is part of any habitat
+            foreach (var habitat in GameWorld.Instance.GetHabitats())
+            {
+                if (habitat.ContainsPosition(GameWorld.TileToPixel(_tilePosition)))
+                {
+                    Debug.WriteLine($"Cannot place road: Position ({x}, {y}) is part of an existing habitat.");
+                    return false;
+                }
+            }
+
             GameWorld.Instance.UpdateTile(x, y, true, ROAD_TEXTURE_INDEX);
 
             Debug.WriteLine($"Executed: Placed road tile at ({x}, {y}). Original was Walkable: {_originalTile.Walkable}, Texture: {_originalTile.TextureIndex}");

@@ -151,21 +151,21 @@ namespace ZooTycoonManager
                     
                     if (availableSpots.Count > 0)
                     {
-                        Vector2 visitPosition = availableSpots[random.Next(availableSpots.Count)];
+                        Vector2 visitTilePosition = availableSpots[random.Next(availableSpots.Count)];
                         if (randomHabitat.TryEnterHabitatSync(this))
                         {
-                            PathfindTo(visitPosition);
+                            PathfindTo(visitTilePosition);
 
                             if (path == null || path.Count == 0)
                             {
-                                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot {visitPosition} from {Position} failed. Releasing spot.");
+                                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}) failed. Releasing spot.");
                                 randomHabitat.LeaveHabitat(this);
                             }
                             else
                             {
                                 currentHabitat = randomHabitat;
                                 currentVisitTime = 0f;
-                                Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot {visitPosition} from {Position}. Path length: {path.Count}");
+                                Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}). Path length: {path.Count}");
                                 return;
                             }
                         }
@@ -179,8 +179,7 @@ namespace ZooTycoonManager
             if (walkableTiles.Count > 0)
             {
                 Vector2 randomTilePos = walkableTiles[random.Next(walkableTiles.Count)];
-                Vector2 randomPixelPos = GameWorld.TileToPixel(randomTilePos);
-                PathfindTo(randomPixelPos);
+                PathfindTo(randomTilePos);
             }
             else
             {
@@ -188,19 +187,18 @@ namespace ZooTycoonManager
             }
         }
 
-        public void PathfindTo(Vector2 targetDestination)
+        public void PathfindTo(Vector2 targetTileDestination)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
 
             _pathfindingStartPos = position;
-            _pathfindingTargetPos = targetDestination;
+            _pathfindingTargetPos = GameWorld.TileToPixel(targetTileDestination);
 
             Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
-            Vector2 targetTile = GameWorld.PixelToTile(_pathfindingTargetPos);
             
             List<Node> calculatedPath = pathfinder.FindPath(
                 (int)startTile.X, (int)startTile.Y,
-                (int)targetTile.X, (int)targetTile.Y);
+                (int)targetTileDestination.X, (int)targetTileDestination.Y);
 
             path = calculatedPath;
             currentNodeIndex = 0;
@@ -231,6 +229,20 @@ namespace ZooTycoonManager
 
         private void Update(GameTime gameTime)
         {
+            UpdateHunger(gameTime);
+            UpdateHabitatVisit(gameTime);
+
+            if (!_isExiting)
+            {
+                TryRandomWalk(gameTime);
+            }
+
+            UpdatePathFollowing(gameTime);
+            HandlePathCompletion();
+        }
+
+        private void UpdateHunger(GameTime gameTime)
+        {
             _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (_uncommittedHungerPoints >= 1.0f)
@@ -243,7 +255,10 @@ namespace ZooTycoonManager
                 }
                 _uncommittedHungerPoints -= wholePointsToAdd;
             }
+        }
 
+        private void UpdateHabitatVisit(GameTime gameTime)
+        {
             if (!_isExiting && currentHabitat != null)
             {
                 if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
@@ -265,21 +280,10 @@ namespace ZooTycoonManager
                     }
                 }
             }
+        }
 
-
-            if (!_isExiting) 
-            {
-                TryRandomWalk(gameTime);
-            }
-
-
-            if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
-            {
-                _isRunning = false;
-                GameWorld.Instance.ConfirmDespawn(this);
-                return; 
-            }
-
+        private void UpdatePathFollowing(GameTime gameTime)
+        {
             if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
             {
                 return;
@@ -287,7 +291,6 @@ namespace ZooTycoonManager
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
             float remainingMoveThisFrame = speed * deltaTime;
-
 
             while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
             {
@@ -318,11 +321,20 @@ namespace ZooTycoonManager
                     remainingMoveThisFrame = 0;
                 }
             }
+        }
 
-            if (currentNodeIndex >= path.Count) 
+        private void HandlePathCompletion()
+        {
+            if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
             {
-                Vector2 pathEndTargetForLog = _pathfindingTargetPos;
-                path = null; 
+                _isRunning = false;
+                GameWorld.Instance.ConfirmDespawn(this);
+                return;
+            }
+
+            if (path != null && currentNodeIndex >= path.Count)
+            {
+                path = null;
                 currentNodeIndex = 0;
 
                 if (_isExiting)
@@ -461,8 +473,8 @@ namespace ZooTycoonManager
             currentVisitTime = 0f;
             timeSinceLastRandomWalk = float.MinValue;
 
-
-            PathfindTo(_exitTargetPosition);
+            Vector2 exitTargetTile = GameWorld.PixelToTile(_exitTargetPosition);
+            PathfindTo(exitTargetTile);
         }
     }
 }

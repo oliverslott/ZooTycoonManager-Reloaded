@@ -222,10 +222,8 @@ namespace ZooTycoonManager
                 return;
             }
 
-            Vector2 pixelPos = GameWorld.TileToPixel(tilePos);
-            
             GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
-            AddFencePosition(pixelPos);
+            AddFencePosition(tilePos);
             fenceTileCoordinates.Add(tilePos);
         }
 
@@ -266,10 +264,8 @@ namespace ZooTycoonManager
                 return visitingSpots.ToList();
             }
 
-            foreach (Vector2 fencePixelPos in fencePositions)
+            foreach (Vector2 fenceTilePos in fencePositions)
             {
-                Vector2 fenceTilePos = GameWorld.PixelToTile(fencePixelPos);
-
                 int[] dx = { 0, 0, 1, -1 };
                 int[] dy = { 1, -1, 0, 0 };
 
@@ -281,10 +277,12 @@ namespace ZooTycoonManager
                     if (adjacentTileX >= 0 && adjacentTileX < GameWorld.GRID_WIDTH &&
                         adjacentTileY >= 0 && adjacentTileY < GameWorld.GRID_HEIGHT)
                     {
-                        if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY])
+                        Vector2 adjacentTile = new Vector2(adjacentTileX, adjacentTileY);
+                        if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY] &&
+                            !fenceTileCoordinates.Contains(adjacentTile) && 
+                            !this.ContainsPosition(GameWorld.TileToPixel(adjacentTile)))
                         {
-                            Vector2 adjacentPixelPos = GameWorld.TileToPixel(new Vector2(adjacentTileX, adjacentTileY));
-                            visitingSpots.Add(adjacentPixelPos);
+                            visitingSpots.Add(adjacentTile);
                         }
                     }
                 }

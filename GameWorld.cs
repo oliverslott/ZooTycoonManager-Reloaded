@@ -28,7 +28,7 @@ namespace ZooTycoonManager
         private SpriteFont _font;
         public Map map { get; private set; }
         TileRenderer tileRenderer;
-        Texture2D[] tileTextures;
+        private Texture2D[] tileTextures;
         private FPSCounter _fpsCounter; 
         private Texture2D _habitatPreviewTexture;
 
@@ -45,7 +45,7 @@ namespace ZooTycoonManager
         private List<Vector2> _staticTreePositions;
         private const int NUMBER_OF_STATIC_TREES = 1000;
 
-        private List<Vector2> _boundaryFencePixelPositions;
+        private List<Vector2> _boundaryFenceTilePositions;
         private HashSet<Vector2> _boundaryFenceTileCoordinates;
 
         private MoneyDisplay _moneyDisplay;
@@ -138,7 +138,7 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>();
-            _boundaryFencePixelPositions = new List<Vector2>();
+            _boundaryFenceTilePositions = new List<Vector2>();
             _boundaryFenceTileCoordinates = new HashSet<Vector2>();
 
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
@@ -590,11 +590,9 @@ namespace ZooTycoonManager
             }
 
             // Draw boundary fences
-            if (_boundaryFencePixelPositions != null && _boundaryFencePixelPositions.Count > 0)
+            if (_boundaryFenceTilePositions != null && _boundaryFenceTilePositions.Count > 0)
             {
-                // Pass an empty HashSet for tile coordinates to use default fence texture and a scale of 1.0f
-                // FenceRenderer.Draw(_spriteBatch, _boundaryFencePixelPositions, new HashSet<Vector2>(), 1.0f);
-                FenceRenderer.Draw(_spriteBatch, _boundaryFencePixelPositions, _boundaryFenceTileCoordinates, 2.67f); // Use populated tile coordinates and habitat fence scale
+                FenceRenderer.Draw(_spriteBatch, _boundaryFenceTilePositions, _boundaryFenceTileCoordinates, 2.67f);
             }
 
             // Draw road preview if in road placement mode
@@ -866,7 +864,7 @@ namespace ZooTycoonManager
 
         private void InitializeBoundaryFences()
         {
-            _boundaryFencePixelPositions.Clear();
+            _boundaryFenceTilePositions.Clear();
             _boundaryFenceTileCoordinates.Clear();
 
             for (int x = -1; x <= GRID_WIDTH; x++)
@@ -881,28 +879,28 @@ namespace ZooTycoonManager
                 }
 
                 Vector2 tilePos = new Vector2(x, -1);
-                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTilePositions.Add(tilePos);
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
             for (int x = -1; x <= GRID_WIDTH; x++)
             {
                 Vector2 tilePos = new Vector2(x, GRID_HEIGHT);
-                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTilePositions.Add(tilePos);
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
                 Vector2 tilePos = new Vector2(-1, y);
-                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTilePositions.Add(tilePos);
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
 
             for (int y = 0; y < GRID_HEIGHT; y++)
             {
                 Vector2 tilePos = new Vector2(GRID_WIDTH, y);
-                _boundaryFencePixelPositions.Add(TileToPixel(tilePos));
+                _boundaryFenceTilePositions.Add(tilePos);
                 _boundaryFenceTileCoordinates.Add(tilePos);
             }
         }

@@ -29,7 +29,7 @@ namespace ZooTycoonManager
             fenceConnectedLeftRightTexture = content.Load<Texture2D>("fence-connected-left-right");
         }
 
-        public static void Draw(SpriteBatch spriteBatch, IEnumerable<Vector2> fencePixelPositions, HashSet<Vector2> fenceTileCoordinates, float scale)
+        public static void Draw(SpriteBatch spriteBatch, IEnumerable<Vector2> fenceTilePositions, HashSet<Vector2> fenceTileCoordinates, float scale)
         {
             if (fenceTexture == null)
             {
@@ -37,9 +37,8 @@ namespace ZooTycoonManager
                 return;
             }
 
-            foreach (Vector2 position in fencePixelPositions)
+            foreach (Vector2 tilePos in fenceTilePositions)
             {
-                Vector2 tilePos = GameWorld.PixelToTile(position);
                 bool hasLeft = fenceTileCoordinates.Contains(new Vector2(tilePos.X - 1, tilePos.Y));
                 bool hasRight = fenceTileCoordinates.Contains(new Vector2(tilePos.X + 1, tilePos.Y));
                 bool hasBottom = fenceTileCoordinates.Contains(new Vector2(tilePos.X, tilePos.Y + 1));
@@ -75,7 +74,9 @@ namespace ZooTycoonManager
                     currentFenceTexture = fenceConnectedBottomTexture;
                 }
 
-                spriteBatch.Draw(currentFenceTexture, position, null, Color.White, 0f,
+                Vector2 pixelDrawPosition = GameWorld.TileToPixel(tilePos);
+
+                spriteBatch.Draw(currentFenceTexture, pixelDrawPosition, null, Color.White, 0f,
                     new Vector2(currentFenceTexture.Width / 2, currentFenceTexture.Height / 2),
                     scale, SpriteEffects.None, 0f);
             }
