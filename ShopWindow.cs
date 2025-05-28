@@ -32,7 +32,7 @@ namespace ZooTycoonManager
             // Placer knapperne pænt
             for (int i = 0; i < buttonTexts.Length; i++)
             {
-                Vector2 buttonPosition = position + new Vector2(20, 20 + i * (buttonTexture.Height + 10));
+                Vector2 buttonPosition = position + new Vector2(10, 10 + i * (buttonTexture.Height + 10));
                 buttons.Add(new Button(buttonTexture, null, buttonPosition, buttonTexts[i], font));
             }
         }

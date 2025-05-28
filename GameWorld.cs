@@ -194,7 +194,7 @@ namespace ZooTycoonManager
             Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
             Texture2D iconTexture = Content.Load<Texture2D>("Regular_07");       // Brug det rigtige navn
 
-            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - backgroundTexture.Width - 10, 10);
+            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - backgroundTexture.Width - 10, 30);
             shopButton = new Button(backgroundTexture, iconTexture, shopButtonPosition);
 
             Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
@@ -202,7 +202,7 @@ namespace ZooTycoonManager
             SpriteFont font = Content.Load<SpriteFont>("font");
 
             // Lav shop window
-            Vector2 shopWindowPosition = new Vector2(200, 100); // fx midt på skærmen
+            Vector2 shopWindowPosition = new Vector2(1050, 90); // fx midt på skærmen
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
 
 
