@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace ZooTycoonManager
 {
-    public class Animal: ISaveable, ILoadable
+    public class Animal: ISaveable, ILoadable, IInspectableEntity
     {
         Texture2D sprite;
         List<Node> path;
@@ -21,6 +21,9 @@ namespace ZooTycoonManager
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 3f; // Time in seconds between random walks
 
+        private const float HUNGER_INCREASE_RATE = 0.5f; // Hunger points per second
+        private float _uncommittedHungerPoints = 0f; // New field for accurate hunger accumulation
+
         private Thread _pathfindingWorkerThread;
         private readonly AutoResetEvent _pathfindingRequestEvent = new AutoResetEvent(false);
         private volatile bool _workerThreadRunning = true;
@@ -30,6 +33,8 @@ namespace ZooTycoonManager
         private readonly object _pendingPathResultLock = new object();
 
         public bool IsPathfinding { get; private set; }
+        public bool IsSelected { get; set; }
+        private static Texture2D _borderTexture;
 
         //Database - TODO: Can this be moved elsewhere?
         public int AnimalId { get; set; }
@@ -38,6 +43,10 @@ namespace ZooTycoonManager
         public int Hunger { get; set; }
         public int Stress { get; set; }
         public int HabitatId { get; set; }
+
+        // IInspectableEntity explicit implementation for Id to resolve ambiguity if any other Id exists.
+        // For now, AnimalId is used.
+        int IInspectableEntity.Id => AnimalId;
 
         private Vector2 _position;
         private int _positionX;
@@ -58,6 +67,8 @@ namespace ZooTycoonManager
 
         public int PositionX => _positionX;
         public int PositionY => _positionY;
+
+        public Rectangle BoundingBox => new Rectangle((int)(Position.X - 8 * 2), (int)(Position.Y - 8 * 2), 16 * 2, 16 * 2); // Sprite is 16x16, scaled by 2, origin is 8,8
 
         public Animal(int animalId = 0)
         {
@@ -185,11 +196,30 @@ namespace ZooTycoonManager
         public void LoadContent(ContentManager contentManager)
         {
             sprite = contentManager.Load<Texture2D>("NibblingGoat");
+            if (_borderTexture == null)
+            {
+                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
+                _borderTexture.SetData(new[] { Color.White });
+            }
         }
 
         public void Update(GameTime gameTime)
         {
             TryRandomWalk(gameTime);
+
+            // Increase hunger over time more accurately
+            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_uncommittedHungerPoints >= 1.0f)
+            {
+                int wholePointsToAdd = (int)_uncommittedHungerPoints;
+                Hunger += wholePointsToAdd;
+                if (Hunger > 100)
+                {
+                    Hunger = 100;
+                }
+                _uncommittedHungerPoints -= wholePointsToAdd; // Subtract the whole points that were added
+            }
 
             if (IsPathfinding) // If a pathfinding task was initiated
             {
@@ -255,6 +285,21 @@ namespace ZooTycoonManager
         {
             if (sprite == null) return;
             spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+
+            if (IsSelected)
+            {
+                DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow);
+            }
+        }
+
+        private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
+        {
+            if (_borderTexture == null) return;
+
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, rectangleToBorder.Width, thicknessOfBorder), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle((rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder), rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y + rectangleToBorder.Height - thicknessOfBorder, rectangleToBorder.Width, thicknessOfBorder), borderColor);
         }
 
         public void Save(SqliteTransaction transaction)
@@ -320,6 +365,7 @@ namespace ZooTycoonManager
             path = null;
             currentNodeIndex = 0;
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL; // Make animal act on first update
+            _uncommittedHungerPoints = 0f; // Initialize _uncommittedHungerPoints if necessary for loaded animals, though 0f is fine.
         }
     }
 }

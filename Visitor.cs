@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace ZooTycoonManager
 {
-    public class Visitor : ISaveable, ILoadable
+    public class Visitor : ISaveable, ILoadable, IInspectableEntity
     {
         private Texture2D sprite;
         private Texture2D thoughtBubbleTexture;
@@ -37,6 +37,15 @@ namespace ZooTycoonManager
 
         private Vector2 _pathfindingStartPos;
         private Vector2 _pathfindingTargetPos;
+
+        private static Texture2D _borderTexture; // Added for selection border
+
+        private const float HUNGER_INCREASE_RATE = 0.2f; // Hunger points per second (adjust as needed)
+        private float _uncommittedHungerPoints = 0f;
+
+        // IInspectableEntity implementation
+        public bool IsSelected { get; set; } // Added for IInspectableEntity
+        int IInspectableEntity.Id => VisitorId; // Explicit implementation for Id
 
         // Database properties
         public int VisitorId { get; set; }
@@ -64,6 +73,9 @@ namespace ZooTycoonManager
 
         public int PositionX => _positionX;
         public int PositionY => _positionY;
+
+        // BoundingBox for selection, similar to Animal
+        public Rectangle BoundingBox => new Rectangle((int)(Position.X - 16), (int)(Position.Y - 16), 32, 32);
 
         public Visitor(Vector2 spawnPosition, int visitorId = 0)
         {
@@ -222,10 +234,31 @@ namespace ZooTycoonManager
             sprite = contentManager.Load<Texture2D>("Pawn_Blue_Cropped_resized");
             thoughtBubbleTexture = contentManager.Load<Texture2D>("Thought_bubble");
             animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+
+            // Load border texture if not already loaded (shared across instances)
+            if (_borderTexture == null)
+            {
+                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
+                _borderTexture.SetData(new[] { Color.White });
+            }
         }
 
         private void Update(GameTime gameTime)
         {
+            // Increase hunger over time
+            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_uncommittedHungerPoints >= 1.0f)
+            {
+                int wholePointsToAdd = (int)_uncommittedHungerPoints;
+                Hunger += wholePointsToAdd;
+                if (Hunger > 100)
+                {
+                    Hunger = 100;
+                }
+                _uncommittedHungerPoints -= wholePointsToAdd;
+            }
+
             // Habitat visiting logic (only if not exiting)
             if (!_isExiting && currentHabitat != null)
             {
@@ -355,7 +388,24 @@ namespace ZooTycoonManager
 
                     spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
                 }
+
+                // Draw selection border if selected
+                if (IsSelected)
+                {
+                    DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow); 
+                }
             }
+        }
+
+        // Method to draw border, similar to Animal.cs
+        private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
+        {
+            if (_borderTexture == null) return;
+
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, rectangleToBorder.Width, thicknessOfBorder), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle((rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder), rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y + rectangleToBorder.Height - thicknessOfBorder, rectangleToBorder.Width, thicknessOfBorder), borderColor);
         }
 
         public Vector2 GetPosition()
@@ -434,6 +484,7 @@ namespace ZooTycoonManager
             currentVisitTime = 0f;
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;
+            _uncommittedHungerPoints = 0f; // Initialize hunger points on load
         }
 
         public void InitiateExit()

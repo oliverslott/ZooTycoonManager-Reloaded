@@ -97,6 +97,9 @@ namespace ZooTycoonManager
 
         private List<Visitor> _visitorsToDespawn = new List<Visitor>(); // Added for despawning
 
+        private EntityInfoPopup _entityInfoPopup; // Changed from AnimalInfoPopup
+        private IInspectableEntity _selectedEntity; // Changed from Animal to IInspectableEntity
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -180,6 +183,9 @@ namespace ZooTycoonManager
 
             // Initialize MoneyManager and MoneyDisplay
             MoneyManager.Instance.Initialize(0); // Initialize with 0, actual value loaded in Initialize()
+
+            // Initialize AnimalInfoPopup - Font will be loaded in LoadContent
+            // _animalInfoPopup = new AnimalInfoPopup(GraphicsDevice, _font);
 
             // Subscribe to window resize event
             Window.ClientSizeChanged += OnClientSizeChanged;
@@ -285,6 +291,9 @@ namespace ZooTycoonManager
             _moneyDisplay = new MoneyDisplay(_font, moneyPosition, Color.Black, 2f);
             MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
             MoneyManager.Instance.Notify(); // Initial notification to set initial money text
+
+            // Initialize AnimalInfoPopup here after _font is loaded
+            _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font); // Changed from AnimalInfoPopup
 
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
@@ -449,7 +458,10 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
+            // Update AnimalInfoPopup
+            bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
+
+            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
             {
                 Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
@@ -464,6 +476,66 @@ namespace ZooTycoonManager
                 else
                 {
                     // evt. eksisterende logik for andre klik
+                    // Convert mouse position to world coordinates for checking entity clicks
+                    Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                    bool entityClickedThisFrame = false;
+                    IInspectableEntity clickedEntity = null;
+
+                    // Check for animal clicks first
+                    foreach (var habitat in habitats)
+                    {
+                        foreach (var animal in habitat.GetAnimals())
+                        {
+                            if (animal.BoundingBox.Contains(worldMousePosForEntityCheck))
+                            {
+                                clickedEntity = animal;
+                                entityClickedThisFrame = true;
+                                break;
+                            }
+                        }
+                        if (entityClickedThisFrame) break;
+                    }
+
+                    // If no animal was clicked, check for visitor clicks
+                    if (!entityClickedThisFrame)
+                    {
+                        foreach (var visitor in visitors)
+                        {
+                            // Assuming Visitor has a BoundingBox similar to Animal
+                            // If not, this needs to be adjusted or Visitor needs a BoundingBox property.
+                            // For now, let's add a temporary BoundingBox for Visitor for selection purposes.
+                            // This should be properly implemented in Visitor.cs if permanent.
+                            Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
+                            if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
+                            {
+                                clickedEntity = visitor;
+                                entityClickedThisFrame = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (clickedEntity != null)
+                    {
+                        if (_selectedEntity != null && _selectedEntity != clickedEntity)
+                        {
+                            _selectedEntity.IsSelected = false; // Deselect previous entity
+                        }
+                        _selectedEntity = clickedEntity;
+                        _selectedEntity.IsSelected = true; // Select new entity
+                        _entityInfoPopup.Show(_selectedEntity); // Show or update for the new entity
+                    }
+                    // If no entity was clicked and the popup is visible, but the click was not on the popup itself (e.g. close button), then hide the popup.
+                    // And deselect the entity
+                    else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick)
+                    {
+                        _entityInfoPopup.Hide();
+                        if (_selectedEntity != null)
+                        {
+                            _selectedEntity.IsSelected = false;
+                            _selectedEntity = null;
+                        }
+                    }
                 }
             }
 
@@ -681,6 +753,8 @@ namespace ZooTycoonManager
             _habitatMenu.Draw(_spriteBatch);
             _animalMenu.Draw(_spriteBatch);
             _zookeeperMenu.Draw(_spriteBatch);
+            // Draw AnimalInfoPopup
+            _entityInfoPopup.Draw(_spriteBatch);
 
             _spriteBatch.End();
 
