@@ -14,8 +14,9 @@ namespace ZooTycoonManager
     public class Visitor : ISaveable, ILoadable, IInspectableEntity
     {
         private Texture2D sprite;
-        private Texture2D thoughtBubbleTexture;
-        private Texture2D animalInThoughtTexture;
+        private ThoughtBubble _thoughtBubble;
+        private Texture2D _animalInThoughtTexture;
+        private Texture2D _sadTexture;
         private Vector2 position;
         private List<Node> path;
         private int currentNodeIndex = 0;
@@ -27,6 +28,9 @@ namespace ZooTycoonManager
         private const float VISIT_DURATION = 4f;
         private float currentVisitTime = 0f;
         private Habitat currentHabitat = null;
+
+        private float _showSadThoughtBubbleTimer = 0f;
+        private const float SAD_BUBBLE_DURATION = 2f;
 
         private readonly object _positionLock = new object();
         private bool _isRunning = true;
@@ -228,8 +232,11 @@ namespace ZooTycoonManager
         public void LoadContent(ContentManager contentManager)
         {
             sprite = contentManager.Load<Texture2D>("Pawn_Blue_Cropped_resized");
-            thoughtBubbleTexture = contentManager.Load<Texture2D>("Thought_bubble");
-            animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+            
+            _thoughtBubble = new ThoughtBubble();
+            _thoughtBubble.LoadContent(contentManager);
+            _animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+            _sadTexture = contentManager.Load<Texture2D>("sad");
 
 
             if (_borderTexture == null)
@@ -243,6 +250,7 @@ namespace ZooTycoonManager
         {
             UpdateHunger(gameTime);
             UpdateHabitatVisit(gameTime);
+            UpdateSadThoughtBubbleDisplay(gameTime);
 
             if (!_isExiting)
             {
@@ -278,10 +286,20 @@ namespace ZooTycoonManager
                     currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
                     if (currentVisitTime >= VISIT_DURATION)
                     {
-                        if (currentHabitat != null)
+                        Habitat justLeftHabitat = currentHabitat;
+                        if (justLeftHabitat != null)
                         {
-                            _visitedHabitatIds.Add(currentHabitat.HabitatId);
-                            currentHabitat.LeaveHabitat(this);
+                            if (DoesHabitatTriggerSadReaction(justLeftHabitat))
+                            {
+                                _showSadThoughtBubbleTimer = SAD_BUBBLE_DURATION;
+                                int moodDeduction = (int)(Mood * 0.20f);
+                                Mood -= moodDeduction;
+                                if (Mood < 0) Mood = 0;
+                                Debug.WriteLine($"Visitor {VisitorId} mood decreased by {moodDeduction} to {Mood} after seeing sad animals.");
+                            }
+
+                            _visitedHabitatIds.Add(justLeftHabitat.HabitatId);
+                            justLeftHabitat.LeaveHabitat(this);
                             currentHabitat = null;
                             currentVisitTime = 0f;
                             if (!_isExiting)
@@ -290,6 +308,36 @@ namespace ZooTycoonManager
                             }
                         }
                     }
+                }
+            }
+        }
+
+        private bool DoesHabitatTriggerSadReaction(Habitat visitedHabitat)
+        {
+            if (visitedHabitat == null) return false;
+
+            var animalsInHabitat = visitedHabitat.GetAnimals();
+            if (animalsInHabitat != null)
+            {
+                foreach (var animal in animalsInHabitat)
+                {
+                    if (animal.Mood <= 50)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private void UpdateSadThoughtBubbleDisplay(GameTime gameTime)
+        {
+            if (_showSadThoughtBubbleTimer > 0)
+            {
+                _showSadThoughtBubbleTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (_showSadThoughtBubbleTimer < 0)
+                {
+                    _showSadThoughtBubbleTimer = 0;
                 }
             }
         }
@@ -364,7 +412,14 @@ namespace ZooTycoonManager
             {
                 spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
 
-                DrawThoughtBubble(spriteBatch);
+                if (_showSadThoughtBubbleTimer > 0 && _thoughtBubble != null && _sadTexture != null)
+                {
+                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
+                }
+                else
+                {
+                    DrawVisitingHabitatThoughtBubble(spriteBatch);
+                }
 
                 if (IsSelected)
                 {
@@ -373,17 +428,14 @@ namespace ZooTycoonManager
             }
         }
 
-        private void DrawThoughtBubble(SpriteBatch spriteBatch)
+        private void DrawVisitingHabitatThoughtBubble(SpriteBatch spriteBatch)
         {
-            if (currentHabitat != null && (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && thoughtBubbleTexture != null && animalInThoughtTexture != null)
+            if (currentHabitat != null && 
+                (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && 
+                _thoughtBubble != null && 
+                _animalInThoughtTexture != null)
             {
-                Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); 
-
-                spriteBatch.Draw(thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(thoughtBubbleTexture.Width / 2, thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
-
-                Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
-
-                spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
+                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, new Rectangle(0, 0, 16, 16));
             }
         }
 
