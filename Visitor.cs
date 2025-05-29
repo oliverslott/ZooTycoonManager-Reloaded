@@ -32,7 +32,6 @@ namespace ZooTycoonManager
         private bool _isRunning = true;
         private HashSet<int> _visitedHabitatIds;
         private bool _isExiting = false;
-        private Vector2 _exitTargetPosition;
 
         private Vector2 _pathfindingStartPos;
 
@@ -72,10 +71,12 @@ namespace ZooTycoonManager
 
         public Rectangle BoundingBox => new Rectangle((int)(Position.X - 16), (int)(Position.Y - 16), 32, 32);
 
-        public Visitor(Vector2 spawnPosition, int visitorId = 0)
+        public Visitor(Vector2 spawnTilePosition, int visitorId = 0)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
-            Position = spawnPosition;
+            
+            Position = GameWorld.TileToPixel(spawnTilePosition);
+            
             VisitorId = visitorId;
             _visitedHabitatIds = new HashSet<int>();
 
@@ -457,8 +458,7 @@ namespace ZooTycoonManager
             int posX = reader.GetInt32(7);
             int posY = reader.GetInt32(8);
 
-            Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
-            Position = pixelPos;
+            Position = GameWorld.TileToPixel(new Vector2(posX, posY));
 
             InitializeVisitorState();
         }
@@ -477,7 +477,7 @@ namespace ZooTycoonManager
 
         public void InitiateExit()
         {
-            _exitTargetPosition = GameWorld.Instance.VisitorExitPosition;
+            Vector2 exitTileCoord = GameWorld.Instance.VisitorExitTileCoordinate; 
             
             path = null;
             currentNodeIndex = 0;
@@ -488,7 +488,7 @@ namespace ZooTycoonManager
             }
             currentVisitTime = 0f;
 
-            if (TryPathfindToExit())
+            if (TryPathfindToExit(exitTileCoord))
             {
                 Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to exit. Path length: {path.Count}");
                 _isExiting = true;
@@ -502,10 +502,9 @@ namespace ZooTycoonManager
             }
         }
 
-        private bool TryPathfindToExit()
+        private bool TryPathfindToExit(Vector2 targetExitTile)
         {
-            Vector2 exitTargetTile = GameWorld.PixelToTile(_exitTargetPosition);
-            PathfindTo(exitTargetTile);
+            PathfindTo(targetExitTile);
             return path != null && path.Count > 0;
         }
     }

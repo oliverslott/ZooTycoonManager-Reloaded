@@ -70,11 +70,11 @@ namespace ZooTycoonManager
 
         private float _visitorSpawnTimer = 0f;
         private const float VISITOR_SPAWN_INTERVAL = 10.0f;
-        private Vector2 _visitorSpawnPosition;
-        private Vector2 _visitorExitPosition;
+        private Vector2 _visitorSpawnTileCoord;
+        private Vector2 _visitorExitTileCoord;
         private const int VISITOR_SPAWN_REWARD = 20;
-        public Vector2 VisitorSpawnPosition => _visitorSpawnPosition;
-        public Vector2 VisitorExitPosition => _visitorExitPosition;
+        public Vector2 VisitorSpawnTileCoordinate => _visitorSpawnTileCoord;
+        public Vector2 VisitorExitTileCoordinate => _visitorExitTileCoord;
 
         private Camera _camera;
 
@@ -142,8 +142,8 @@ namespace ZooTycoonManager
             _boundaryFenceTilePositions = new List<Vector2>();
             _boundaryFenceTileCoordinates = new HashSet<Vector2>();
 
-            _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
-            _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); 
+            _visitorSpawnTileCoord = new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y);
+            _visitorExitTileCoord = new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y);
 
             MoneyManager.Instance.Initialize(0);
 
@@ -332,12 +332,12 @@ namespace ZooTycoonManager
                 {
                     _visitorSpawnTimer = 0f; 
 
-                    Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
+                    Visitor newVisitor = new Visitor(_visitorSpawnTileCoord, _nextVisitorId++);
                     newVisitor.LoadContent(Content);
                     visitors.Add(newVisitor);
 
                     MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
-                    Debug.WriteLine($"Visitor spawned at {_visitorSpawnPosition}. Added ${VISITOR_SPAWN_REWARD}.");
+                    Debug.WriteLine($"Visitor spawned at {_visitorSpawnTileCoord}. Added ${VISITOR_SPAWN_REWARD}.");
                 }
             }
             else
@@ -347,10 +347,10 @@ namespace ZooTycoonManager
 
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
-                Visitor newVisitor = new Visitor(_visitorSpawnPosition, _nextVisitorId++);
+                Visitor newVisitor = new Visitor(_visitorSpawnTileCoord, _nextVisitorId++);
                 newVisitor.LoadContent(Content);
                 visitors.Add(newVisitor);
-                Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnPosition} for debugging.");
+                Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnTileCoord} for debugging.");
             }
 
             if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed)
