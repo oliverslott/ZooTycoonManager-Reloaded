@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace ZooTycoonManager
 {
-    public class Animal: ISaveable, ILoadable, IInspectableEntity
+    public class Animal: ISaveable, ILoadable, IInspectableEntity, IStressableEntity
     {
         Texture2D sprite;
         List<Node> path;
@@ -23,6 +23,9 @@ namespace ZooTycoonManager
 
         private const float HUNGER_INCREASE_RATE = 0.5f;
         private float _uncommittedHungerPoints = 0f;
+
+        private const float STRESS_INCREASE_RATE_OVERCROWDING = 25.0f;
+        private float _uncommittedStressPoints = 0f;
 
         private Thread _pathfindingWorkerThread;
         private readonly AutoResetEvent _pathfindingRequestEvent = new AutoResetEvent(false);
@@ -45,6 +48,10 @@ namespace ZooTycoonManager
         public int HabitatId { get; set; }
 
         int IInspectableEntity.Id => AnimalId;
+        string IInspectableEntity.Name => Name;
+        int IInspectableEntity.Mood => Mood;
+        int IInspectableEntity.Hunger => Hunger;
+        int IStressableEntity.Stress => Stress;
 
         private Vector2 _position;
         private int _positionX;
@@ -78,8 +85,11 @@ namespace ZooTycoonManager
             Mood = 100;
             Hunger = 0;
             Stress = 0;
+            HabitatId = -1;
 
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
+            _uncommittedHungerPoints = 0f;
+            _uncommittedStressPoints = 0f;
 
             _pathfindingWorkerThread = new Thread(PathfindingWorkerLoop);
             _pathfindingWorkerThread.Name = $"Animal_{GetHashCode()}_PathWorker";
@@ -91,6 +101,11 @@ namespace ZooTycoonManager
         {
             currentHabitat = habitat;
             HabitatId = habitat.HabitatId;
+            path = null;
+            currentNodeIndex = 0;
+            timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
+            _uncommittedHungerPoints = 0f;
+            _uncommittedStressPoints = 0f;
         }
 
         private void TryRandomWalk(GameTime gameTime)
@@ -200,7 +215,27 @@ namespace ZooTycoonManager
         {
             TryRandomWalk(gameTime);
 
+            // Overcrowding Stress Update
+            if (currentHabitat != null)
+            {
+                if (currentHabitat.GetAnimals().Count > 5)
+                {
+                    _uncommittedStressPoints += STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                }
+            }
 
+            if (_uncommittedStressPoints >= 1.0f)
+            {
+                int wholeStressToAdd = (int)_uncommittedStressPoints;
+                Stress += wholeStressToAdd;
+                if (Stress > 100)
+                {
+                    Stress = 100;
+                }
+                _uncommittedStressPoints -= wholeStressToAdd;
+            }
+
+            // Hunger Update
             _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (_uncommittedHungerPoints >= 1.0f)
@@ -213,6 +248,10 @@ namespace ZooTycoonManager
                 }
                 _uncommittedHungerPoints -= wholePointsToAdd;
             }
+
+            // Calculate Mood based on Hunger and Stress
+            float calculatedMood = 100f - (Hunger * 0.5f) - (Stress * 0.5f);
+            Mood = (int)Math.Max(0, Math.Min(100, calculatedMood));
 
             if (IsPathfinding) 
             {
@@ -357,6 +396,7 @@ namespace ZooTycoonManager
             currentNodeIndex = 0;
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
             _uncommittedHungerPoints = 0f;
+            _uncommittedStressPoints = 0f;
         }
     }
 }

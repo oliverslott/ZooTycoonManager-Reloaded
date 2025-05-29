@@ -42,6 +42,9 @@ namespace ZooTycoonManager
 
         public bool IsSelected { get; set; }
         int IInspectableEntity.Id => VisitorId;
+        string IInspectableEntity.Name => Name;
+        int IInspectableEntity.Mood => Mood;
+        int IInspectableEntity.Hunger => Hunger;
 
         // Database
         public int VisitorId { get; set; }

@@ -35,11 +35,14 @@ namespace ZooTycoonManager
             _closeButtonTexture = new Texture2D(graphicsDevice, 1, 1);
             _closeButtonTexture.SetData(new[] { Color.Red });
 
+            const int popupWidth = 270;
+            const int popupHeight = 226;
+
             _popupRectangle = new Rectangle(
-                _graphicsDevice.Viewport.Width - 270 - PADDING, 
-                _graphicsDevice.Viewport.Height - 180 - PADDING,
-                270, 
-                180);
+                _graphicsDevice.Viewport.Width - popupWidth - PADDING, 
+                _graphicsDevice.Viewport.Height - popupHeight - PADDING,
+                popupWidth, 
+                popupHeight);
 
             _closeButtonRectangle = new Rectangle(
                 _popupRectangle.X + _popupRectangle.Width - CLOSE_BUTTON_SIZE - PADDING / 2,
@@ -142,6 +145,20 @@ namespace ZooTycoonManager
             float invertedHungerPercentage = displayedHunger / 100f; 
             Color hungerColor = Color.Lerp(Color.Red, Color.LimeGreen, invertedHungerPercentage); 
             DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedHunger, 100, hungerColor);
+            currentY += PROGRESS_BAR_HEIGHT + ITEM_SPACING;
+
+            if (_selectedEntity is IStressableEntity stressableEntity)
+            {
+                string stressLabelText = "Stress:";
+                spriteBatch.DrawString(_font, stressLabelText, new Vector2(leftX, currentY), Color.White);
+                currentY += _font.LineSpacing + LABEL_BAR_SPACING;
+
+                float displayedStress = 100f - stressableEntity.Stress;
+                float displayedStressPercentage = displayedStress / 100f;
+                
+                Color stressColor = Color.Lerp(Color.Red, Color.LimeGreen, displayedStressPercentage);
+                DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedStress, 100, stressColor);
+            }
         }
     }
 } 
