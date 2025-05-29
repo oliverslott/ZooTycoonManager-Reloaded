@@ -87,6 +87,21 @@ namespace ZooTycoonManager
         private EntityInfoPopup _entityInfoPopup;
         private IInspectableEntity _selectedEntity;
 
+        private bool IsMouseOverUI(Vector2 mousePosition)
+        {
+            Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
+
+            // Vi antager at UI sidder fast på skærmen, så vi tjekker mod deres skærmpositioner
+            if (_shopWindow.IsVisible && _shopWindow.Contains(mousePosition)) return true;
+            if (_buildingsMenu.IsVisible && _buildingsMenu.Contains(mousePosition)) return true;
+            if (_habitatMenu.IsVisible && _habitatMenu.Contains(mousePosition)) return true;
+            if (_animalMenu.IsVisible && _animalMenu.Contains(mousePosition)) return true;
+            if (_zookeeperMenu.IsVisible && _zookeeperMenu.Contains(mousePosition)) return true;
+            if (shopButton.Contains(mousePosition)) return true;
+
+            return false;
+        }
+
         public List<Habitat> GetHabitats()
         {
             return habitats;
@@ -301,8 +316,11 @@ namespace ZooTycoonManager
 
             if (keyboard.IsKeyDown(Keys.P) && !prevKeyboardState.IsKeyDown(Keys.P))
             {
-                _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
-                Debug.WriteLine($"Road placement mode active: {_isPlacingRoadModeActive}");
+                if (_isPlacingRoadModeActive)
+                {
+                    _isPlacingRoadModeActive = false;
+                    Debug.WriteLine("Exited tile placement mode");
+                }
             }
 
 
@@ -343,9 +361,13 @@ namespace ZooTycoonManager
                 Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnTileCoord} for debugging.");
             }
 
-            if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed)
+            if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
-                PlaceRoadTile(PixelToTile(worldMousePosition));
+                Vector2 screenMousePos = new Vector2(mouse.X, mouse.Y);
+                if (!IsMouseOverUI(screenMousePos))
+                {
+                    PlaceRoadTile(PixelToTile(worldMousePosition));
+                }
             }
             else if (!_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
@@ -641,6 +663,14 @@ namespace ZooTycoonManager
             //Begin ui:
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
+            if (_isPlacingRoadModeActive)
+            {
+                Vector2 infoPosition = new Vector2(550, 20);
+                _spriteBatch.DrawString(_font, "Click or hold Mouse 1 to place tiles", infoPosition, Color.Yellow);
+                _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
+            }
+
+
 
             _fpsCounter.Draw(_spriteBatch);
 
@@ -922,5 +952,16 @@ namespace ZooTycoonManager
                 Console.WriteLine("Placement mode: Medium Habitat activated");
             }
         }
+        public void ToggleTilePlacementMode()
+        {
+            _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
+
+            // Luk menuerne for visuel konsistens
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+        }
+        
     }
 }

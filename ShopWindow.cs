@@ -20,6 +20,11 @@ namespace ZooTycoonManager
 
         public bool IsVisible { get; set; }
 
+        public bool Contains(Vector2 screenPos)
+        {
+            return backgroundRect.Contains(screenPos); // ShopWindow
+        }
+
         public ShopWindow(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position)
         {
             this.backgroundTexture = backgroundTexture;

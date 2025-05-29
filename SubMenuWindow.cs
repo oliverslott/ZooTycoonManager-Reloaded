@@ -20,6 +20,11 @@ namespace ZooTycoonManager
 
         public bool IsVisible { get; set; }
 
+        public bool Contains(Vector2 screenPos)
+        {
+            return backgroundRect.Contains(screenPos);
+        }
+
         public SubMenuWindow(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position, string[] options)
         {
             this.backgroundTexture = backgroundTexture;
@@ -55,6 +60,10 @@ namespace ZooTycoonManager
                     if (button.Text == "Medium")
                     {
                         GameWorld.Instance.StartHabitatPlacement("Medium");
+                    }
+                    else if (button.Text == "Tiles")
+                    {
+                        GameWorld.Instance.ToggleTilePlacementMode();
                     }
                 }
             }
