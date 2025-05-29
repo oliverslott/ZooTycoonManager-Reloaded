@@ -144,22 +144,6 @@ namespace ZooTycoonManager
 
             _visitorSpawnPosition = TileToPixel(new Vector2(VISITOR_SPAWN_TILE_X, VISITOR_SPAWN_TILE_Y));
             _visitorExitPosition = TileToPixel(new Vector2(VISITOR_EXIT_TILE_X, VISITOR_EXIT_TILE_Y)); 
-            Vector2 pathSpawnTile = Vector2.Zero;
-            bool foundSpawn = false;
-            for (int y = 0; y < GRID_HEIGHT; y++)
-            {
-                for (int x = 0; x < GRID_WIDTH; x++)
-                {
-                    if (map.Tiles[x, y].TextureIndex == 1)
-                    {
-                        pathSpawnTile = new Vector2(x, y);
-                        foundSpawn = true;
-                        break;
-                    }
-                }
-                if (foundSpawn) break;
-            }
-            _visitorSpawnPosition = TileToPixel(pathSpawnTile);
 
             MoneyManager.Instance.Initialize(0);
 
