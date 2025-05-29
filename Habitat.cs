@@ -23,7 +23,8 @@ namespace ZooTycoonManager
         private HashSet<Vector2> fenceTileCoordinates; 
         private SemaphoreSlim visitorSemaphore;
         private HashSet<Visitor> currentVisitors;
-
+        private List<Zookeeper> zookeepers;
+        
         //Database
         public int HabitatId { get; set; }
         public int Size { get; set; }
@@ -32,6 +33,8 @@ namespace ZooTycoonManager
         public string Type { get; set; }
         private int positionX;
         private int positionY;
+
+
 
         public Vector2 CenterPosition 
         { 
@@ -59,6 +62,7 @@ namespace ZooTycoonManager
             this.height = height;
             this.fencePositions = new List<Vector2>();
             this.animals = new List<Animal>();
+            this.zookeepers = new List<Zookeeper>();
             this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
             this.currentVisitors = new HashSet<Visitor>();
             this.fenceTileCoordinates = new HashSet<Vector2>();
@@ -86,6 +90,11 @@ namespace ZooTycoonManager
             animals.Add(animal);
         }
 
+        public void AddZookeeper(Zookeeper zookeeper)
+        {
+            zookeepers.Add(zookeeper);
+        }
+
         public bool ContainsPosition(Vector2 position)
         {
             Vector2 tilePos = GameWorld.PixelToTile(position);
@@ -108,6 +117,11 @@ namespace ZooTycoonManager
         public List<Animal> GetAnimals()
         {
             return animals;
+        }
+
+        public List<Zookeeper> GetZookeepers()
+        {
+            return zookeepers; 
         }
 
         public Vector2 GetCenterPosition()
@@ -133,6 +147,11 @@ namespace ZooTycoonManager
             {
                 animal.Draw(spriteBatch);
             }
+
+            foreach (var zookeeper in zookeepers)
+            {
+                zookeeper.Draw(spriteBatch);
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -141,6 +160,11 @@ namespace ZooTycoonManager
             {
                 animal.Update(gameTime);
             }
+
+            foreach (var zookeeper in zookeepers)
+            {
+                zookeeper.Update(gameTime);
+            }
         }
 
         public void LoadAnimalContent(ContentManager content)
@@ -148,6 +172,11 @@ namespace ZooTycoonManager
             foreach (var animal in animals)
             {
                 animal.LoadContent(content);
+            }
+
+            foreach (var zookeeper in zookeepers)
+            {
+                zookeeper.LoadContent(content);
             }
         }
 
@@ -383,5 +412,7 @@ namespace ZooTycoonManager
 
             PlaceEnclosure(pixelPos);
         }
+
+        
     }
 } 
