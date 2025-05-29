@@ -35,6 +35,9 @@ namespace ZooTycoonManager
         private List<Node> _pendingPathResult;
         private readonly object _pendingPathResultLock = new object();
 
+        private ThoughtBubble _thoughtBubble;
+        private Texture2D _drumstickTexture;
+
         public bool IsPathfinding { get; private set; }
         public bool IsSelected { get; set; }
         private static Texture2D _borderTexture;
@@ -204,6 +207,10 @@ namespace ZooTycoonManager
         public void LoadContent(ContentManager contentManager)
         {
             sprite = contentManager.Load<Texture2D>("NibblingGoat");
+            _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
+            _thoughtBubble = new ThoughtBubble();
+            _thoughtBubble.LoadContent(contentManager);
+
             if (_borderTexture == null)
             {
                 _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
@@ -331,6 +338,11 @@ namespace ZooTycoonManager
         {
             if (sprite == null) return;
             spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+
+            if (Hunger > 50 && _thoughtBubble != null && _drumstickTexture != null)
+            {
+                _thoughtBubble.Draw(spriteBatch, Position, sprite.Height * 2, _drumstickTexture, null, 0.3f);
+            }
 
             if (IsSelected)
             {
