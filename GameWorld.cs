@@ -326,7 +326,7 @@ namespace ZooTycoonManager
             if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
             {
                 // Create and execute the place animal command
-                var placeZookeeperCommand = new PlaceAnimalCommand(worldMousePosition);
+                var placeZookeeperCommand = new PlaceZookeeperCommand(worldMousePosition);
                 CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
             }
 
