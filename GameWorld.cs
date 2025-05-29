@@ -25,6 +25,9 @@ namespace ZooTycoonManager
         Texture2D[] tileTextures;
         private FPSCounter _fpsCounter;  // Add FPS counter field
 
+        // zookeeper
+        
+
         // Money Management
         private MoneyDisplay _moneyDisplay;
 
@@ -38,6 +41,7 @@ namespace ZooTycoonManager
         private int _nextHabitatId = 1;
         private int _nextAnimalId = 1;
         private int _nextVisitorId = 1;
+        private int _nextZookeeperId = 1;
 
         // Visitor spawning settings
         private float _visitorSpawnTimer = 0f;
@@ -177,6 +181,7 @@ namespace ZooTycoonManager
             _nextVisitorId = nextVisitorId;
             MoneyManager.Instance.Initialize(loadedMoney);
 
+            
             base.Initialize();
         }
 
@@ -208,6 +213,9 @@ namespace ZooTycoonManager
                 habitat.LoadAnimalContent(Content);
             }
             Habitat.LoadContent(Content);
+
+            
+            
         }
 
         MouseState prevMouseState;
@@ -258,6 +266,13 @@ namespace ZooTycoonManager
                 CommandManager.Instance.ExecuteCommand(placeAnimalCommand);
             }
 
+            if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
+            {
+                // Create and execute the place animal command
+                var placeZookeeperCommand = new PlaceAnimalCommand(worldMousePosition);
+                CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
+            }
+
             // Handle automatic visitor spawning
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
@@ -304,6 +319,7 @@ namespace ZooTycoonManager
                 _nextHabitatId = 1;
                 _nextAnimalId = 1;
                 _nextVisitorId = 1;
+                _nextZookeeperId = 1;
                 CommandManager.Instance.Clear(); // Clear command history when clearing everything
             }
 
@@ -363,6 +379,8 @@ namespace ZooTycoonManager
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
+            
+
             base.Update(gameTime);
         }
 
@@ -407,6 +425,8 @@ namespace ZooTycoonManager
                 visitor.Draw(_spriteBatch);
             }
 
+            
+
             _spriteBatch.End();
 
             // Draw UI elements without camera offset
@@ -441,6 +461,12 @@ namespace ZooTycoonManager
         public int GetNextHabitatId()
         {
             return _nextHabitatId++;
+        }
+
+        public int GetNextZookeeperId()
+        {
+            // Logic to generate a unique zookeeper ID
+            return _nextZookeeperId++;
         }
 
         public bool GetOriginalWalkableState(int x, int y)
