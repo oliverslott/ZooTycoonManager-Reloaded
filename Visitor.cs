@@ -28,7 +28,6 @@ namespace ZooTycoonManager
         private float currentVisitTime = 0f;
         private Habitat currentHabitat = null;
 
-        private Thread _updateThread;
         private readonly object _positionLock = new object();
         private bool _isRunning = true;
         private HashSet<int> _visitedHabitatIds;
@@ -36,7 +35,6 @@ namespace ZooTycoonManager
         private Vector2 _exitTargetPosition;
 
         private Vector2 _pathfindingStartPos;
-        private Vector2 _pathfindingTargetPos;
 
         private static Texture2D _borderTexture;
 
@@ -90,28 +88,26 @@ namespace ZooTycoonManager
 
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
 
-            _updateThread = new Thread(UpdateLoop);
-            _updateThread.Name = $"Visitor_{GetHashCode()}_Update";
-            _updateThread.IsBackground = true;
-            _updateThread.Start();
-        }
-
-        private void UpdateLoop()
-        {
-            GameTime gameTime = new GameTime();
-            DateTime lastUpdate = DateTime.Now;
-
-            while (_isRunning)
+            Thread updateThread = new Thread(() =>
             {
-                DateTime currentTime = DateTime.Now;
-                TimeSpan elapsed = currentTime - lastUpdate;
-                gameTime.ElapsedGameTime = elapsed;
-                gameTime.TotalGameTime += elapsed;
-                lastUpdate = currentTime;
+                GameTime gameTime = new GameTime();
+                DateTime lastUpdate = DateTime.Now;
 
-                Update(gameTime);
-                Thread.Sleep(16); // 60 fps
-            }
+                while (_isRunning)
+                {
+                    DateTime currentTime = DateTime.Now;
+                    TimeSpan elapsed = currentTime - lastUpdate;
+                    gameTime.ElapsedGameTime = elapsed;
+                    gameTime.TotalGameTime += elapsed;
+                    lastUpdate = currentTime;
+
+                    Update(gameTime);
+                    Thread.Sleep(16); // 60 fps
+                }
+            });
+            updateThread.Name = $"Visitor_{GetHashCode()}_Update";
+            updateThread.IsBackground = true;
+            updateThread.Start();
         }
 
         private void TryRandomWalk(GameTime gameTime)
@@ -130,56 +126,69 @@ namespace ZooTycoonManager
         private void PerformNextActionDecision()
         {
             if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return;
-            if (_isExiting || currentHabitat != null) return;
+            if (currentHabitat != null) return;
 
-            var allHabitats = GameWorld.Instance.GetHabitats();
+            if (TryVisitHabitat()) return;
 
-            if (allHabitats.Count > 0)
+            if (path == null || path.Count == 0)
             {
-                var unvisitedHabitats = allHabitats.Where(h => !_visitedHabitatIds.Contains(h.HabitatId)).ToList();
+                PerformRandomWalk();
+            }
+        }
 
-                if (unvisitedHabitats.Count == 0)
-                {
-                    InitiateExit();
-                    return;
-                }
+        private bool TryVisitHabitat()
+        {
+            var allHabitats = GameWorld.Instance.GetHabitats();
+            if (allHabitats.Count == 0) return false;
 
-                if (random.NextDouble() < 0.7)
+            var unvisitedHabitats = allHabitats.Where(h => !_visitedHabitatIds.Contains(h.HabitatId)).ToList();
+
+            if (unvisitedHabitats.Count == 0)
+            {
+                InitiateExit();
+                return (path != null && path.Count > 0);
+            }
+
+            if (random.NextDouble() < 0.7)
+            {
+                var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
+                List<Vector2> availableSpots = randomHabitat.GetWalkableVisitingSpots();
+
+                if (availableSpots.Count > 0)
                 {
-                    var randomHabitat = unvisitedHabitats[random.Next(unvisitedHabitats.Count)];
-                    List<Vector2> availableSpots = randomHabitat.GetWalkableVisitingSpots();
-                    
-                    if (availableSpots.Count > 0)
+                    Vector2 visitTilePosition = availableSpots[random.Next(availableSpots.Count)];
+                    if (randomHabitat.TryEnterHabitatSync(this))
                     {
-                        Vector2 visitTilePosition = availableSpots[random.Next(availableSpots.Count)];
-                        if (randomHabitat.TryEnterHabitatSync(this))
-                        {
-                            PathfindTo(visitTilePosition);
+                        PathfindTo(visitTilePosition);
 
-                            if (path == null || path.Count == 0)
-                            {
-                                Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}) failed. Releasing spot.");
-                                randomHabitat.LeaveHabitat(this);
-                            }
-                            else
-                            {
-                                currentHabitat = randomHabitat;
-                                currentVisitTime = 0f;
-                                Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}). Path length: {path.Count}");
-                                return;
-                            }
+                        if (path == null || path.Count == 0)
+                        {
+                            Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to habitat {randomHabitat.HabitatId} ({randomHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}) failed. Releasing spot.");
+                            randomHabitat.LeaveHabitat(this);
+                            return false;
+                        }
+                        else
+                        {
+                            currentHabitat = randomHabitat;
+                            currentVisitTime = 0f;
+                            Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}). Path length: {path.Count}");
+                            return true;
                         }
                     }
                 }
             }
+            return false;
+        }
 
-
+        private void PerformRandomWalk()
+        {
             List<Vector2> walkableTiles = GameWorld.Instance.GetWalkableTileCoordinates();
 
             if (walkableTiles.Count > 0)
             {
                 Vector2 randomTilePos = walkableTiles[random.Next(walkableTiles.Count)];
                 PathfindTo(randomTilePos);
+                Debug.WriteLine($"Visitor {VisitorId}: Performing random walk to {randomTilePos}.");
             }
             else
             {
@@ -192,7 +201,6 @@ namespace ZooTycoonManager
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
 
             _pathfindingStartPos = position;
-            _pathfindingTargetPos = GameWorld.TileToPixel(targetTileDestination);
 
             Vector2 startTile = GameWorld.PixelToTile(_pathfindingStartPos);
             
@@ -352,17 +360,7 @@ namespace ZooTycoonManager
             {
                 spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
 
-                if (currentHabitat != null && (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && thoughtBubbleTexture != null && animalInThoughtTexture != null)
-                {
-                    Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); 
-
-                    spriteBatch.Draw(thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(thoughtBubbleTexture.Width / 2, thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
-
-                    Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
-
-                    spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
-                }
-
+                DrawThoughtBubble(spriteBatch);
 
                 if (IsSelected)
                 {
@@ -371,6 +369,19 @@ namespace ZooTycoonManager
             }
         }
 
+        private void DrawThoughtBubble(SpriteBatch spriteBatch)
+        {
+            if (currentHabitat != null && (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && thoughtBubbleTexture != null && animalInThoughtTexture != null)
+            {
+                Vector2 thoughtBubblePosition = new Vector2(position.X, position.Y - sprite.Height); 
+
+                spriteBatch.Draw(thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(thoughtBubbleTexture.Width / 2, thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
+
+                Vector2 animalTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
+
+                spriteBatch.Draw(animalInThoughtTexture, animalTexturePosition, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(16 / 2, 16 / 2), 1f, SpriteEffects.None, 0.2f);
+            }
+        }
 
         private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
         {
@@ -391,6 +402,11 @@ namespace ZooTycoonManager
         }
 
         public void Save(SqliteTransaction transaction)
+        {
+            ExecuteSaveCommand(transaction);
+        }
+
+        private void ExecuteSaveCommand(SqliteTransaction transaction)
         {
             var command = transaction.Connection.CreateCommand();
             command.Transaction = transaction;
@@ -441,10 +457,14 @@ namespace ZooTycoonManager
             int posX = reader.GetInt32(7);
             int posY = reader.GetInt32(8);
 
-
             Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
             Position = pixelPos;
 
+            InitializeVisitorState();
+        }
+
+        private void InitializeVisitorState()
+        {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             path = null;
             currentNodeIndex = 0;
@@ -457,10 +477,6 @@ namespace ZooTycoonManager
 
         public void InitiateExit()
         {
-            if (_isExiting) return;
-
-            _isExiting = true;
-
             _exitTargetPosition = GameWorld.Instance.VisitorExitPosition;
             
             path = null;
@@ -471,10 +487,26 @@ namespace ZooTycoonManager
                 currentHabitat = null;
             }
             currentVisitTime = 0f;
-            timeSinceLastRandomWalk = float.MinValue;
 
+            if (TryPathfindToExit())
+            {
+                Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to exit. Path length: {path.Count}");
+                _isExiting = true;
+                timeSinceLastRandomWalk = float.MinValue;
+            }
+            else
+            {
+                Debug.WriteLine($"Visitor {VisitorId}: Failed to find path to exit. Resorting to random walk behavior.");
+                _isExiting = false;
+                timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
+            }
+        }
+
+        private bool TryPathfindToExit()
+        {
             Vector2 exitTargetTile = GameWorld.PixelToTile(_exitTargetPosition);
             PathfindTo(exitTargetTile);
+            return path != null && path.Count > 0;
         }
     }
 }
