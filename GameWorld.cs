@@ -276,16 +276,6 @@ namespace ZooTycoonManager
         MouseState prevMouseState;
         KeyboardState prevKeyboardState;
 
-
-        private void PlaceFence(Vector2 pixelPosition)
-        {
-            Debug.WriteLine($"PlaceFence called with pixel position: {pixelPosition}, isPlacingEnclosure: {isPlacingEnclosure}");
-
-            // Create and execute the place habitat command
-            var placeHabitatCommand = new PlaceHabitatCommand(pixelPosition);
-            CommandManager.Instance.ExecuteCommand(placeHabitatCommand);
-        }
-
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
