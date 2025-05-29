@@ -56,7 +56,8 @@ namespace ZooTycoonManager
         private enum PlacementMode
         {
             None,
-            PlaceMediumHabitat
+            PlaceMediumHabitat,
+            PlaceAnimal_Buffalo
         }
 
         private PlacementMode _currentPlacement = PlacementMode.None;
@@ -326,10 +327,13 @@ namespace ZooTycoonManager
 
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
+
+
             if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
             {
                 var placeAnimalCommand = new PlaceAnimalCommand(worldMousePosition);
                 CommandManager.Instance.ExecuteCommand(placeAnimalCommand);
+
             }
 
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
@@ -665,7 +669,7 @@ namespace ZooTycoonManager
 
             if (_isPlacingRoadModeActive)
             {
-                Vector2 infoPosition = new Vector2(550, 20);
+                Vector2 infoPosition = new Vector2(550, 650);
                 _spriteBatch.DrawString(_font, "Press Mouse 1 to place tiles", infoPosition, Color.Yellow);
                 _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
             }
@@ -962,6 +966,19 @@ namespace ZooTycoonManager
             _animalMenu.IsVisible = false;
             _zookeeperMenu.IsVisible = false;
         }
-        
+        public void StartAnimalPlacement(string animalType)
+        {
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            if (animalType == "Buffalo") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
+                Console.WriteLine("Placement mode: Buffalo activated");
+            }
+        }
+
     }
 }

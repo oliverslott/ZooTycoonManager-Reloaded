@@ -65,6 +65,10 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.ToggleTilePlacementMode();
                     }
+                    else if (button.Text == "Buffalo")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Buffalo");
+                    }
                 }
             }
         }
