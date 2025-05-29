@@ -666,7 +666,7 @@ namespace ZooTycoonManager
             if (_isPlacingRoadModeActive)
             {
                 Vector2 infoPosition = new Vector2(550, 20);
-                _spriteBatch.DrawString(_font, "Click or hold Mouse 1 to place tiles", infoPosition, Color.Yellow);
+                _spriteBatch.DrawString(_font, "Press Mouse 1 to place tiles", infoPosition, Color.Yellow);
                 _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
             }
 
