@@ -222,6 +222,10 @@ namespace ZooTycoonManager
                 {
                     _uncommittedStressPoints += STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 }
+                else 
+                {
+                    _uncommittedStressPoints -= STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                }
             }
 
             if (_uncommittedStressPoints >= 1.0f)
@@ -233,6 +237,16 @@ namespace ZooTycoonManager
                     Stress = 100;
                 }
                 _uncommittedStressPoints -= wholeStressToAdd;
+            }
+            else if (_uncommittedStressPoints <= -1.0f)
+            {
+                int wholeStressToRemove = (int)Math.Abs(_uncommittedStressPoints);
+                Stress -= wholeStressToRemove;
+                if (Stress < 0)
+                {
+                    Stress = 0;
+                }
+                _uncommittedStressPoints += wholeStressToRemove;
             }
 
             // Hunger Update
