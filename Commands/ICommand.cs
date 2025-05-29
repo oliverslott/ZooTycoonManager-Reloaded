@@ -1,4 +1,4 @@
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Commands
 {
     public interface ICommand
     {

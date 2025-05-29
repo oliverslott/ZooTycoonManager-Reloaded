@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using System.Diagnostics;
 using System.Linq;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Commands
 {
     public class PlaceAnimalCommand : ICommand
     {

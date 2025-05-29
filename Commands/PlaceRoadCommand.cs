@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using System.Diagnostics;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Commands
 {
     public class PlaceRoadCommand : ICommand
     {
