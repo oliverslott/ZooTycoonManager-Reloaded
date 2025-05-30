@@ -43,7 +43,7 @@ namespace ZooTycoonManager
 
         private static Texture2D _borderTexture;
 
-        private const float HUNGER_INCREASE_RATE = 20f;
+        private const float HUNGER_INCREASE_RATE = 5f;
         private float _uncommittedHungerPoints = 0f;
 
         public bool IsSelected { get; set; }
