@@ -56,6 +56,11 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.StartHabitatPlacement("Medium");
                     }
+
+                    if (button.Text == "Experienced Zookeeper")
+                    {
+                        GameWorld.Instance.StartZookeeperPlacement("Experienced Zookeeper");
+                    }
                 }
             }
         }

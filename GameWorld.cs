@@ -60,7 +60,8 @@ namespace ZooTycoonManager
         private enum PlacementMode
         {
             None,
-            PlaceMediumHabitat
+            PlaceMediumHabitat,
+            PlaceZookeeper
         }
 
         private PlacementMode _currentPlacement = PlacementMode.None;
@@ -441,6 +442,15 @@ namespace ZooTycoonManager
                         }
                         if (entityClickedThisFrame) break;
                     }
+
+                    if (_currentPlacement == PlacementMode.PlaceZookeeper)
+                    {
+                        var command = new PlaceZookeeperCommand(worldMousePos, cost: 500);
+                        CommandManager.Instance.ExecuteCommand(command);
+
+                        _currentPlacement = PlacementMode.None;
+                    }
+
 
                     if (!entityClickedThisFrame)
                     {
@@ -948,6 +958,20 @@ namespace ZooTycoonManager
             {
                 _currentPlacement = PlacementMode.PlaceMediumHabitat;
                 Console.WriteLine("Placement mode: Medium Habitat activated");
+            }
+        }
+
+        public void StartZookeeperPlacement(string name)
+        {
+            _buildingsMenu.IsVisible = false;
+            _habitatMenu.IsVisible = false;
+            _animalMenu.IsVisible = false;
+            _zookeeperMenu.IsVisible = false;
+
+            if (name == "Experienced Zookeeper")
+            {
+                _currentPlacement = PlacementMode.PlaceZookeeper;
+                Console.WriteLine("Placement mode: Experienced Zookeeper activated");
             }
         }
     }
