@@ -57,7 +57,16 @@ namespace ZooTycoonManager
         {
             None,
             PlaceMediumHabitat,
-            PlaceAnimal_Buffalo
+            PlaceAnimal_Buffalo,
+            PlaceAnimal_Camel,
+            PlaceAnimal_Wolf,
+            PlaceAnimal_Bear,
+            PlaceAnimal_Chimpanze,
+            PlaceAnimal_Elephant,
+            PlaceAnimal_Orangutan,
+            PlaceAnimal_Polarbear,
+            PlaceAnimal_Turtle,
+            PlaceAnimal_Kangaroo
         }
 
         private PlacementMode _currentPlacement = PlacementMode.None;
@@ -246,7 +255,7 @@ namespace ZooTycoonManager
 
             string[] buildings = { "Tiles", "Visitor Shop", "Tree", "Waterhole" };
             string[] habitattype = { "Small", "Medium", "Large" };
-            string[] animals = { "Buffalo", "Turtle", "Chimpanzee", "Camel", "Orangutang", "Kangaroo", "Wolf", "Bear", "Elephant", "Polarbear" };
+            string[] animals = { "Buffalo", "Turtle", "Chimpanze", "Camel", "Orangutan", "Kangaroo", "Wolf", "Bear", "Elephant", "Polarbear" };
             string[] zookeepers = { "Experienced Zookeeper" };
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
@@ -423,13 +432,95 @@ namespace ZooTycoonManager
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Buffalo)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos);
+                    var command = new PlaceAnimalCommand(worldMousePos, "Buffalo");
                     CommandManager.Instance.ExecuteCommand(command);
 
                     
 
                     _currentPlacement = PlacementMode.None;
                 }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Orangutan)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Orangutan");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Chimpanze)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Chimpanze");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Kangaroo)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Kangaroo");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Elephant)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Elephant");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Camel)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Camel");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Wolf)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Wolf");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Bear)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Bear");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Turtle)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Turtle");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Polarbear)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos, "Polarbear");
+                    CommandManager.Instance.ExecuteCommand(command);
+
+
+
+                    _currentPlacement = PlacementMode.None;
+                }
+
                 else
                 {
                     // evt. eksisterende logik for andre klik
@@ -980,6 +1071,51 @@ namespace ZooTycoonManager
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
                 Console.WriteLine("Placement mode: Buffalo activated");
+            }
+            if (animalType == "Kangaroo") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
+                Console.WriteLine("Placement mode: Kangaroo activated");
+            }
+            if (animalType == "Polarbear") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
+                Console.WriteLine("Placement mode: Polarbear activated");
+            }
+            if (animalType == "Bear") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Bear;
+                Console.WriteLine("Placement mode: Bear activated");
+            }
+            if (animalType == "Chimpanze") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
+                Console.WriteLine("Placement mode: Chimpanze activated");
+            }
+            if (animalType == "Elephant") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
+                Console.WriteLine("Placement mode: Elephant activated");
+            }
+            if (animalType == "Orangutan") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
+                Console.WriteLine("Placement mode: Orangutan activated");
+            }
+            if (animalType == "Turtle") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
+                Console.WriteLine("Placement mode: Turtle activated");
+            }
+            if (animalType == "Wolf") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
+                Console.WriteLine("Placement mode: Wolf activated");
+            }
+            if (animalType == "Camel") // Du kan udvide til flere dyr senere
+            {
+                _currentPlacement = PlacementMode.PlaceAnimal_Camel;
+                Console.WriteLine("Placement mode: Camel activated");
             }
         }
 

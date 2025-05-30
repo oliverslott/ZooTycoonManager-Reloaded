@@ -69,6 +69,42 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.StartAnimalPlacement("Buffalo");
                     }
+                    else if (button.Text == "Turtle")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Turtle");
+                    }
+                    else if (button.Text == "Bear")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Bear");
+                    }
+                    else if (button.Text == "Polarbear")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Polarbear");
+                    }
+                    else if (button.Text == "Kangaroo")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Kangaroo");
+                    }
+                    else if (button.Text == "Chimpanze")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Chimpanze");
+                    }
+                    else if (button.Text == "Wolf")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Wolf");
+                    }
+                    else if (button.Text == "Camel")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Camel");
+                    }
+                    else if (button.Text == "Elephant")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Elephant");
+                    }
+                    else if (button.Text == "Orangutan")
+                    {
+                        GameWorld.Instance.StartAnimalPlacement("Orangutan");
+                    }
                 }
             }
         }
