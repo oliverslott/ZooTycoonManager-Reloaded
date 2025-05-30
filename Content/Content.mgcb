@@ -37,6 +37,30 @@
 /processorParam:TextureFormat=Color
 /build:91d056d7-c743-4680-a336-3dfd7d54e88d.png
 
+#begin AgitatedOrangutan.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:AgitatedOrangutan.png
+
+#begin ArcticWolf.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:ArcticWolf.png
+
 #begin Button_Blue_3Slides.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -86,6 +110,7 @@
 /build:Dirt1.png
 
 #begin drumstick.png
+#begin EnragedBuffalo.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -96,6 +121,7 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:drumstick.png
+/build:EnragedBuffalo.png
 
 #begin fence-connected-bottom.png
 /importer:TextureImporter
@@ -248,6 +274,42 @@
 /processorParam:TextureFormat=Color
 /build:Grass1.png
 
+#begin HoppingKangaroo.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:HoppingKangaroo.png
+
+#begin KodiakBear.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:KodiakBear.png
+
+#begin MindfulChimpanze.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:MindfulChimpanze.png
+
 #begin NibblingGoat.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -272,6 +334,18 @@
 /processorParam:TextureFormat=Color
 /build:Pawn_Blue_Cropped_resized.png
 
+#begin PolarBear.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:PolarBear.png
+
 #begin Regular_07.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -285,6 +359,7 @@
 /build:Regular_07.png
 
 #begin sad.png
+#begin SlowTurtle.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -295,6 +370,31 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:sad.png
+/build:SlowTurtle.png
+
+#begin StompingElephant.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StompingElephant.png
+
+#begin ThirstyCamel.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:ThirstyCamel.png
 
 #begin Thought_bubble.png
 /importer:TextureImporter

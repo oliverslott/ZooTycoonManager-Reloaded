@@ -17,6 +17,11 @@ public class Button
     public string Text { get; set; }
     public bool IsClicked { get; private set; }
 
+    public bool Contains(Vector2 screenPos)
+    {
+        return bounds.Contains(screenPos); // Button-klassen
+    }
+
     public Button(Texture2D backgroundTexture, Texture2D iconTexture, Vector2 position, string text = null, SpriteFont font = null)
     {
         this.backgroundTexture = backgroundTexture;

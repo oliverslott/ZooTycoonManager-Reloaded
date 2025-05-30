@@ -60,6 +60,8 @@ namespace ZooTycoonManager
         private int _positionX;
         private int _positionY;
 
+        string species;
+
         public Vector2 Position 
         { 
             get => _position;
@@ -77,18 +79,19 @@ namespace ZooTycoonManager
 
         public Rectangle BoundingBox => new Rectangle((int)(Position.X - 8 * 2), (int)(Position.Y - 8 * 2), 16 * 2, 16 * 2);
 
-        public Animal(int animalId = 0)
+        public Animal(int animalId = 0, string species = "Buffalo")
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
             Position = new Vector2(GameWorld.TILE_SIZE * 5, GameWorld.TILE_SIZE * 5);
             AnimalId = animalId;
-
-            Name = "Goat";
+            this.species = species;
+             
+            Name = species;
             Mood = 100;
             Hunger = 0;
             Stress = 0;
-            HabitatId = -1;
+            HabitatId = -1;   
 
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
             _uncommittedHungerPoints = 0f;
@@ -206,15 +209,46 @@ namespace ZooTycoonManager
 
         public void LoadContent(ContentManager contentManager)
         {
-            sprite = contentManager.Load<Texture2D>("NibblingGoat");
             _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
             _thoughtBubble = new ThoughtBubble();
             _thoughtBubble.LoadContent(contentManager);
-
             if (_borderTexture == null)
             {
                 _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
                 _borderTexture.SetData(new[] { Color.White });
+            }
+            switch (species)
+            {
+                case "Buffalo":
+                    sprite = contentManager.Load<Texture2D>("EnragedBuffalo");
+                    break;
+                case "Orangutan":
+                    sprite = contentManager.Load<Texture2D>("AgitatedOrangutan");
+                    break;
+                case "Kangaroo":
+                    sprite = contentManager.Load<Texture2D>("HoppingKangaroo");
+                    break;
+                case "Elephant":
+                    sprite = contentManager.Load<Texture2D>("StompingElephant");
+                    break;
+                case "Polarbear":
+                    sprite = contentManager.Load<Texture2D>("PolarBear");
+                    break;
+                case "Turtle":
+                    sprite = contentManager.Load<Texture2D>("SlowTurtle");
+                    break;
+                case "Camel":
+                    sprite = contentManager.Load<Texture2D>("ThirstyCamel");
+                    break;
+                case "Bear":
+                    sprite = contentManager.Load<Texture2D>("KodiakBear");
+                    break;
+                case "Wolf":
+                    sprite = contentManager.Load<Texture2D>("ArcticWolf");
+                    break;
+                case "Chimpanze":
+                    sprite = contentManager.Load<Texture2D>("MindfulChimpanze");
+                    break;
             }
         }
 
