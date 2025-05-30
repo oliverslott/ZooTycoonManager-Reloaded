@@ -22,10 +22,16 @@ namespace ZooTycoonManager.Commands
 
         public bool Execute()
         {
+            Vector2 cursorTile = GameWorld.PixelToTile(_position);
+
+            int shopTopLeftTileX = (int)cursorTile.X - (_widthInTiles / 2);
+            int shopTopLeftTileY = (int)cursorTile.Y - (_heightInTiles / 2);
+
             Vector2 snappedPixelPosition = new Vector2(
-                (int)(_position.X / GameWorld.TILE_SIZE) * GameWorld.TILE_SIZE,
-                (int)(_position.Y / GameWorld.TILE_SIZE) * GameWorld.TILE_SIZE
+                shopTopLeftTileX * GameWorld.TILE_SIZE,
+                shopTopLeftTileY * GameWorld.TILE_SIZE
             );
+
             Vector2 startTile = GameWorld.PixelToTile(snappedPixelPosition);
 
             HashSet<Vector2> newShopTiles = new HashSet<Vector2>();

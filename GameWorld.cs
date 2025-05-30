@@ -713,16 +713,22 @@ namespace ZooTycoonManager
             {
                 MouseState mouse = Mouse.GetState();
                 Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
-                Vector2 tilePreviewPosition = PixelToTile(worldMousePosition);
+
+                int shopWidthInTiles = 3; 
+                int shopHeightInTiles = 3;
+
+                Vector2 cursorTile = PixelToTile(worldMousePosition);
+
+                int previewTopLeftTileX = (int)cursorTile.X - (shopWidthInTiles / 2);
+                int previewTopLeftTileY = (int)cursorTile.Y - (shopHeightInTiles / 2);
 
                 Vector2 snappedDrawPosition = new Vector2(
-                    tilePreviewPosition.X * TILE_SIZE,
-                    tilePreviewPosition.Y * TILE_SIZE
+                    previewTopLeftTileX * TILE_SIZE,
+                    previewTopLeftTileY * TILE_SIZE
                 );
 
-
-                int previewWidthPixels = 3 * TILE_SIZE;
-                int previewHeightPixels = 3 * TILE_SIZE;
+                int previewWidthPixels = shopWidthInTiles * TILE_SIZE;
+                int previewHeightPixels = shopHeightInTiles * TILE_SIZE;
 
                 Rectangle destinationRectangle = new Rectangle(
                     (int)snappedDrawPosition.X,
