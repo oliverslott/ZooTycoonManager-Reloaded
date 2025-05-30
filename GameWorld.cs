@@ -22,6 +22,8 @@ namespace ZooTycoonManager
         public const int VISITOR_EXIT_TILE_X = GRID_WIDTH - 20;
         public const int VISITOR_EXIT_TILE_Y = 0;
 
+        public const int DEFAULT_SHOP_COST = 500;
+
         private static GameWorld _instance;
         private static readonly object _lock = new object();
         private GraphicsDeviceManager _graphics;
@@ -32,6 +34,7 @@ namespace ZooTycoonManager
         private Texture2D[] tileTextures;
         private FPSCounter _fpsCounter; 
         private Texture2D _habitatPreviewTexture;
+        private Texture2D _shopPreviewTexture;
 
         // UI
         Button shopButton;
@@ -60,7 +63,8 @@ namespace ZooTycoonManager
         private enum PlacementMode
         {
             None,
-            PlaceMediumHabitat
+            PlaceMediumHabitat,
+            PlaceVisitorShop
         }
 
         private PlacementMode _currentPlacement = PlacementMode.None;
@@ -248,6 +252,7 @@ namespace ZooTycoonManager
             _font = Content.Load<SpriteFont>("font"); 
             _fpsCounter = new FPSCounter(_font, _graphics);
             _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
+            _shopPreviewTexture = Content.Load<Texture2D>("foodshopsprite_cut");
 
 
             Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
@@ -435,7 +440,7 @@ namespace ZooTycoonManager
             // Debug key for placing a shop
             if (keyboard.IsKeyDown(Keys.J) && !prevKeyboardState.IsKeyDown(Keys.J))
             {
-                var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, 0);
+                var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, DEFAULT_SHOP_COST);
                 CommandManager.Instance.ExecuteCommand(placeShopCommand);
             }
 
@@ -450,6 +455,12 @@ namespace ZooTycoonManager
                     var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
                     CommandManager.Instance.ExecuteCommand(command);
 
+                    _currentPlacement = PlacementMode.None; 
+                }
+                else if (_currentPlacement == PlacementMode.PlaceVisitorShop)
+                {
+                    var placeShopCommand = new PlaceShopCommand(worldMousePos, 3, 3, DEFAULT_SHOP_COST); 
+                    CommandManager.Instance.ExecuteCommand(placeShopCommand);
                     _currentPlacement = PlacementMode.None; 
                 }
                 else
@@ -698,6 +709,30 @@ namespace ZooTycoonManager
                 _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f); // Halvgennemsigtig
             }
 
+            if (_currentPlacement == PlacementMode.PlaceVisitorShop && _shopPreviewTexture != null)
+            {
+                MouseState mouse = Mouse.GetState();
+                Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                Vector2 tilePreviewPosition = PixelToTile(worldMousePosition);
+
+                Vector2 snappedDrawPosition = new Vector2(
+                    tilePreviewPosition.X * TILE_SIZE,
+                    tilePreviewPosition.Y * TILE_SIZE
+                );
+
+
+                int previewWidthPixels = 3 * TILE_SIZE;
+                int previewHeightPixels = 3 * TILE_SIZE;
+
+                Rectangle destinationRectangle = new Rectangle(
+                    (int)snappedDrawPosition.X,
+                    (int)snappedDrawPosition.Y,
+                    previewWidthPixels,
+                    previewHeightPixels
+                );
+                _spriteBatch.Draw(_shopPreviewTexture, destinationRectangle, Color.White * 0.5f); // 50% transparency
+            }
+
             // VIGTIGT! Luk det første Begin!
             
 
@@ -705,7 +740,6 @@ namespace ZooTycoonManager
 
             //Begin ui:
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
 
             _fpsCounter.Draw(_spriteBatch);
 
@@ -987,15 +1021,32 @@ namespace ZooTycoonManager
         }
         public void StartHabitatPlacement(string size)
         {
-            _buildingsMenu.IsVisible = false;
-            _habitatMenu.IsVisible = false;
-            _animalMenu.IsVisible = false;
-            _zookeeperMenu.IsVisible = false;
+            HideAllMenus();
 
             if (size == "Medium")
             {
                 _currentPlacement = PlacementMode.PlaceMediumHabitat;
                 Console.WriteLine("Placement mode: Medium Habitat activated");
+            }
+        }
+
+        public void HideAllMenus()
+        {
+            if (_shopWindow != null) _shopWindow.IsVisible = false;
+            if (_buildingsMenu != null) _buildingsMenu.IsVisible = false;
+            if (_habitatMenu != null) _habitatMenu.IsVisible = false;
+            if (_animalMenu != null) _animalMenu.IsVisible = false;
+            if (_zookeeperMenu != null) _zookeeperMenu.IsVisible = false;
+        }
+
+        public void StartShopPlacement(string shopType)
+        {
+            HideAllMenus();
+
+            if (shopType == "Visitor Shop")
+            {
+                _currentPlacement = PlacementMode.PlaceVisitorShop;
+                Debug.WriteLine("Placement mode: Visitor Shop activated");
             }
         }
     }

@@ -47,13 +47,13 @@ namespace ZooTycoonManager
         public int WidthInPixels => _widthInTiles * GameWorld.TILE_SIZE;
         public int HeightInPixels => _heightInTiles * GameWorld.TILE_SIZE;
 
-        public Shop(Vector2 worldPosition, int widthInTiles, int heightInTiles, int shopId)
+        public Shop(Vector2 worldPosition, int widthInTiles, int heightInTiles, int shopId, int cost)
         {
             ShopId = shopId;
             _widthInTiles = widthInTiles;
             _heightInTiles = heightInTiles;
             Type = "Food";
-            Cost = 0;
+            Cost = cost;
             Position = SnapToTile(worldPosition);
             InitializeShopState();
         }

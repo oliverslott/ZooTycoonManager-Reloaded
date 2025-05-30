@@ -81,11 +81,19 @@ namespace ZooTycoonManager.Commands
                 }
             }
 
-            _placedShop = new Shop(snappedPixelPosition, _widthInTiles, _heightInTiles, GameWorld.Instance.GetNextShopId());
+
+            if (!MoneyManager.Instance.SpendMoney(_cost))
+            {
+                Debug.WriteLine($"PlaceShopCommand: Could not spend {_cost} for shop. Current balance: {MoneyManager.Instance.CurrentMoney}. Placement failed.");
+                return false;
+            }
+
+            _placedShop = new Shop(snappedPixelPosition, _widthInTiles, _heightInTiles, GameWorld.Instance.GetNextShopId(), _cost);
             _placedShop.LoadContent(GameWorld.Instance.Content);
+            
             GameWorld.Instance.GetShops().Add(_placedShop);
 
-            Debug.WriteLine($"Executed PlaceShopCommand: Shop {_placedShop.ShopId} at {snappedPixelPosition}");
+            Debug.WriteLine($"Executed PlaceShopCommand: Shop {_placedShop.ShopId} at {snappedPixelPosition}, Cost: {_cost}");
             return true;
         }
 
@@ -109,11 +117,12 @@ namespace ZooTycoonManager.Commands
                     }
                 }
 
-                Debug.WriteLine($"Undone PlaceShopCommand: Shop {_placedShop.ShopId} removed.");
+                MoneyManager.Instance.AddMoney(_cost);
+                Debug.WriteLine($"Undone PlaceShopCommand: Shop {_placedShop.ShopId} removed. Cost {_cost} refunded.");
                 _placedShop = null;
             }
         }
 
-        public string Description => $"Place Shop at ({_position.X / GameWorld.TILE_SIZE}, {_position.Y / GameWorld.TILE_SIZE})";
+        public string Description => $"Place Shop at ({_position.X / GameWorld.TILE_SIZE}, {_position.Y / GameWorld.TILE_SIZE}) for ${_cost}";
     }
 } 

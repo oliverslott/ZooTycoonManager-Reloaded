@@ -56,6 +56,10 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.StartHabitatPlacement("Medium");
                     }
+                    else if (button.Text == "Visitor Shop")
+                    {
+                        GameWorld.Instance.StartShopPlacement("Visitor Shop");
+                    }
                 }
             }
         }
