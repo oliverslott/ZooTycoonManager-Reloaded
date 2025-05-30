@@ -57,6 +57,8 @@ namespace ZooTycoonManager
         private int _positionX;
         private int _positionY;
 
+        string species;
+
         public Vector2 Position 
         { 
             get => _position;
@@ -203,7 +205,7 @@ namespace ZooTycoonManager
 
         public void LoadContent(ContentManager contentManager)
         {
-            sprite = contentManager.Load<Texture2D>("NibblingGoat");
+            sprite = contentManager.Load<Texture2D>("EnragedBuffalo");
             if (_borderTexture == null)
             {
                 _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
