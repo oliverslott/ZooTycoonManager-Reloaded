@@ -68,10 +68,12 @@ namespace ZooTycoonManager
         private bool isPlacingEnclosure = true;
         private List<Habitat> habitats;
         private List<Visitor> visitors;
+        private List<Shop> shops;
         private int _nextHabitatId = 1;
         private int _nextAnimalId = 1;
         private int _nextVisitorId = 1;
         private int _nextZookeeperId = 1;
+        private int _nextShopId = 1;
 
         private float _visitorSpawnTimer = 0f;
         private const float VISITOR_SPAWN_INTERVAL = 10.0f;
@@ -100,6 +102,11 @@ namespace ZooTycoonManager
         public List<Visitor> GetVisitors()
         {
             return visitors;
+        }
+
+        public List<Shop> GetShops()
+        {
+            return shops;
         }
 
         public static GameWorld Instance
@@ -144,6 +151,7 @@ namespace ZooTycoonManager
 
             habitats = new List<Habitat>();
             visitors = new List<Visitor>();
+            shops = new List<Shop>();
             _boundaryFenceTilePositions = new List<Vector2>();
             _boundaryFenceTileCoordinates = new HashSet<Vector2>();
 
@@ -205,13 +213,31 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            var (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
+            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
             habitats = loadedHabitats;
+            shops = loadedShops;
             _nextHabitatId = nextHabitatId;
             _nextAnimalId = nextAnimalId;
             _nextVisitorId = nextVisitorId;
+            _nextShopId = nextShopIdVal;
             MoneyManager.Instance.Initialize(loadedMoney);
 
+            foreach (var shop in shops)
+            {
+                Vector2 startTile = GameWorld.PixelToTile(shop.Position);
+                for (int x = 0; x < shop.WidthInTiles; x++)
+                {
+                    for (int y = 0; y < shop.HeightInTiles; y++)
+                    {
+                        int tileX = (int)startTile.X + x;
+                        int tileY = (int)startTile.Y + y;
+                        if (tileX >= 0 && tileX < GRID_WIDTH && tileY >= 0 && tileY < GRID_HEIGHT)
+                        {
+                            WalkableMap[tileX, tileY] = false;
+                        }
+                    }
+                }
+            }
             
             base.Initialize();
         }
@@ -406,6 +432,13 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
+            // Debug key for placing a shop
+            if (keyboard.IsKeyDown(Keys.J) && !prevKeyboardState.IsKeyDown(Keys.J))
+            {
+                var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, 0);
+                CommandManager.Instance.ExecuteCommand(placeShopCommand);
+            }
+
             bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
 
             if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
@@ -483,6 +516,11 @@ namespace ZooTycoonManager
             foreach (var habitat in habitats)
             {
                 habitat.Update(gameTime);
+            }
+
+            foreach (var shop in shops)
+            {
+                shop.Update(gameTime);
             }
 
             if (_visitorsToDespawn.Count > 0)
@@ -617,6 +655,11 @@ namespace ZooTycoonManager
                 habitat.Draw(_spriteBatch);
             }
 
+            foreach (var shop in shops)
+            {
+                shop.Draw(_spriteBatch);
+            }
+
             // Draw all visitors
             foreach (var visitor in visitors)
             {
@@ -706,6 +749,11 @@ namespace ZooTycoonManager
         {
             // Logic to generate a unique zookeeper ID
             return _nextZookeeperId++;
+        }
+
+        public int GetNextShopId()
+        {
+            return _nextShopId++;
         }
 
         public bool GetOriginalWalkableState(int x, int y)
