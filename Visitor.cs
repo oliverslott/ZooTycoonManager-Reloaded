@@ -44,6 +44,7 @@ namespace ZooTycoonManager
         private static Texture2D _borderTexture;
 
         private const float HUNGER_INCREASE_RATE = 5f;
+        private const int HUNGER_PRIORITY_THRESHOLD = 50;
         private float _uncommittedHungerPoints = 0f;
 
         public bool IsSelected { get; set; }
@@ -138,11 +139,11 @@ namespace ZooTycoonManager
             if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return;
             if (currentHabitat != null) return;
 
-            if (Hunger > 70 && TryVisitShop()) return;
+            if (Hunger > HUNGER_PRIORITY_THRESHOLD && TryVisitShop()) return;
 
             if (TryVisitHabitat()) return;
 
-            if (Hunger <= 70 && TryVisitShop()) return;
+            if (Hunger <= HUNGER_PRIORITY_THRESHOLD && TryVisitShop()) return;
 
             if (path == null || path.Count == 0)
             {
@@ -487,7 +488,7 @@ namespace ZooTycoonManager
                 {
                     _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
                 }
-                else if (Hunger > 70 && _thoughtBubble != null && _drumstickTexture != null)
+                else if (Hunger > HUNGER_PRIORITY_THRESHOLD && _thoughtBubble != null && _drumstickTexture != null)
                 {
                     _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _drumstickTexture, null, 0.3f);
                 }
