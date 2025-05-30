@@ -329,12 +329,7 @@ namespace ZooTycoonManager
 
 
 
-            if (keyboard.IsKeyDown(Keys.A) && !prevKeyboardState.IsKeyDown(Keys.A))
-            {
-                var placeAnimalCommand = new PlaceAnimalCommand(worldMousePosition);
-                CommandManager.Instance.ExecuteCommand(placeAnimalCommand);
-
-            }
+            
 
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
@@ -424,8 +419,16 @@ namespace ZooTycoonManager
                 {
                     var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
                     CommandManager.Instance.ExecuteCommand(command);
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceAnimal_Buffalo)
+                {
+                    var command = new PlaceAnimalCommand(worldMousePos);
+                    CommandManager.Instance.ExecuteCommand(command);
 
-                    _currentPlacement = PlacementMode.None; 
+                    
+
+                    _currentPlacement = PlacementMode.None;
                 }
                 else
                 {
