@@ -47,6 +47,11 @@ namespace ZooTycoonManager
         private const int HUNGER_PRIORITY_THRESHOLD = 50;
         private float _uncommittedHungerPoints = 0f;
 
+        private const int HIGH_HUNGER_THRESHOLD = 80;
+        private const float MOOD_PENALTY_PER_SECOND_HIGH_HUNGER = 1.0f;
+        private const float MOOD_RECOVERY_PER_SECOND_NOT_HUNGRY = 0.5f;
+        private float _uncommittedMoodChangePoints = 0f;
+
         public bool IsSelected { get; set; }
         int IInspectableEntity.Id => VisitorId;
         string IInspectableEntity.Name => Name;
@@ -296,6 +301,7 @@ namespace ZooTycoonManager
         private void Update(GameTime gameTime)
         {
             UpdateHunger(gameTime);
+            UpdateMood(gameTime);
             UpdateActivity(gameTime);
             UpdateSadThoughtBubbleDisplay(gameTime);
 
@@ -321,6 +327,37 @@ namespace ZooTycoonManager
                     Hunger = 100;
                 }
                 _uncommittedHungerPoints -= wholePointsToAdd;
+            }
+        }
+
+        private void UpdateMood(GameTime gameTime)
+        {
+            if (Hunger > HIGH_HUNGER_THRESHOLD)
+            {
+                _uncommittedMoodChangePoints -= MOOD_PENALTY_PER_SECOND_HIGH_HUNGER * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            else if (Mood < 100)
+            {
+                _uncommittedMoodChangePoints += MOOD_RECOVERY_PER_SECOND_NOT_HUNGRY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
+            if (Math.Abs(_uncommittedMoodChangePoints) >= 1.0f)
+            {
+                int wholePointsToChange = (int)_uncommittedMoodChangePoints;
+                Mood += wholePointsToChange;
+                _uncommittedMoodChangePoints -= wholePointsToChange;
+
+                if (Mood < 0) Mood = 0;
+                if (Mood > 100) Mood = 100;
+
+                if (wholePointsToChange < 0)
+                {
+                    Debug.WriteLine($"Visitor {VisitorId} mood decreased by {Math.Abs(wholePointsToChange)} to {Mood} due to high hunger ({Hunger}).");
+                }
+                else if (wholePointsToChange > 0)
+                {
+                    Debug.WriteLine($"Visitor {VisitorId} mood increased by {wholePointsToChange} to {Mood} due to normal hunger ({Hunger}).");
+                }
             }
         }
 
@@ -604,6 +641,7 @@ namespace ZooTycoonManager
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;
             _uncommittedHungerPoints = 0f;
+            _uncommittedMoodChangePoints = 0f;
         }
 
         public void InitiateExit()
