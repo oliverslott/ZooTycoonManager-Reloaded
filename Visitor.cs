@@ -487,7 +487,7 @@ namespace ZooTycoonManager
                 {
                     _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
                 }
-                else if (IsThinkingAboutShop() && _thoughtBubble != null && _drumstickTexture != null)
+                else if (Hunger > 70 && _thoughtBubble != null && _drumstickTexture != null)
                 {
                     _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _drumstickTexture, null, 0.3f);
                 }
@@ -641,16 +641,6 @@ namespace ZooTycoonManager
         {
             PathfindTo(targetExitTile);
             return path != null && path.Count > 0;
-        }
-
-        private bool IsThinkingAboutShop()
-        {
-            if (currentShop == null) return false;
-
-            bool isInteractingAtShop = (path == null || path.Count == 0 || currentNodeIndex >= path.Count) && currentVisitTime < (VISIT_DURATION / 2.0f);
-            bool isPathfindingToShop = (path != null && path.Count > 0 && currentNodeIndex < path.Count);
-            
-            return isInteractingAtShop || isPathfindingToShop;
         }
     }
 }
