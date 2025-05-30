@@ -185,6 +185,7 @@ namespace ZooTycoonManager
         public void VisitorInteraction(Visitor visitor)
         {
             visitor.Hunger = 0;
+            MoneyManager.Instance.AddMoney(10);
             Debug.WriteLine($"Visitor {visitor.VisitorId} visited Shop {ShopId} and hunger is now 0.");
         }
 
