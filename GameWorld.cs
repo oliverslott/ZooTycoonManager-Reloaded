@@ -889,7 +889,7 @@ namespace ZooTycoonManager
 
             _fpsCounter.Draw(_spriteBatch);
 
-            string instructions = "Press 'A' for placing animal\nPress 'B' for spawning visitor\nPress 'P' to toggle road placement\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
+            string instructions = "Press 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
             Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
