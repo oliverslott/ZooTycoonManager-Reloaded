@@ -49,9 +49,11 @@ namespace ZooTycoonManager
         public int Hunger { get; set; }
         public int Stress { get; set; }
         public int HabitatId { get; set; }
+        public int SpeciesId { get; private set; }
 
         int IInspectableEntity.Id => AnimalId;
         string IInspectableEntity.Name => Name;
+        int IInspectableEntity.SpeciesId => SpeciesId;
         int IInspectableEntity.Mood => Mood;
         int IInspectableEntity.Hunger => Hunger;
         int IStressableEntity.Stress => Stress;
@@ -59,8 +61,6 @@ namespace ZooTycoonManager
         private Vector2 _position;
         private int _positionX;
         private int _positionY;
-
-        string species;
 
         public Vector2 Position 
         { 
@@ -79,15 +79,16 @@ namespace ZooTycoonManager
 
         public Rectangle BoundingBox => new Rectangle((int)(Position.X - 8 * 2), (int)(Position.Y - 8 * 2), 16 * 2, 16 * 2);
 
-        public Animal(int animalId = 0, string species = "Buffalo")
+        public Animal(int animalId = 0, int speciesId = 1)
         {
             pathfinder = new AStarPathfinding(GameWorld.GRID_WIDTH, GameWorld.GRID_HEIGHT, GameWorld.Instance.WalkableMap);
             IsPathfinding = false;
             Position = new Vector2(GameWorld.TILE_SIZE * 5, GameWorld.TILE_SIZE * 5);
             AnimalId = animalId;
-            this.species = species;
+            SpeciesId = speciesId;
              
-            Name = species;
+            string speciesName = DatabaseManager.Instance.GetSpeciesNameById(speciesId);
+            Name = $"{speciesName} #{AnimalId}";
             Mood = 100;
             Hunger = 0;
             Stress = 0;
@@ -101,6 +102,12 @@ namespace ZooTycoonManager
             _pathfindingWorkerThread.Name = $"Animal_{GetHashCode()}_PathWorker";
             _pathfindingWorkerThread.IsBackground = true;
             _pathfindingWorkerThread.Start();
+
+            if (_borderTexture == null)
+            {
+                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
+                _borderTexture.SetData(new[] { Color.White });
+            }
         }
 
         public void SetHabitat(Habitat habitat)
@@ -212,12 +219,9 @@ namespace ZooTycoonManager
             _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
             _thoughtBubble = new ThoughtBubble();
             _thoughtBubble.LoadContent(contentManager);
-            if (_borderTexture == null)
-            {
-                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
-                _borderTexture.SetData(new[] { Color.White });
-            }
-            switch (species)
+            string speciesNameForTexture = DatabaseManager.Instance.GetSpeciesNameById(SpeciesId);
+
+            switch (speciesNameForTexture)
             {
                 case "Buffalo":
                     sprite = contentManager.Load<Texture2D>("EnragedBuffalo");
@@ -407,6 +411,7 @@ namespace ZooTycoonManager
             command.Parameters.AddWithValue("$habitat_id", HabitatId);
             command.Parameters.AddWithValue("$position_x", PositionX);
             command.Parameters.AddWithValue("$position_y", PositionY);
+            command.Parameters.AddWithValue("$species_id", SpeciesId);
 
             command.CommandText = @"
                 UPDATE Animal 
@@ -416,7 +421,8 @@ namespace ZooTycoonManager
                     stress = $stress, 
                     habitat_id = $habitat_id, 
                     position_x = $position_x, 
-                    position_y = $position_y
+                    position_y = $position_y,
+                    species_id = $species_id
                 WHERE animal_id = $animal_id;
             ";
             int rowsAffected = command.ExecuteNonQuery();
@@ -424,15 +430,15 @@ namespace ZooTycoonManager
             if (rowsAffected == 0)
             {
                 command.CommandText = @"
-                    INSERT INTO Animal (animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y)
-                    VALUES ($animal_id, $name, $mood, $hunger, $stress, $habitat_id, $position_x, $position_y);
+                    INSERT INTO Animal (animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y, species_id)
+                    VALUES ($animal_id, $name, $mood, $hunger, $stress, $habitat_id, $position_x, $position_y, $species_id);
                 ";
                 command.ExecuteNonQuery();
-                Debug.WriteLine($"Inserted Animal: ID {AnimalId}, Name: {Name}");
+                Debug.WriteLine($"Inserted Animal: ID {AnimalId}, Name: {Name}, SpeciesID: {SpeciesId}");
             }
             else
             {
-                Debug.WriteLine($"Updated Animal: ID {AnimalId}, Name: {Name}");
+                Debug.WriteLine($"Updated Animal: ID {AnimalId}, Name: {Name}, SpeciesID: {SpeciesId}");
             }
         }
 
@@ -446,6 +452,7 @@ namespace ZooTycoonManager
             HabitatId = reader.GetInt32(5);
             int posX = reader.GetInt32(6);
             int posY = reader.GetInt32(7);
+            SpeciesId = reader.GetInt32(8);
 
             Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
             Position = pixelPos;

@@ -10,15 +10,15 @@ namespace ZooTycoonManager.Commands
         private readonly decimal _cost;
         private Animal _createdAnimal;
         private Habitat _targetHabitat;
-        string species;
+        private readonly int _speciesId;
         
-        public string Description => $"Place Animal at ({_position.X:F0}, {_position.Y:F0})";
+        public string Description => $"Place Animal ({_speciesId}) at ({_position.X:F0}, {_position.Y:F0})";
         
-        public PlaceAnimalCommand(Vector2 position, string species, decimal cost = 1000)
+        public PlaceAnimalCommand(Vector2 position, int speciesId, decimal cost = 1000)
         {
             _position = position;
             _cost = cost;
-            this.species = species;
+            _speciesId = speciesId;
         }
         
         public bool Execute()
@@ -49,7 +49,7 @@ namespace ZooTycoonManager.Commands
             }
             
             Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
-            _createdAnimal = new Animal(GameWorld.Instance.GetNextAnimalId(), species);
+            _createdAnimal = new Animal(GameWorld.Instance.GetNextAnimalId(), _speciesId);
             _createdAnimal.SetPosition(spawnPos);
             _createdAnimal.LoadContent(GameWorld.Instance.Content);
             _createdAnimal.SetHabitat(_targetHabitat);

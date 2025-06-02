@@ -57,6 +57,7 @@ namespace ZooTycoonManager
         string IInspectableEntity.Name => Name;
         int IInspectableEntity.Mood => Mood;
         int IInspectableEntity.Hunger => Hunger;
+        int IInspectableEntity.SpeciesId => 0;
 
         // Database
         public int VisitorId { get; set; }

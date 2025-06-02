@@ -103,7 +103,9 @@ namespace ZooTycoonManager
                     habitat_id INTEGER NOT NULL,
                     position_x INTEGER NOT NULL,
                     position_y INTEGER NOT NULL,
-                    FOREIGN KEY (habitat_id) REFERENCES Habitat(habitat_id) ON DELETE RESTRICT
+                    species_id INTEGER NOT NULL,
+                    FOREIGN KEY (habitat_id) REFERENCES Habitat(habitat_id) ON DELETE RESTRICT,
+                    FOREIGN KEY (species_id) REFERENCES Species(species_id)
                 );
                 CREATE TABLE IF NOT EXISTS VisitorFavoriteSpecies (
                     visitor_id INTEGER NOT NULL,
@@ -135,12 +137,54 @@ namespace ZooTycoonManager
                 {
                     var insertSpeciesCmd = _connection.CreateCommand();
                     insertSpeciesCmd.Transaction = transaction;
-                    insertSpeciesCmd.CommandText = @"
-                        INSERT INTO Species (name) VALUES ('Goat');
-                    ";
-                    insertSpeciesCmd.ExecuteNonQuery();
+                    
+                    // Define all known species with IDs (assuming IDs start from 1)
+                    var allSpeciesWithIds = new Dictionary<int, string>() 
+                    {
+                        {1, "Buffalo"}, {2, "Turtle"}, {3, "Chimpanze"}, {4, "Camel"}, {5, "Orangutan"},
+                        {6, "Kangaroo"}, {7, "Wolf"}, {8, "Bear"}, {9, "Elephant"}, {10, "Polarbear"}, {11, "Goat"}
+                    };
+
+                    // Check existing species to avoid duplicates by name or id
+                    var existingSpeciesNames = new HashSet<string>();
+                    var existingSpeciesIds = new HashSet<int>();
+                    var checkExistingCmd = _connection.CreateCommand();
+                    checkExistingCmd.Transaction = transaction; 
+                    checkExistingCmd.CommandText = "SELECT species_id, name FROM Species";
+                    using (var reader = checkExistingCmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            existingSpeciesIds.Add(reader.GetInt32(0));
+                            existingSpeciesNames.Add(reader.GetString(1));
+                        }
+                    }
+
+                    bool newSpeciesAdded = false;
+                    foreach (var speciesEntry in allSpeciesWithIds)
+                    {
+                        // Insert if ID is not present AND name is not present to be safe
+                        if (!existingSpeciesIds.Contains(speciesEntry.Key) && !existingSpeciesNames.Contains(speciesEntry.Value))
+                        {
+                            insertSpeciesCmd.CommandText = "INSERT INTO Species (species_id, name) VALUES (@id, @name);";
+                            insertSpeciesCmd.Parameters.Clear(); 
+                            insertSpeciesCmd.Parameters.AddWithValue("@id", speciesEntry.Key);
+                            insertSpeciesCmd.Parameters.AddWithValue("@name", speciesEntry.Value);
+                            insertSpeciesCmd.ExecuteNonQuery();
+                            newSpeciesAdded = true;
+                        }
+                        // Optionally, handle cases where ID exists but name differs, or vice-versa (update or error)
+                    }
+                    
                     transaction.Commit();
-                    Debug.WriteLine("Populated default species into Species table.");
+                    if (newSpeciesAdded)
+                    {
+                        Debug.WriteLine("Populated/updated species in Species table.");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Species table already up-to-date.");
+                    }
                 }
             }
 
@@ -409,7 +453,7 @@ namespace ZooTycoonManager
         {
             nextAnimalId = 1;
             var command = _connection.CreateCommand();
-            command.CommandText = "SELECT animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y FROM Animal";
+            command.CommandText = "SELECT animal_id, name, mood, hunger, stress, habitat_id, position_x, position_y, species_id FROM Animal";
             using (var reader = command.ExecuteReader())
             {
                 while (reader.Read())
@@ -534,6 +578,58 @@ namespace ZooTycoonManager
             }
 
             return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, currentMoney);
+        }
+
+        public string GetSpeciesNameById(int speciesId)
+        {
+            string speciesName = "Unknown";
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT name FROM Species WHERE species_id = @id";
+            command.Parameters.AddWithValue("@id", speciesId);
+
+            try
+            {
+                var result = command.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    speciesName = Convert.ToString(result);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Species ID {speciesId} not found in Species table.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error fetching species name for ID {speciesId}: {ex.Message}");
+            }
+            return speciesName;
+        }
+
+        public int GetSpeciesIdByName(string speciesName)
+        {
+            int speciesId = -1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT species_id FROM Species WHERE name = @name COLLATE NOCASE";
+            command.Parameters.AddWithValue("@name", speciesName);
+
+            try
+            {
+                var result = command.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    speciesId = Convert.ToInt32(result);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Species name '{speciesName}' not found in Species table.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error fetching species ID for name '{speciesName}': {ex.Message}");
+            }
+            return speciesId;
         }
     }
 } 

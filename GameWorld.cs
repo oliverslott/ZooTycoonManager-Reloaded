@@ -510,92 +510,92 @@ namespace ZooTycoonManager
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Buffalo)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Buffalo");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-                    
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Buffalo");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1000); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Orangutan)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Orangutan");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Orangutan");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1200); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Chimpanze)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Chimpanze");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Chimpanze");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1100); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Kangaroo)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Kangaroo");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Kangaroo");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1300); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Elephant)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Elephant");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Elephant");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2000); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Camel)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Camel");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Camel");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1400); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Wolf)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Wolf");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Wolf");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1500); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Bear)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Bear");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Bear");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1800); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Turtle)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Turtle");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Turtle");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 800); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceAnimal_Polarbear)
                 {
-                    var command = new PlaceAnimalCommand(worldMousePos, "Polarbear");
-                    CommandManager.Instance.ExecuteCommand(command);
-
-
-
+                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Polarbear");
+                    if (speciesId != -1) {
+                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2200); 
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
                     _currentPlacement = PlacementMode.None;
                 }
 
@@ -1240,55 +1240,65 @@ namespace ZooTycoonManager
             _animalMenu.IsVisible = false;
             _zookeeperMenu.IsVisible = false;
 
-            if (animalType == "Buffalo") // Du kan udvide til flere dyr senere
+            int speciesIdToPlace = DatabaseManager.Instance.GetSpeciesIdByName(animalType);
+            if (speciesIdToPlace == -1) 
+            {
+                Debug.WriteLine($"Animal placement failed: Species '{animalType}' not found in database.");
+                _currentPlacement = PlacementMode.None; 
+                return; 
+            }
+
+            
+
+            if (animalType == "Buffalo") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
-                Console.WriteLine("Placement mode: Buffalo activated");
+                Console.WriteLine($"Placement mode: Buffalo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Kangaroo") // Du kan udvide til flere dyr senere
+            else if (animalType == "Kangaroo") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
-                Console.WriteLine("Placement mode: Kangaroo activated");
+                Console.WriteLine($"Placement mode: Kangaroo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Polarbear") // Du kan udvide til flere dyr senere
+            else if (animalType == "Polarbear")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
-                Console.WriteLine("Placement mode: Polarbear activated");
+                Console.WriteLine($"Placement mode: Polarbear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Bear") // Du kan udvide til flere dyr senere
+            else if (animalType == "Bear")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Bear;
-                Console.WriteLine("Placement mode: Bear activated");
+                Console.WriteLine($"Placement mode: Bear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Chimpanze") // Du kan udvide til flere dyr senere
+            else if (animalType == "Chimpanze")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
-                Console.WriteLine("Placement mode: Chimpanze activated");
+                Console.WriteLine($"Placement mode: Chimpanze (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Elephant") // Du kan udvide til flere dyr senere
+            else if (animalType == "Elephant")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
-                Console.WriteLine("Placement mode: Elephant activated");
+                Console.WriteLine($"Placement mode: Elephant (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Orangutan") // Du kan udvide til flere dyr senere
+            else if (animalType == "Orangutan")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
-                Console.WriteLine("Placement mode: Orangutan activated");
+                Console.WriteLine($"Placement mode: Orangutan (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Turtle") // Du kan udvide til flere dyr senere
+            else if (animalType == "Turtle")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
-                Console.WriteLine("Placement mode: Turtle activated");
+                Console.WriteLine($"Placement mode: Turtle (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Wolf") // Du kan udvide til flere dyr senere
+            else if (animalType == "Wolf")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
-                Console.WriteLine("Placement mode: Wolf activated");
+                Console.WriteLine($"Placement mode: Wolf (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Camel") // Du kan udvide til flere dyr senere
+            else if (animalType == "Camel")
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Camel;
-                Console.WriteLine("Placement mode: Camel activated");
+                Console.WriteLine($"Placement mode: Camel (ID: {speciesIdToPlace}) activated");
             }
         }
 
