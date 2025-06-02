@@ -65,7 +65,7 @@ namespace ZooTycoonManager
             None,
             PlaceMediumHabitat,
 
-            PlaceZookeeper
+            PlaceZookeeper,
             PlaceVisitorShop,
             PlaceAnimal_Buffalo,
             PlaceAnimal_Camel,

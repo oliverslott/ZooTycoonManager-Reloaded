@@ -65,6 +65,7 @@ namespace ZooTycoonManager
                     if (button.Text == "Experienced Zookeeper")
                     {
                         GameWorld.Instance.StartZookeeperPlacement("Experienced Zookeeper");
+                    }
                     else if (button.Text == "Visitor Shop")
                     {
                         GameWorld.Instance.StartShopPlacement("Visitor Shop");
@@ -116,7 +117,6 @@ namespace ZooTycoonManager
                 }
             }
         }
-
         public void Draw(SpriteBatch spriteBatch)
         {
             if (!IsVisible) return;
