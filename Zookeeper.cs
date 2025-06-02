@@ -253,7 +253,7 @@ namespace ZooTycoonManager
         public void Draw(SpriteBatch spriteBatch)
         {
             if (sprite == null) return;
-            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(8, 8), 1.2f, SpriteEffects.None, 0f);
         }
 
 
