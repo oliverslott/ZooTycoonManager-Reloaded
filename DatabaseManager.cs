@@ -392,7 +392,7 @@ namespace ZooTycoonManager
             {
                 while (reader.Read())
                 {
-                    var habitat = new Habitat(Vector2.Zero, Habitat.DEFAULT_ENCLOSURE_SIZE, Habitat.DEFAULT_ENCLOSURE_SIZE);
+                    var habitat = new Habitat();
                     habitat.Load(reader);
                     loadedHabitats.Add(habitat);
 

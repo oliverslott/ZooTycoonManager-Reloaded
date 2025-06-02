@@ -259,7 +259,7 @@ namespace ZooTycoonManager
             // Overcrowding Stress Update
             if (currentHabitat != null)
             {
-                if (currentHabitat.GetAnimals().Count > 5)
+                if (currentHabitat.GetAnimals().Count > currentHabitat.MaxAnimalsBeforeStress)
                 {
                     _uncommittedStressPoints += STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 }
