@@ -110,7 +110,6 @@
 /build:Dirt1.png
 
 #begin drumstick.png
-#begin EnragedBuffalo.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -121,6 +120,17 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:drumstick.png
+
+#begin EnragedBuffalo.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:EnragedBuffalo.png
 
 #begin fence-connected-bottom.png
@@ -359,7 +369,6 @@
 /build:Regular_07.png
 
 #begin sad.png
-#begin SlowTurtle.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -370,6 +379,17 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:sad.png
+
+#begin SlowTurtle.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:SlowTurtle.png
 
 #begin StompingElephant.png
@@ -419,6 +439,13 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:tree1.png
+
+#begin UIFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:UIFont.spritefont
 
 #begin zookeeper.png
 /importer:TextureImporter

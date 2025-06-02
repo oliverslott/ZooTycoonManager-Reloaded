@@ -44,6 +44,8 @@ namespace ZooTycoonManager
         SubMenuWindow _habitatMenu;
         SubMenuWindow _animalMenu;
         SubMenuWindow _zookeeperMenu;
+        private StatDisplay _visitorDisplay;
+        private StatDisplay _animalDisplay;
 
         private Texture2D _treeTexture;
         private List<Vector2> _staticTreePositions;
@@ -280,6 +282,8 @@ namespace ZooTycoonManager
             _fpsCounter = new FPSCounter(_font, _graphics);
             _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
             _shopPreviewTexture = Content.Load<Texture2D>("foodshopsprite_cut");
+            SpriteFont uiFont = Content.Load<SpriteFont>("UIFont");
+
 
 
             Texture2D backgroundTexture = Content.Load<Texture2D>("Button_Blue"); // Brug det rigtige navn
@@ -290,30 +294,45 @@ namespace ZooTycoonManager
 
             Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
-            SpriteFont font = Content.Load<SpriteFont>("font");
+            SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
             string[] buildings = { "Tiles", "Visitor Shop", "Tree", "Waterhole" };
             string[] habitattype = { "Small", "Medium", "Large" };
             string[] animals = { "Buffalo", "Turtle", "Chimpanze", "Camel", "Orangutan", "Kangaroo", "Wolf", "Bear", "Elephant", "Polarbear" };
-            string[] zookeepers = { "Experienced Zookeeper" };
+            string[] zookeepers = { "Zookeeper" };
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
 
-            _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, buildings);
-            _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, habitattype);
-            _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, animals);
-            _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, zookeepers);
+            _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, buildings);
+            _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, habitattype);
+            _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, animals);
+            _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, zookeepers);
 
             // Lav shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90); // fx midt på skærmen
-            _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
+            _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
 
 
             // Initialize MoneyDisplay here after _font is loaded
-            Vector2 moneyPosition = new Vector2(10, 10); // Top-left corner
-            _moneyDisplay = new MoneyDisplay(_font, moneyPosition, Color.Black, 2f);
-            MoneyManager.Instance.Attach(_moneyDisplay); // Attach MoneyDisplay as observer
-            MoneyManager.Instance.Notify(); // Initial notification to set initial money text
+            Texture2D moneyBackground = Content.Load<Texture2D>("Button_Blue_3Slides"); // <-- skift navnet
+            Vector2 moneyPosition = new Vector2(10, 20); // hvor i hjørnet den skal stå
+
+            _moneyDisplay = new MoneyDisplay(
+                uiFont,
+                new Vector2(10, 10),             // Position (øverst til venstre fx)
+                Color.Black,                     // Tekstfarve
+                1.25f,                            // Tekststørrelse
+                moneyBackground,                // Baggrundstekstur
+                new Vector2(0, 0),               // Offset på baggrund (kan være 0,0)
+                new Vector2(1f, 1f)              // Baggrundsskalering
+            );
+            MoneyManager.Instance.Attach(_moneyDisplay);
+            MoneyManager.Instance.Notify();
+
+            Texture2D displayBg = Content.Load<Texture2D>("Button_Blue_3Slides"); // samme baggrund
+
+            _visitorDisplay = new StatDisplay(uiFont, new Vector2(220, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
+            _animalDisplay = new StatDisplay(uiFont, new Vector2(430, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
 
             // Initialize AnimalInfoPopup here after _font is loaded
             _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font); // Changed from AnimalInfoPopup
@@ -378,9 +397,10 @@ namespace ZooTycoonManager
 
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
+            _visitorDisplay.SetText($"Visitors: {visitors.Count}");
+            _animalDisplay.SetText($"Animals: {habitats.Sum(h => h.GetAnimals().Count)}");
 
 
-            
 
             if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
             {
@@ -894,8 +914,10 @@ namespace ZooTycoonManager
             _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
 
             _moneyDisplay.Draw(_spriteBatch);
+            _visitorDisplay.Draw(_spriteBatch);
+            _animalDisplay.Draw(_spriteBatch);
 
-            Vector2 undoRedoPosition = new Vector2(10, 40);
+            Vector2 undoRedoPosition = new Vector2(10, 75);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
 
@@ -1271,10 +1293,10 @@ namespace ZooTycoonManager
             _animalMenu.IsVisible = false;
             _zookeeperMenu.IsVisible = false;
 
-            if (name == "Experienced Zookeeper")
+            if (name == "Zookeeper")
             {
                 _currentPlacement = PlacementMode.PlaceZookeeper;
-                Console.WriteLine("Placement mode: Experienced Zookeeper activated");
+                Console.WriteLine("Placement mode: Zookeeper activated");
             }
         }
     }
