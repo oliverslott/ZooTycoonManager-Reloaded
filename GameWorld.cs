@@ -54,8 +54,16 @@ namespace ZooTycoonManager
         private List<Vector2> _boundaryFenceTilePositions;
         private HashSet<Vector2> _boundaryFenceTileCoordinates;
 
+        private Texture2D _infoButtonTexture;
+        private Texture2D _infoPanelTexture;
+        private Texture2D _infoRibbonTexture;
+        private Texture2D _infoIconTexture;
+
+        private Button _infoButton;
+        private bool _showInfoPanel = false;
+
         // zookeeper
-        
+
 
         // Money Management
         private MoneyDisplay _moneyDisplay;
@@ -333,6 +341,14 @@ namespace ZooTycoonManager
 
             _visitorDisplay = new StatDisplay(uiFont, new Vector2(220, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
             _animalDisplay = new StatDisplay(uiFont, new Vector2(430, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
+
+            _infoButtonTexture = Content.Load<Texture2D>("Button_Blue");               // Lille knap
+            _infoPanelTexture = Content.Load<Texture2D>("Button_Blue_9Slides");        // Stor panel
+            _infoRibbonTexture = Content.Load<Texture2D>("Ribbon_Blue_3Slides");       // Banner
+            _infoIconTexture = Content.Load<Texture2D>("info"); // Info ikon
+
+            Vector2 infoButtonPos = new Vector2(GraphicsDevice.Viewport.Width - _infoButtonTexture.Width - 70, 30);
+            _infoButton = new Button(_infoButtonTexture, _infoIconTexture, infoButtonPos);
 
             // Initialize AnimalInfoPopup here after _font is loaded
             _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font); // Changed from AnimalInfoPopup
@@ -716,10 +732,16 @@ namespace ZooTycoonManager
             _animalMenu.Update(mouseState, prevMouseState);
             _zookeeperMenu.Update(mouseState, prevMouseState);
 
+            
+
+            _infoButton.Update(Mouse.GetState(), prevMouseState);
+            if (_infoButton.IsClicked)
+            {
+                _showInfoPanel = !_showInfoPanel;
+            }
+
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
-
-            
 
             base.Update(gameTime);
         }
@@ -931,6 +953,69 @@ namespace ZooTycoonManager
             _zookeeperMenu.Draw(_spriteBatch);
             // Draw AnimalInfoPopup
             _entityInfoPopup.Draw(_spriteBatch);
+
+            _infoButton.Draw(_spriteBatch);
+
+            if (_showInfoPanel)
+            {
+                // Info panel tekstlinjer
+                string[] lines = new[]
+                {
+        "Remember to keep your visitors happy!",
+        "They like to see happy animals, and have easy access to food when they're hungry.",
+        "",
+        "Remember to hire zookeepers to look out for your animals!",
+        "",
+        "You can undo and redo your actions by pressing Ctrl + Z and Ctrl + Y"
+    };
+
+                // Beregn bredeste linje
+                float maxWidth = lines.Max(line => _font.MeasureString(line).X);
+                float lineHeight = _font.LineSpacing;
+                int lineCount = lines.Length;
+
+                // Padding
+                int horizontalPadding = 75;
+                int verticalPadding = 100;
+
+                // Samlet panelstørrelse – med ekstra plads
+                Vector2 panelSize = new Vector2(
+                    maxWidth + horizontalPadding * 2 + 60,
+                    lineCount * lineHeight + verticalPadding + 30
+                );
+
+                // Center position
+                Vector2 panelPos = new Vector2(
+                    (_graphics.PreferredBackBufferWidth - panelSize.X) / 2,
+                    (_graphics.PreferredBackBufferHeight - panelSize.Y) / 2
+                );
+
+                // Tegn baggrund som rectangle
+                Rectangle panelRect = new Rectangle(
+                    (int)panelPos.X,
+                    (int)panelPos.Y,
+                    (int)panelSize.X,
+                    (int)panelSize.Y
+                );
+
+                _spriteBatch.Draw(_infoPanelTexture, panelRect, Color.White);
+
+                // Ribbon (øverst centreret på boksen)
+                Vector2 ribbonPos = new Vector2(
+                    panelRect.X + (panelRect.Width - _infoRibbonTexture.Width) / 2,
+                    panelRect.Y + 10
+                );
+                _spriteBatch.Draw(_infoRibbonTexture, ribbonPos, Color.White);
+
+                // Tekst – start lidt under ribbon
+                Vector2 textStart = new Vector2(panelRect.X + horizontalPadding, ribbonPos.Y + _infoRibbonTexture.Height + 20);
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    Vector2 linePos = textStart + new Vector2(0, i * lineHeight);
+                    _spriteBatch.DrawString(_font, lines[i], linePos, Color.Black);
+                }
+            }
 
             _spriteBatch.End();
 
