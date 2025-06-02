@@ -62,9 +62,9 @@ namespace ZooTycoonManager
                         GameWorld.Instance.StartHabitatPlacement("Medium");
                     }
 
-                    if (button.Text == "Experienced Zookeeper")
+                    if (button.Text == "Zookeeper")
                     {
-                        GameWorld.Instance.StartZookeeperPlacement("Experienced Zookeeper");
+                        GameWorld.Instance.StartZookeeperPlacement("Zookeeper");
                     }
                     else if (button.Text == "Visitor Shop")
                     {
