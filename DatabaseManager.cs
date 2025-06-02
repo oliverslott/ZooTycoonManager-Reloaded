@@ -203,6 +203,22 @@ namespace ZooTycoonManager
             }
         }
 
+        private void SaveShops(SqliteTransaction transaction, List<Shop> shops)
+        {
+            foreach (Shop shopInstance in shops)
+            {
+                Debug.WriteLine($"Attempting to save Shop ID: {shopInstance.ShopId}");
+                if (shopInstance is ISaveable saveableObject)
+                {
+                    saveableObject.Save(transaction);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Shop ID {shopInstance.ShopId} is not ISaveable and was not saved.");
+                }
+            }
+        }
+
         private void SaveCurrentMoney(SqliteTransaction transaction)
         {
             var saveMoneyCmd = _connection.CreateCommand();
@@ -212,7 +228,7 @@ namespace ZooTycoonManager
             saveMoneyCmd.ExecuteNonQuery();
         }
 
-        private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds)
+        private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds, List<int> currentShopIds)
         {
             var deleteCmd = _connection.CreateCommand();
             deleteCmd.Transaction = transaction;
@@ -265,6 +281,20 @@ namespace ZooTycoonManager
                 deleteCmd.CommandText = "DELETE FROM Habitat";
                 deleteCmd.ExecuteNonQuery();
             }
+
+            // Delete removed shops
+            if (currentShopIds.Any())
+            {
+                deleteCmd.CommandText = @"
+                    DELETE FROM Shop 
+                    WHERE shop_id NOT IN (" + string.Join(",", currentShopIds) + ")";
+                deleteCmd.ExecuteNonQuery();
+            }
+            else
+            {
+                deleteCmd.CommandText = "DELETE FROM Shop";
+                deleteCmd.ExecuteNonQuery();
+            }
         }
 
         private void SaveRoadTiles(SqliteTransaction transaction)
@@ -304,12 +334,14 @@ namespace ZooTycoonManager
                     var currentHabitatIds = habitats.Select(h => h.HabitatId).ToList();
                     var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
                     var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
+                    var currentShopIds = GameWorld.Instance.GetShops().Select(s => s.ShopId).ToList();
 
                     SaveHabitats(transaction, habitats);
                     SaveAnimals(transaction, habitats);
                     SaveVisitors(transaction);
+                    SaveShops(transaction, GameWorld.Instance.GetShops());
                     SaveCurrentMoney(transaction);
-                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds);
+                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds);
                     SaveRoadTiles(transaction);
 
                     transaction.Commit();
@@ -423,6 +455,31 @@ namespace ZooTycoonManager
             }
         }
 
+        private List<Shop> LoadShops(ContentManager content, out int nextShopId)
+        {
+            var loadedShops = new List<Shop>();
+            nextShopId = 1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT shop_id, type, cost, position_x, position_y FROM Shop";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var shop = new Shop();
+                    shop.Load(reader);
+                    shop.LoadContent(content);
+                    loadedShops.Add(shop);
+
+                    if (shop.ShopId >= nextShopId)
+                    {
+                        nextShopId = shop.ShopId + 1;
+                    }
+                }
+            }
+            Debug.WriteLine($"Loaded {loadedShops.Count} shops. Next Shop ID will be {nextShopId}");
+            return loadedShops;
+        }
+
         private void LoadRoadTiles()
         {
             var command = _connection.CreateCommand();
@@ -445,17 +502,19 @@ namespace ZooTycoonManager
             }
         }
 
-        public (List<Habitat> habitats, int nextHabitatId, int nextAnimalId, int nextVisitorId, decimal currentMoney) LoadGame(ContentManager content)
+        public (List<Habitat> habitats, List<Shop> shops, int nextHabitatId, int nextAnimalId, int nextVisitorId, int nextShopId, decimal currentMoney) LoadGame(ContentManager content)
         {
             Debug.WriteLine("Loading game state...");
             List<Habitat> loadedHabitats;
-            int nextHabitatId, nextAnimalId, nextVisitorId;
+            List<Shop> loadedShops;
+            int nextHabitatId, nextAnimalId, nextVisitorId, nextShopId;
             decimal currentMoney;
 
             try
             {
                 currentMoney = LoadCurrentMoney();
                 loadedHabitats = LoadHabitats(content, out nextHabitatId);
+                loadedShops = LoadShops(content, out nextShopId);
                 LoadAnimals(content, loadedHabitats, out nextAnimalId);
                 LoadVisitors(content, out nextVisitorId);
                 LoadRoadTiles();
@@ -466,13 +525,15 @@ namespace ZooTycoonManager
             {
                 Debug.WriteLine($"Error loading game state: {ex.Message}");
                 loadedHabitats = new List<Habitat>();
+                loadedShops = new List<Shop>();
                 nextHabitatId = 1;
                 nextAnimalId = 1;
                 nextVisitorId = 1;
+                nextShopId = 1;
                 currentMoney = 20000;
             }
 
-            return (loadedHabitats, nextHabitatId, nextAnimalId, nextVisitorId, currentMoney);
+            return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, currentMoney);
         }
     }
 } 

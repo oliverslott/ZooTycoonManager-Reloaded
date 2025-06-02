@@ -17,6 +17,7 @@ namespace ZooTycoonManager
         private ThoughtBubble _thoughtBubble;
         private Texture2D _animalInThoughtTexture;
         private Texture2D _sadTexture;
+        private Texture2D _drumstickTexture;
         private Vector2 position;
         private List<Node> path;
         private int currentNodeIndex = 0;
@@ -28,6 +29,7 @@ namespace ZooTycoonManager
         private const float VISIT_DURATION = 4f;
         private float currentVisitTime = 0f;
         private Habitat currentHabitat = null;
+        private Shop currentShop = null;
 
         private float _showSadThoughtBubbleTimer = 0f;
         private const float SAD_BUBBLE_DURATION = 2f;
@@ -41,8 +43,14 @@ namespace ZooTycoonManager
 
         private static Texture2D _borderTexture;
 
-        private const float HUNGER_INCREASE_RATE = 0.2f;
+        private const float HUNGER_INCREASE_RATE = 2f;
+        private const int HUNGER_PRIORITY_THRESHOLD = 50;
         private float _uncommittedHungerPoints = 0f;
+
+        private const int HIGH_HUNGER_THRESHOLD = 80;
+        private const float MOOD_PENALTY_PER_SECOND_HIGH_HUNGER = 1.0f;
+        private const float MOOD_RECOVERY_PER_SECOND_NOT_HUNGRY = 0.5f;
+        private float _uncommittedMoodChangePoints = 0f;
 
         public bool IsSelected { get; set; }
         int IInspectableEntity.Id => VisitorId;
@@ -136,7 +144,11 @@ namespace ZooTycoonManager
             if (path != null && path.Count > 0 && currentNodeIndex < path.Count) return;
             if (currentHabitat != null) return;
 
+            if (Hunger > HUNGER_PRIORITY_THRESHOLD && TryVisitShop()) return;
+
             if (TryVisitHabitat()) return;
+
+            if (Hunger <= HUNGER_PRIORITY_THRESHOLD && TryVisitShop()) return;
 
             if (path == null || path.Count == 0)
             {
@@ -180,6 +192,45 @@ namespace ZooTycoonManager
                             currentHabitat = randomHabitat;
                             currentVisitTime = 0f;
                             Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to habitat {currentHabitat.HabitatId} ({currentHabitat.Name}) spot (tile: {visitTilePosition}) from (pixel: {Position}). Path length: {path.Count}");
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool TryVisitShop()
+        {
+            var allShops = GameWorld.Instance.GetShops();
+            if (allShops == null || allShops.Count == 0) return false;
+
+            var availableShops = allShops.Where(s => s.GetWalkableVisitingSpots().Count > 0).ToList();
+            if (availableShops.Count == 0) return false;
+
+            if (random.NextDouble() < 0.5)
+            {
+                Shop randomShop = availableShops[random.Next(availableShops.Count)];
+                List<Vector2> availableSpots = randomShop.GetWalkableVisitingSpots();
+
+                if (availableSpots.Count > 0)
+                {
+                    Vector2 visitTilePosition = availableSpots[random.Next(availableSpots.Count)];
+                    if (randomShop.TryEnterShopSync(this))
+                    {
+                        PathfindTo(visitTilePosition);
+
+                        if (path == null || path.Count == 0)
+                        {
+                            Debug.WriteLine($"Visitor {VisitorId}: Pathfinding to shop {randomShop.ShopId} spot (tile: {visitTilePosition}) from (pixel: {Position}) failed. Releasing spot.");
+                            randomShop.LeaveShop(this);
+                            return false;
+                        }
+                        else
+                        {
+                            currentShop = randomShop;
+                            currentVisitTime = 0f;
+                            Debug.WriteLine($"Visitor {VisitorId}: Successfully pathfinding to shop {currentShop.ShopId} spot (tile: {visitTilePosition}). Path length: {path.Count}");
                             return true;
                         }
                     }
@@ -237,6 +288,7 @@ namespace ZooTycoonManager
             _thoughtBubble.LoadContent(contentManager);
             _animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
             _sadTexture = contentManager.Load<Texture2D>("sad");
+            _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
 
 
             if (_borderTexture == null)
@@ -249,7 +301,8 @@ namespace ZooTycoonManager
         private void Update(GameTime gameTime)
         {
             UpdateHunger(gameTime);
-            UpdateHabitatVisit(gameTime);
+            UpdateMood(gameTime);
+            UpdateActivity(gameTime);
             UpdateSadThoughtBubbleDisplay(gameTime);
 
             if (!_isExiting)
@@ -277,34 +330,90 @@ namespace ZooTycoonManager
             }
         }
 
-        private void UpdateHabitatVisit(GameTime gameTime)
+        private void UpdateMood(GameTime gameTime)
         {
-            if (!_isExiting && currentHabitat != null)
+            if (Hunger > HIGH_HUNGER_THRESHOLD)
             {
-                if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
-                {
-                    currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    if (currentVisitTime >= VISIT_DURATION)
-                    {
-                        Habitat justLeftHabitat = currentHabitat;
-                        if (justLeftHabitat != null)
-                        {
-                            if (DoesHabitatTriggerSadReaction(justLeftHabitat))
-                            {
-                                _showSadThoughtBubbleTimer = SAD_BUBBLE_DURATION;
-                                int moodDeduction = (int)(Mood * 0.20f);
-                                Mood -= moodDeduction;
-                                if (Mood < 0) Mood = 0;
-                                Debug.WriteLine($"Visitor {VisitorId} mood decreased by {moodDeduction} to {Mood} after seeing sad animals.");
-                            }
+                _uncommittedMoodChangePoints -= MOOD_PENALTY_PER_SECOND_HIGH_HUNGER * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+            else if (Mood < 100)
+            {
+                _uncommittedMoodChangePoints += MOOD_RECOVERY_PER_SECOND_NOT_HUNGRY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
 
-                            _visitedHabitatIds.Add(justLeftHabitat.HabitatId);
-                            justLeftHabitat.LeaveHabitat(this);
-                            currentHabitat = null;
-                            currentVisitTime = 0f;
-                            if (!_isExiting)
+            if (Math.Abs(_uncommittedMoodChangePoints) >= 1.0f)
+            {
+                int wholePointsToChange = (int)_uncommittedMoodChangePoints;
+                Mood += wholePointsToChange;
+                _uncommittedMoodChangePoints -= wholePointsToChange;
+
+                if (Mood < 0) Mood = 0;
+                if (Mood > 100) Mood = 100;
+
+                if (wholePointsToChange < 0)
+                {
+                    Debug.WriteLine($"Visitor {VisitorId} mood decreased by {Math.Abs(wholePointsToChange)} to {Mood} due to high hunger ({Hunger}).");
+                }
+                else if (wholePointsToChange > 0)
+                {
+                    Debug.WriteLine($"Visitor {VisitorId} mood increased by {wholePointsToChange} to {Mood} due to normal hunger ({Hunger}).");
+                }
+            }
+        }
+
+        private void UpdateActivity(GameTime gameTime)
+        {
+            if (!_isExiting)
+            {
+                if (currentHabitat != null)
+                {
+                    if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
+                    {
+                        currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        if (currentVisitTime >= VISIT_DURATION)
+                        {
+                            Habitat justLeftHabitat = currentHabitat;
+                            if (justLeftHabitat != null)
                             {
-                                PerformNextActionDecision();
+                                if (DoesHabitatTriggerSadReaction(justLeftHabitat))
+                                {
+                                    _showSadThoughtBubbleTimer = SAD_BUBBLE_DURATION;
+                                    int moodDeduction = (int)(Mood * 0.20f);
+                                    Mood -= moodDeduction;
+                                    if (Mood < 0) Mood = 0;
+                                    Debug.WriteLine($"Visitor {VisitorId} mood decreased by {moodDeduction} to {Mood} after seeing sad animals.");
+                                }
+
+                                _visitedHabitatIds.Add(justLeftHabitat.HabitatId);
+                                justLeftHabitat.LeaveHabitat(this);
+                                currentHabitat = null;
+                                currentVisitTime = 0f;
+                                if (!_isExiting)
+                                {
+                                    PerformNextActionDecision();
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (currentShop != null)
+                {
+                    if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
+                    {
+                        currentVisitTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        if (currentVisitTime >= VISIT_DURATION / 2)
+                        {
+                            Shop justLeftShop = currentShop;
+                            if (justLeftShop != null)
+                            {
+                                justLeftShop.VisitorInteraction(this);
+                                justLeftShop.LeaveShop(this);
+                                currentShop = null;
+                                currentVisitTime = 0f;
+                                if (!_isExiting)
+                                {
+                                    PerformNextActionDecision();
+                                }
                             }
                         }
                     }
@@ -415,6 +524,10 @@ namespace ZooTycoonManager
                 if (_showSadThoughtBubbleTimer > 0 && _thoughtBubble != null && _sadTexture != null)
                 {
                     _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
+                }
+                else if (Hunger > HUNGER_PRIORITY_THRESHOLD && _thoughtBubble != null && _drumstickTexture != null)
+                {
+                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _drumstickTexture, null, 0.3f);
                 }
                 else
                 {
@@ -528,6 +641,7 @@ namespace ZooTycoonManager
             _visitedHabitatIds = new HashSet<int>();
             _isExiting = false;
             _uncommittedHungerPoints = 0f;
+            _uncommittedMoodChangePoints = 0f;
         }
 
         public void InitiateExit()
@@ -540,6 +654,11 @@ namespace ZooTycoonManager
             {
                 currentHabitat.LeaveHabitat(this);
                 currentHabitat = null;
+            }
+            if (currentShop != null)
+            {
+                currentShop.LeaveShop(this);
+                currentShop = null;
             }
             currentVisitTime = 0f;
 
