@@ -9,9 +9,15 @@ using Microsoft.Data.Sqlite;
 
 namespace ZooTycoonManager
 {
+    public enum HabitatSizeType
+    {
+        Small,
+        Medium,
+        Large
+    }
+
     public class Habitat: ISaveable, ILoadable
     {
-        public const int DEFAULT_ENCLOSURE_SIZE = 9;
         private const int MAX_VISITORS = 3;
         private const float FENCE_DRAW_SCALE = 2.67f;
 
@@ -20,21 +26,34 @@ namespace ZooTycoonManager
         private int height;
         private List<Vector2> fencePositions;
         private List<Animal> animals;
-        private HashSet<Vector2> fenceTileCoordinates; 
+        private HashSet<Vector2> fenceTileCoordinates;
         private SemaphoreSlim visitorSemaphore;
         private HashSet<Visitor> currentVisitors;
         private List<Zookeeper> zookeepers;
         
         //Database
         public int HabitatId { get; set; }
-        public int Size { get; set; }
         public int MaxAnimals { get; set; }
         public string Name { get; set; }
         public string Type { get; set; }
         private int positionX;
         private int positionY;
 
+        public HabitatSizeType CurrentSizeType { get; private set; }
 
+        public int MaxAnimalsBeforeStress
+        {
+            get
+            {
+                switch (CurrentSizeType)
+                {
+                    case HabitatSizeType.Small: return 3;
+                    case HabitatSizeType.Medium: return 5;
+                    case HabitatSizeType.Large: return 8;
+                    default: return 5;
+                }
+            }
+        }
 
         public Vector2 CenterPosition 
         { 
@@ -51,28 +70,49 @@ namespace ZooTycoonManager
         public int PositionX => positionX;
         public int PositionY => positionY;
 
-        public static int GetEnclosureRadius()
+        public int GetEnclosureRadius()
         {
-            return (DEFAULT_ENCLOSURE_SIZE - 1) / 2;
+            switch (CurrentSizeType)
+            {
+                case HabitatSizeType.Small: return 2;
+                case HabitatSizeType.Medium: return 4;
+                case HabitatSizeType.Large: return 6;
+                default: return 4;
+            }
         }
 
-        public Habitat(Vector2 centerPosition, int width, int height, int habitatId = 0)
+        public Habitat(Vector2 centerPosition, HabitatSizeType sizeType, int habitatId)
         {
-            this.width = width;
-            this.height = height;
-            this.fencePositions = new List<Vector2>();
             this.animals = new List<Animal>();
             this.zookeepers = new List<Zookeeper>();
             this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
             this.currentVisitors = new HashSet<Visitor>();
+            this.fencePositions = new List<Vector2>();
             this.fenceTileCoordinates = new HashSet<Vector2>();
-            CenterPosition = centerPosition;
-            HabitatId = habitatId;
 
-            Size = 1;
-            MaxAnimals = 10;
-            Name = "Goat Habitat";
-            Type = "Normal";
+            this.HabitatId = habitatId;
+            this.CurrentSizeType = sizeType;
+            
+            this.width = (GetEnclosureRadius() * 2) + 1;
+            this.height = (GetEnclosureRadius() * 2) + 1;
+            
+            this.MaxAnimals = 10;
+            this.Name = $"{sizeType} Habitat";
+            this.Type = "Normal";
+
+            this.CenterPosition = centerPosition;
+
+            PlaceEnclosure(this.CenterPosition);
+        }
+
+        public Habitat()
+        {
+            this.animals = new List<Animal>();
+            this.zookeepers = new List<Zookeeper>();
+            this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+            this.currentVisitors = new HashSet<Visitor>();
+            this.fencePositions = new List<Vector2>();
+            this.fenceTileCoordinates = new HashSet<Vector2>();
         }
 
         public static void LoadContent(ContentManager content)
@@ -393,7 +433,7 @@ namespace ZooTycoonManager
         public void Load(SqliteDataReader reader)
         {
             HabitatId = reader.GetInt32(0);
-            Size = reader.GetInt32(1);
+            CurrentSizeType = (HabitatSizeType)reader.GetInt32(1);
             MaxAnimals = reader.GetInt32(2);
             Name = reader.GetString(3);
             Type = reader.GetString(4);
@@ -403,8 +443,8 @@ namespace ZooTycoonManager
             Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
             CenterPosition = pixelPos;
             
-            width = Habitat.DEFAULT_ENCLOSURE_SIZE;
-            height = Habitat.DEFAULT_ENCLOSURE_SIZE;
+            width = (GetEnclosureRadius() * 2) + 1;
+            height = (GetEnclosureRadius() * 2) + 1;
             fencePositions = new List<Vector2>();
             animals = new List<Animal>();
             visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
@@ -413,6 +453,9 @@ namespace ZooTycoonManager
             PlaceEnclosure(pixelPos);
         }
 
-        
+        public int Size
+        {
+            get { return (int)CurrentSizeType; }
+        }
     }
 } 

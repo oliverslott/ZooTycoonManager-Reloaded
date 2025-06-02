@@ -57,9 +57,17 @@ namespace ZooTycoonManager
                 button.Update(current, previous);
                 if (button.IsClicked)
                 {
-                    if (button.Text == "Medium")
+                    if (button.Text == "Small")
+                    {
+                        GameWorld.Instance.StartHabitatPlacement("Small");
+                    }
+                    else if (button.Text == "Medium")
                     {
                         GameWorld.Instance.StartHabitatPlacement("Medium");
+                    }
+                    else if (button.Text == "Large")
+                    {
+                        GameWorld.Instance.StartHabitatPlacement("Large");
                     }
 
                     if (button.Text == "Experienced Zookeeper")

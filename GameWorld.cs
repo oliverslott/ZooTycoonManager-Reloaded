@@ -63,7 +63,9 @@ namespace ZooTycoonManager
         private enum PlacementMode
         {
             None,
+            PlaceSmallHabitat,
             PlaceMediumHabitat,
+            PlaceLargeHabitat,
 
             PlaceZookeeper,
             PlaceVisitorShop,
@@ -482,9 +484,21 @@ namespace ZooTycoonManager
             {
                 Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
-                if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+                if (_currentPlacement == PlacementMode.PlaceSmallHabitat)
                 {
-                    var command = new PlaceHabitatCommand(worldMousePos, cost: 10000);
+                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Small, cost: 5000);
+                    CommandManager.Instance.ExecuteCommand(command);
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+                {
+                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Medium, cost: 10000);
+                    CommandManager.Instance.ExecuteCommand(command);
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceLargeHabitat)
+                {
+                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Large, cost: 15000);
                     CommandManager.Instance.ExecuteCommand(command);
                     _currentPlacement = PlacementMode.None;
                 }
@@ -807,12 +821,13 @@ namespace ZooTycoonManager
             {
                 visitor.Draw(_spriteBatch);
             }
-            if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+            if (_currentPlacement == PlacementMode.PlaceSmallHabitat || 
+                _currentPlacement == PlacementMode.PlaceMediumHabitat || 
+                _currentPlacement == PlacementMode.PlaceLargeHabitat)
             {
                 Vector2 mousePos = Mouse.GetState().Position.ToVector2();
                 Vector2 worldMouse = _camera.ScreenToWorld(mousePos);
 
-                // Snap til nærmeste tile
                 Vector2 snappedTile = new Vector2(
                     (int)(worldMouse.X / TILE_SIZE),
                     (int)(worldMouse.Y / TILE_SIZE)
@@ -823,21 +838,24 @@ namespace ZooTycoonManager
                     snappedTile.Y * TILE_SIZE
                 );
 
-                int habitatSize = Habitat.DEFAULT_ENCLOSURE_SIZE; // fx 5
-                int previewPixelSize = (int)(habitatSize * TILE_SIZE * 1.25f); // 5% større
-                //int previewPixelSize = 165;
-
-                // Justér til midten af habitat
+                int habitatRadiusTiles = 0;
+                if (_currentPlacement == PlacementMode.PlaceSmallHabitat) habitatRadiusTiles = 2;
+                else if (_currentPlacement == PlacementMode.PlaceMediumHabitat) habitatRadiusTiles = 4;
+                else if (_currentPlacement == PlacementMode.PlaceLargeHabitat) habitatRadiusTiles = 6;
+                
+                int enclosureDiameterTiles = (habitatRadiusTiles * 2) + 1;
+                float previewPixelSize = enclosureDiameterTiles * TILE_SIZE * 1.25f; // Changed 1.0f to 1.25f
+                
                 Vector2 previewTopLeft = snappedPos + new Vector2(TILE_SIZE / 2) - new Vector2(previewPixelSize / 2);
 
                 Rectangle destRect = new Rectangle(
                     (int)previewTopLeft.X,
                     (int)previewTopLeft.Y,
-                    previewPixelSize,
-                    previewPixelSize
+                    (int)previewPixelSize,
+                    (int)previewPixelSize
                 );
 
-                _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f); // Halvgennemsigtig
+                _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f);
             }
 
             if (_currentPlacement == PlacementMode.PlaceVisitorShop && _shopPreviewTexture != null)
@@ -1169,10 +1187,20 @@ namespace ZooTycoonManager
         {
             HideAllMenus();
 
-            if (size == "Medium")
+            if (size == "Small")
+            {
+                _currentPlacement = PlacementMode.PlaceSmallHabitat;
+                Console.WriteLine("Placement mode: Small Habitat activated");
+            }
+            else if (size == "Medium")
             {
                 _currentPlacement = PlacementMode.PlaceMediumHabitat;
                 Console.WriteLine("Placement mode: Medium Habitat activated");
+            }
+            else if (size == "Large")
+            {
+                _currentPlacement = PlacementMode.PlaceLargeHabitat;
+                Console.WriteLine("Placement mode: Large Habitat activated");
             }
         }
 
