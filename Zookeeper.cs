@@ -255,9 +255,6 @@ namespace ZooTycoonManager
             if (sprite == null) return;
             spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(8, 8), 1.2f, SpriteEffects.None, 0f);
         }
-
-
-
         public void Save(SqliteTransaction transaction)
         {
             using (var command = new SqliteCommand("INSERT INTO Zookeeper (ZookeeperId, Name, Upkeep, HabitatId, PositionX, PositionY) VALUES (@ZookeeperId, @Name, @Upkeep, @HabitatId, @PositionX, @PositionY)", transaction.Connection))
