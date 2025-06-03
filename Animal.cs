@@ -37,6 +37,7 @@ namespace ZooTycoonManager
 
         private ThoughtBubble _thoughtBubble;
         private Texture2D _drumstickTexture;
+        private float _scale = 2f; // Default scale
 
         public bool IsPathfinding { get; private set; }
         public bool IsSelected { get; set; }
@@ -254,6 +255,27 @@ namespace ZooTycoonManager
                     sprite = contentManager.Load<Texture2D>("MindfulChimpanze");
                     break;
             }
+
+            // Set scale based on species
+            switch (speciesNameForTexture)
+            {
+                case "Elephant":
+                    _scale = 3f;
+                    break;
+                case "Polarbear":
+                    _scale = 2.8f;
+                    break;
+                case "Bear":
+                    _scale = 2.5f;
+                    break;
+                case "Buffalo":
+                    _scale = 2.2f;
+                    break;
+                case "Turtle":
+                    _scale = 1.5f;
+                    break;
+                // Default scale for others is already 2f
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -375,7 +397,7 @@ namespace ZooTycoonManager
         public void Draw(SpriteBatch spriteBatch)
         {
             if (sprite == null) return;
-            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), _scale, SpriteEffects.None, 0f);
 
             if (Hunger > 50 && _thoughtBubble != null && _drumstickTexture != null)
             {
