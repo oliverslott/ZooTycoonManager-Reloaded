@@ -286,7 +286,7 @@ namespace ZooTycoonManager
             
             _thoughtBubble = new ThoughtBubble();
             _thoughtBubble.LoadContent(contentManager);
-            _animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+            _animalInThoughtTexture = contentManager.Load<Texture2D>("binoculars");
             _sadTexture = contentManager.Load<Texture2D>("sad");
             _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
 
