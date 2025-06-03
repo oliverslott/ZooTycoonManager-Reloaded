@@ -74,45 +74,45 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.ToggleTilePlacementMode();
                     }
-                    else if (button.Text == "Buffalo")
+                    else if (button.Text == "Buffalo - 1.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Buffalo");
+                        GameWorld.Instance.StartAnimalPlacement("Buffalo - 1.000");
                     }
-                    else if (button.Text == "Turtle")
+                    else if (button.Text == "Turtle - 5.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Turtle");
+                        GameWorld.Instance.StartAnimalPlacement("Turtle - 5.000");
                     }
-                    else if (button.Text == "Bear")
+                    else if (button.Text == "Bear - 9.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Bear");
+                        GameWorld.Instance.StartAnimalPlacement("Bear - 9.000");
                     }
-                    else if (button.Text == "Polarbear")
+                    else if (button.Text == "Polarbear - 10.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Polarbear");
+                        GameWorld.Instance.StartAnimalPlacement("Polarbear - 10.000");
                     }
-                    else if (button.Text == "Kangaroo")
+                    else if (button.Text == "Kangaroo - 2.500")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Kangaroo");
+                        GameWorld.Instance.StartAnimalPlacement("Kangaroo - 2.500");
                     }
-                    else if (button.Text == "Chimpanze")
+                    else if (button.Text == "Chimpanze - 2.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Chimpanze");
+                        GameWorld.Instance.StartAnimalPlacement("Chimpanze - 2.000");
                     }
-                    else if (button.Text == "Wolf")
+                    else if (button.Text == "Wolf - 4.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Wolf");
+                        GameWorld.Instance.StartAnimalPlacement("Wolf - 4.000");
                     }
-                    else if (button.Text == "Camel")
+                    else if (button.Text == "Camel - 2.500")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Camel");
+                        GameWorld.Instance.StartAnimalPlacement("Camel - 2.500");
                     }
-                    else if (button.Text == "Elephant")
+                    else if (button.Text == "Elephant - 8.000")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Elephant");
+                        GameWorld.Instance.StartAnimalPlacement("Elephant - 8.000");
                     }
-                    else if (button.Text == "Orangutan")
+                    else if (button.Text == "Orangutan - 2.500")
                     {
-                        GameWorld.Instance.StartAnimalPlacement("Orangutan");
+                        GameWorld.Instance.StartAnimalPlacement("Orangutan - 2.500");
                     }
                     else if (button.Text == "Tree")
                     {
