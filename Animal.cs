@@ -256,7 +256,6 @@ namespace ZooTycoonManager
                     break;
             }
 
-            // Set scale based on species
             switch (speciesNameForTexture)
             {
                 case "Elephant":
@@ -274,7 +273,6 @@ namespace ZooTycoonManager
                 case "Turtle":
                     _scale = 1.5f;
                     break;
-                // Default scale for others is already 2f
             }
         }
 
