@@ -231,6 +231,13 @@ namespace ZooTycoonManager
                     30
 );
                 shopButton.SetPosition(newShopButtonPos);
+
+                Vector2 newIonfoButtonPos = new Vector2(
+                    _graphics.PreferredBackBufferWidth - _infoButton.GetWidth() - 70,
+                    30
+);
+                _infoButton.SetPosition(newIonfoButtonPos);
+
                 Vector2 newSubMenuPos = new Vector2(
                 _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
                 90
