@@ -283,11 +283,11 @@ namespace ZooTycoonManager
 
         public void LoadContent(ContentManager contentManager)
         {
-            sprite = contentManager.Load<Texture2D>("Pawn_Blue_Cropped_resized");
+            sprite = contentManager.Load<Texture2D>("294f5329-d985-4d20-86d5-98e9dfb256fc");
             
             _thoughtBubble = new ThoughtBubble();
             _thoughtBubble.LoadContent(contentManager);
-            _animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+            _animalInThoughtTexture = contentManager.Load<Texture2D>("binoculars");
             _sadTexture = contentManager.Load<Texture2D>("sad");
             _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
 
@@ -549,7 +549,7 @@ namespace ZooTycoonManager
                 _thoughtBubble != null && 
                 _animalInThoughtTexture != null)
             {
-                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, new Rectangle(0, 0, 16, 16));
+                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, contentScale: 0.35f);
             }
         }
 

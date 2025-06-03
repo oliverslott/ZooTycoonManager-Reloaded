@@ -61,6 +61,30 @@
 /processorParam:TextureFormat=Color
 /build:ArcticWolf.png
 
+#begin binoculars.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:binoculars.png
+
+#begin binoculars.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:binoculars.png
+
 #begin Button_Blue_3Slides.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -110,7 +134,6 @@
 /build:Dirt1.png
 
 #begin drumstick.png
-#begin EnragedBuffalo.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -121,6 +144,17 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:drumstick.png
+
+#begin EnragedBuffalo.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:EnragedBuffalo.png
 
 #begin fence-connected-bottom.png
@@ -262,6 +296,18 @@
 /processorParam:TextureFormat=Color
 /build:foodshopsprite.png
 
+#begin glass.webp
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:glass.webp
+
 #begin Grass1.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -285,6 +331,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:HoppingKangaroo.png
+
+#begin info.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:info.png
 
 #begin KodiakBear.png
 /importer:TextureImporter
@@ -358,8 +416,19 @@
 /processorParam:TextureFormat=Color
 /build:Regular_07.png
 
+#begin Ribbon_Blue_3Slides.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Ribbon_Blue_3Slides.png
+
 #begin sad.png
-#begin SlowTurtle.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -370,6 +439,17 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:sad.png
+
+#begin SlowTurtle.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:SlowTurtle.png
 
 #begin StompingElephant.png
@@ -419,6 +499,37 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:tree1.png
+
+#begin treegpt.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:treegpt.png
+
+#begin UIFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:UIFont.spritefont
+
+#begin watergpt.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:watergpt.png
 
 #begin zookeeper.png
 /importer:TextureImporter
