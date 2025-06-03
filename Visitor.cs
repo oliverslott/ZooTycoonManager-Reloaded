@@ -548,7 +548,7 @@ namespace ZooTycoonManager
                 _thoughtBubble != null && 
                 _animalInThoughtTexture != null)
             {
-                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, new Rectangle(0, 0, 16, 16));
+                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, contentScale: 0.35f);
             }
         }
 
