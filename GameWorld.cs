@@ -246,13 +246,14 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
+            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, nextZookeeperIdVal, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
             habitats = loadedHabitats;
             shops = loadedShops;
             _nextHabitatId = nextHabitatId;
             _nextAnimalId = nextAnimalId;
             _nextVisitorId = nextVisitorId;
             _nextShopId = nextShopIdVal;
+            _nextZookeeperId = nextZookeeperIdVal;
             MoneyManager.Instance.Initialize(loadedMoney);
 
             foreach (var shop in shops)

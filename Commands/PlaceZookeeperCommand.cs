@@ -14,6 +14,7 @@ namespace ZooTycoonManager.Commands
         private readonly decimal _cost;
         private Zookeeper _createdZookeeper;
         private Habitat _targetHabitat;
+        private int _createdZookeeperId; // To store the ID for Undo
 
         public string Description => $"Place Zookeeper at ({_position.X:F0}, {_position.Y:F0})";
 
@@ -53,16 +54,16 @@ namespace ZooTycoonManager.Commands
             }
 
             // Create the zookeeper
-            Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
-            _createdZookeeper = new Zookeeper(GameWorld.Instance.GetNextZookeeperId());
-            _createdZookeeper.SetPosition(spawnPos);
-            _createdZookeeper.LoadContent(GameWorld.Instance.Content);
-            _createdZookeeper.SetHabitat(_targetHabitat);
+            _createdZookeeperId = GameWorld.Instance.GetNextZookeeperId();
+            string zookeeperName = $"Zookeeper {_createdZookeeperId}";
+            int zookeeperUpkeep = 100; // Default upkeep
 
-            // Add to the habitat
+            _createdZookeeper = new Zookeeper(GameWorld.Instance.VisitorSpawnTileCoordinate, _createdZookeeperId, _targetHabitat, zookeeperName, zookeeperUpkeep);
+            _createdZookeeper.LoadContent(GameWorld.Instance.Content);
+            
             _targetHabitat.AddZookeeper(_createdZookeeper);
 
-            Debug.WriteLine($"Placed zookeeper at {_position} for ${_cost}");
+            Debug.WriteLine($"Placed zookeeper {_createdZookeeper.Name} (ID: {_createdZookeeperId}) in habitat {_targetHabitat.Name} (spawned at visitor entrance). Cost: ${_cost}");
             return true;
         }
 
@@ -80,7 +81,8 @@ namespace ZooTycoonManager.Commands
             // Refund the money
             MoneyManager.Instance.AddMoney(_cost);
 
-            Debug.WriteLine($"Undid zookeeper placement at {_position}, refunded ${_cost}");
+            Debug.WriteLine($"Undid zookeeper placement for ID {_createdZookeeperId} at {_position}, refunded ${_cost}");
+            _createdZookeeper = null; // Clear the reference
         }
     }
 }
