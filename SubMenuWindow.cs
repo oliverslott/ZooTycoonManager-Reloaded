@@ -114,6 +114,14 @@ namespace ZooTycoonManager
                     {
                         GameWorld.Instance.StartAnimalPlacement("Orangutan");
                     }
+                    else if (button.Text == "Tree")
+                    {
+                        GameWorld.Instance.StartTreePlacement();
+                    }
+                    else if (button.Text == "Waterhole")
+                    {
+                        GameWorld.Instance.StartWaterholePlacement();
+                    }
                 }
             }
         }

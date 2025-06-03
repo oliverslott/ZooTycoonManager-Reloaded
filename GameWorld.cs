@@ -35,6 +35,8 @@ namespace ZooTycoonManager
         private FPSCounter _fpsCounter; 
         private Texture2D _habitatPreviewTexture;
         private Texture2D _shopPreviewTexture;
+        private Texture2D _treePreviewTexture;
+        private Texture2D _waterholePreviewTexture;
 
         // UI
         Button shopButton;
@@ -86,7 +88,9 @@ namespace ZooTycoonManager
             PlaceAnimal_Orangutan,
             PlaceAnimal_Polarbear,
             PlaceAnimal_Turtle,
-            PlaceAnimal_Kangaroo
+            PlaceAnimal_Kangaroo,
+            PlaceTree,
+            PlaceWaterhole
         }
 
         private PlacementMode _currentPlacement = PlacementMode.None;
@@ -349,6 +353,9 @@ namespace ZooTycoonManager
 
             Vector2 infoButtonPos = new Vector2(GraphicsDevice.Viewport.Width - _infoButtonTexture.Width - 70, 30);
             _infoButton = new Button(_infoButtonTexture, _infoIconTexture, infoButtonPos);
+
+            _treePreviewTexture = Content.Load<Texture2D>("treegpt");
+            _waterholePreviewTexture = Content.Load<Texture2D>("watergpt");
 
             // Initialize AnimalInfoPopup here after _font is loaded
             _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font); // Changed from AnimalInfoPopup
@@ -620,6 +627,18 @@ namespace ZooTycoonManager
 
                     _currentPlacement = PlacementMode.None;
                 }
+                //else if (_currentPlacement == PlacementMode.PlaceTree)
+                //{
+                //    // Her kunne du tilføje dem til en liste af bruger-placerede træer fx
+                //    _staticTreePositions.Add(worldMousePos); // eller din egen placering
+                //    _currentPlacement = PlacementMode.None;
+                //}
+                //else if (_currentPlacement == PlacementMode.PlaceWaterhole)
+                //{
+                //    // Det samme – du kan evt. lave en separat liste for vandhuller
+                //    shops.Add(new Waterhole(worldMousePos)); // eller hvad du vil bruge
+                //    _currentPlacement = PlacementMode.None;
+                //}
 
                 else
                 {
@@ -778,10 +797,12 @@ namespace ZooTycoonManager
                 90
 );
 
+
             _buildingsMenu.Reposition(newSubMenuPos);
             _habitatMenu.Reposition(newSubMenuPos);
             _animalMenu.Reposition(newSubMenuPos);
             _zookeeperMenu.Reposition(newSubMenuPos);
+            
 
         }
 
@@ -911,9 +932,32 @@ namespace ZooTycoonManager
                 );
                 _spriteBatch.Draw(_shopPreviewTexture, destinationRectangle, Color.White * 0.5f); // 50% transparency
             }
+            if (_currentPlacement == PlacementMode.PlaceTree && _treePreviewTexture != null)
+            {
+                Vector2 worldMouse = _camera.ScreenToWorld(Mouse.GetState().Position.ToVector2());
+                Vector2 snappedPos = new Vector2(
+                    ((int)(worldMouse.X / TILE_SIZE)) * TILE_SIZE,
+                    ((int)(worldMouse.Y / TILE_SIZE)) * TILE_SIZE
+                );
+
+                Rectangle previewRect = new Rectangle((int)snappedPos.X, (int)snappedPos.Y, _treePreviewTexture.Width, _treePreviewTexture.Height);
+                _spriteBatch.Draw(_treePreviewTexture, previewRect, Color.White * 0.5f);
+            }
+
+            if (_currentPlacement == PlacementMode.PlaceWaterhole && _waterholePreviewTexture != null)
+            {
+                Vector2 worldMouse = _camera.ScreenToWorld(Mouse.GetState().Position.ToVector2());
+                Vector2 snappedPos = new Vector2(
+                    ((int)(worldMouse.X / TILE_SIZE)) * TILE_SIZE,
+                    ((int)(worldMouse.Y / TILE_SIZE)) * TILE_SIZE
+                );
+
+                Rectangle previewRect = new Rectangle((int)snappedPos.X, (int)snappedPos.Y, _waterholePreviewTexture.Width, _waterholePreviewTexture.Height);
+                _spriteBatch.Draw(_waterholePreviewTexture, previewRect, Color.White * 0.5f);
+            }
 
             // VIGTIGT! Luk det første Begin!
-            
+
 
             _spriteBatch.End();
 
@@ -1383,6 +1427,19 @@ namespace ZooTycoonManager
                 _currentPlacement = PlacementMode.PlaceZookeeper;
                 Console.WriteLine("Placement mode: Zookeeper activated");
             }
+        }
+        public void StartTreePlacement()
+        {
+            HideAllMenus();
+            _currentPlacement = PlacementMode.PlaceTree;
+            Console.WriteLine("Placement mode: Tree activated");
+        }
+
+        public void StartWaterholePlacement()
+        {
+            HideAllMenus();
+            _currentPlacement = PlacementMode.PlaceWaterhole;
+            Console.WriteLine("Placement mode: Waterhole activated");
         }
     }
 }
