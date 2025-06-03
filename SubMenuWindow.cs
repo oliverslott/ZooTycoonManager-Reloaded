@@ -57,28 +57,28 @@ namespace ZooTycoonManager
                 button.Update(current, previous);
                 if (button.IsClicked)
                 {
-                    if (button.Text == "Small")
+                    if (button.Text == "Small - 5.000")
                     {
-                        GameWorld.Instance.StartHabitatPlacement("Small");
+                        GameWorld.Instance.StartHabitatPlacement("Small - 5.000");
                     }
-                    else if (button.Text == "Medium")
+                    else if (button.Text == "Medium - 10.000")
                     {
-                        GameWorld.Instance.StartHabitatPlacement("Medium");
+                        GameWorld.Instance.StartHabitatPlacement("Medium - 10.000");
                     }
-                    else if (button.Text == "Large")
+                    else if (button.Text == "Large - 15.000")
                     {
-                        GameWorld.Instance.StartHabitatPlacement("Large");
+                        GameWorld.Instance.StartHabitatPlacement("Large - 15.000");
                     }
 
-                    if (button.Text == "Zookeeper")
+                    if (button.Text == "Zookeeper - 5.000")
                     {
-                        GameWorld.Instance.StartZookeeperPlacement("Zookeeper");
+                        GameWorld.Instance.StartZookeeperPlacement("Zookeeper - 5.000");
                     }
-                    else if (button.Text == "Visitor Shop")
+                    else if (button.Text == "Shop - 1.000")
                     {
-                        GameWorld.Instance.StartShopPlacement("Visitor Shop");
+                        GameWorld.Instance.StartShopPlacement("Shop - 1.000");
                     }
-                    else if (button.Text == "Tiles")
+                    else if (button.Text == "Tiles - 10")
                     {
                         GameWorld.Instance.ToggleTilePlacementMode();
                     }

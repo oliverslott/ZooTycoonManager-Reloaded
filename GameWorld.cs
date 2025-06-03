@@ -116,7 +116,7 @@ namespace ZooTycoonManager
         private const float VISITOR_SPAWN_INTERVAL = 10.0f;
         private Vector2 _visitorSpawnTileCoord;
         private Vector2 _visitorExitTileCoord;
-        private const int VISITOR_SPAWN_REWARD = 20;
+        private const int VISITOR_SPAWN_REWARD = 50;
         public Vector2 VisitorSpawnTileCoordinate => _visitorSpawnTileCoord;
         public Vector2 VisitorExitTileCoordinate => _visitorExitTileCoord;
 
@@ -323,10 +323,10 @@ namespace ZooTycoonManager
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
-            string[] buildings = { "Tiles", "Visitor Shop", "Tree", "Waterhole" };
-            string[] habitattype = { "Small", "Medium", "Large" };
+            string[] buildings = { "Tiles - 10", "Shop - 1.000", "Tree", "Waterhole" };
+            string[] habitattype = { "Small - 5.000", "Medium - 10.000", "Large - 15.000" };
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
-            string[] zookeepers = { "Zookeeper" };
+            string[] zookeepers = { "Zookeeper - 5.000" };
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
 
@@ -692,7 +692,7 @@ namespace ZooTycoonManager
 
                     if (_currentPlacement == PlacementMode.PlaceZookeeper)
                     {
-                        var command = new PlaceZookeeperCommand(worldMousePos, cost: 500);
+                        var command = new PlaceZookeeperCommand(worldMousePos, cost: 5000);
                         CommandManager.Instance.ExecuteCommand(command);
 
                         _currentPlacement = PlacementMode.None;
@@ -851,6 +851,15 @@ namespace ZooTycoonManager
 
             tileRenderer.Draw(_spriteBatch, map);
 
+            foreach (var tree in placeTrees)
+            {
+                _spriteBatch.Draw(_treePreviewTexture, tree, Color.White);
+            }
+            foreach (var waterhole in placeWaterholes)
+            {
+                _spriteBatch.Draw(_waterholePreviewTexture, waterhole, Color.White);
+            }
+
             // Draw static trees first, so they are behind other elements like roads/habitats if they overlap visually
             // in the expanded view area.
             if (_treeTexture != null && _staticTreePositions != null)
@@ -993,14 +1002,7 @@ namespace ZooTycoonManager
                 Rectangle previewRect = new Rectangle((int)snappedPos.X, (int)snappedPos.Y, _waterholePreviewTexture.Width, _waterholePreviewTexture.Height);
                 _spriteBatch.Draw(_waterholePreviewTexture, previewRect, Color.White * 0.5f);
             }
-            foreach (var tree in placeTrees)
-            {
-                _spriteBatch.Draw(_treePreviewTexture, tree, Color.White);
-            }
-            foreach (var waterhole in placeWaterholes)
-            {
-                _spriteBatch.Draw(_waterholePreviewTexture, waterhole, Color.White);
-            }
+            
 
             // VIGTIGT! Luk det første Begin!
 
@@ -1197,7 +1199,7 @@ namespace ZooTycoonManager
 
                 Tile originalTile = map.Tiles[x, y];
 
-                var placeRoadCommand = new PlaceRoadCommand(tilePosition, originalTile);
+                var placeRoadCommand = new PlaceRoadCommand(tilePosition, originalTile, 10);
                 CommandManager.Instance.ExecuteCommand(placeRoadCommand);
             }
             else
@@ -1366,17 +1368,17 @@ namespace ZooTycoonManager
         {
             HideAllMenus();
 
-            if (size == "Small")
+            if (size == "Small - 5.000")
             {
                 _currentPlacement = PlacementMode.PlaceSmallHabitat;
                 Console.WriteLine("Placement mode: Small Habitat activated");
             }
-            else if (size == "Medium")
+            else if (size == "Medium - 10.000")
             {
                 _currentPlacement = PlacementMode.PlaceMediumHabitat;
                 Console.WriteLine("Placement mode: Medium Habitat activated");
             }
-            else if (size == "Large")
+            else if (size == "Large - 15.000")
             {
                 _currentPlacement = PlacementMode.PlaceLargeHabitat;
                 Console.WriteLine("Placement mode: Large Habitat activated");
@@ -1396,7 +1398,7 @@ namespace ZooTycoonManager
         {
             HideAllMenus();
 
-            if (shopType == "Visitor Shop")
+            if (shopType == "Shop - 1.000")
             {
                 _currentPlacement = PlacementMode.PlaceVisitorShop;
                 Debug.WriteLine("Placement mode: Visitor Shop activated");
@@ -1486,7 +1488,7 @@ namespace ZooTycoonManager
             _animalMenu.IsVisible = false;
             _zookeeperMenu.IsVisible = false;
 
-            if (name == "Zookeeper")
+            if (name == "Zookeeper 5.000")
             {
                 _currentPlacement = PlacementMode.PlaceZookeeper;
                 Console.WriteLine("Placement mode: Zookeeper activated");

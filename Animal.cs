@@ -14,7 +14,7 @@ namespace ZooTycoonManager
         Texture2D sprite;
         List<Node> path;
         int currentNodeIndex = 0;
-        float speed = 100f;
+        float speed = 35f;
         AStarPathfinding pathfinder;
         private Habitat currentHabitat;
         private Random random = new Random();
