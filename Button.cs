@@ -54,7 +54,7 @@ public class Button
         {
             Vector2 iconSize = new Vector2(iconTexture.Width, iconTexture.Height);
             Vector2 backgroundSize = new Vector2(backgroundTexture.Width, backgroundTexture.Height);
-            Vector2 iconOffset = (backgroundSize - iconSize) / 2 + new Vector2(0, -0); // Flyt lidt op
+            Vector2 iconOffset = (backgroundSize - iconSize) / 2 + new Vector2(0, -7f);
 
 
             spriteBatch.Draw(iconTexture, position + iconOffset, Color.White);
