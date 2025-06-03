@@ -11,11 +11,15 @@ public class Button
     private Rectangle rectangle;
     private Rectangle bounds;
     private SpriteFont font;
+    private Texture2D startGameButtonTexture;
+
     public int GetWidth() => backgroundTexture.Width;
     public int GetHeight() => backgroundTexture.Height;
 
     public string Text { get; set; }
     public bool IsClicked { get; private set; }
+    public Vector2 Position { get; internal set; }
+    public object Texture { get; internal set; }
 
     public bool Contains(Vector2 screenPos)
     {
@@ -31,6 +35,12 @@ public class Button
         this.font = font;
         bounds = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
     }
+
+    public Button(Texture2D startGameButtonTexture)
+    {
+        this.startGameButtonTexture = startGameButtonTexture;
+    }
+
     public void Update(MouseState current, MouseState previous)
     {
         Point mousePosition = current.Position;

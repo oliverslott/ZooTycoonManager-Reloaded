@@ -97,6 +97,18 @@
 /processorParam:TextureFormat=Color
 /build:Button_Blue.png
 
+#begin ButtonTexture.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:ButtonTexture.png
+
 #begin Dirt1.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -110,7 +122,6 @@
 /build:Dirt1.png
 
 #begin drumstick.png
-#begin EnragedBuffalo.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -121,6 +132,17 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:drumstick.png
+
+#begin EnragedBuffalo.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:EnragedBuffalo.png
 
 #begin fence-connected-bottom.png
@@ -298,6 +320,13 @@
 /processorParam:TextureFormat=Color
 /build:KodiakBear.png
 
+#begin MenuFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:MenuFont.spritefont
+
 #begin MindfulChimpanze.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -359,7 +388,6 @@
 /build:Regular_07.png
 
 #begin sad.png
-#begin SlowTurtle.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -370,7 +398,30 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:sad.png
+
+#begin SlowTurtle.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:SlowTurtle.png
+
+#begin StartScreen.jpg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StartScreen.jpg
 
 #begin StompingElephant.png
 /importer:TextureImporter
