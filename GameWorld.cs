@@ -51,6 +51,11 @@ namespace ZooTycoonManager
 
         private Texture2D _treeTexture;
         private List<Vector2> _staticTreePositions;
+        private List<Vector2> placeTrees = new List<Vector2>();
+        private List<Vector2> placeWaterholes = new List<Vector2>();
+
+
+
         private const int NUMBER_OF_STATIC_TREES = 1000;
 
         private List<Vector2> _boundaryFenceTilePositions;
@@ -627,18 +632,18 @@ namespace ZooTycoonManager
 
                     _currentPlacement = PlacementMode.None;
                 }
-                //else if (_currentPlacement == PlacementMode.PlaceTree)
-                //{
-                //    // Her kunne du tilføje dem til en liste af bruger-placerede træer fx
-                //    _staticTreePositions.Add(worldMousePos); // eller din egen placering
-                //    _currentPlacement = PlacementMode.None;
-                //}
-                //else if (_currentPlacement == PlacementMode.PlaceWaterhole)
-                //{
-                //    // Det samme – du kan evt. lave en separat liste for vandhuller
-                //    shops.Add(new Waterhole(worldMousePos)); // eller hvad du vil bruge
-                //    _currentPlacement = PlacementMode.None;
-                //}
+                else if (_currentPlacement == PlacementMode.PlaceTree)
+                {
+                    // Her kunne du tilføje dem til en liste af bruger-placerede træer fx
+                    placeTrees.Add(worldMousePos); // eller din egen placering
+                    _currentPlacement = PlacementMode.None;
+                }
+                else if (_currentPlacement == PlacementMode.PlaceWaterhole)
+                {
+                    // Det samme – du kan evt. lave en separat liste for vandhuller
+                    placeWaterholes.Add(worldMousePos); // eller hvad du vil bruge
+                    _currentPlacement = PlacementMode.None;
+                }
 
                 else
                 {
@@ -954,6 +959,14 @@ namespace ZooTycoonManager
 
                 Rectangle previewRect = new Rectangle((int)snappedPos.X, (int)snappedPos.Y, _waterholePreviewTexture.Width, _waterholePreviewTexture.Height);
                 _spriteBatch.Draw(_waterholePreviewTexture, previewRect, Color.White * 0.5f);
+            }
+            foreach (var tree in placeTrees)
+            {
+                _spriteBatch.Draw(_treePreviewTexture, tree, Color.White);
+            }
+            foreach (var waterhole in placeWaterholes)
+            {
+                _spriteBatch.Draw(_waterholePreviewTexture, waterhole, Color.White);
             }
 
             // VIGTIGT! Luk det første Begin!
