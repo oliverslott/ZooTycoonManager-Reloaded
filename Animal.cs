@@ -14,14 +14,14 @@ namespace ZooTycoonManager
         Texture2D sprite;
         List<Node> path;
         int currentNodeIndex = 0;
-        float speed = 100f;
+        float speed = 35f;
         AStarPathfinding pathfinder;
         private Habitat currentHabitat;
         private Random random = new Random();
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 3f;
 
-        private const float HUNGER_INCREASE_RATE = 0.5f;
+        private const float HUNGER_INCREASE_RATE = 5.5f;
         private float _uncommittedHungerPoints = 0f;
 
         private const float STRESS_INCREASE_RATE_OVERCROWDING = 25.0f;
@@ -37,6 +37,7 @@ namespace ZooTycoonManager
 
         private ThoughtBubble _thoughtBubble;
         private Texture2D _drumstickTexture;
+        private float _scale = 2f; // Default scale
 
         public bool IsPathfinding { get; private set; }
         public bool IsSelected { get; set; }
@@ -254,6 +255,25 @@ namespace ZooTycoonManager
                     sprite = contentManager.Load<Texture2D>("MindfulChimpanze");
                     break;
             }
+
+            switch (speciesNameForTexture)
+            {
+                case "Elephant":
+                    _scale = 3f;
+                    break;
+                case "Polarbear":
+                    _scale = 2.8f;
+                    break;
+                case "Bear":
+                    _scale = 2.5f;
+                    break;
+                case "Buffalo":
+                    _scale = 2.2f;
+                    break;
+                case "Turtle":
+                    _scale = 1.5f;
+                    break;
+            }
         }
 
         public void Update(GameTime gameTime)
@@ -375,7 +395,7 @@ namespace ZooTycoonManager
         public void Draw(SpriteBatch spriteBatch)
         {
             if (sprite == null) return;
-            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), 2f, SpriteEffects.None, 0f);
+            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), _scale, SpriteEffects.None, 0f);
 
             if (Hunger > 50 && _thoughtBubble != null && _drumstickTexture != null)
             {

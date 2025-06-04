@@ -215,6 +215,23 @@ namespace ZooTycoonManager
             }
         }
 
+        private void SaveZookeepers(SqliteTransaction transaction, List<Habitat> habitats)
+        {
+            var allZookeepers = habitats.SelectMany(h => h.GetZookeepers()).ToList();
+            foreach (Zookeeper zookeeperInstance in allZookeepers)
+            {
+                Debug.WriteLine($"Attempting to save Zookeeper ID: {zookeeperInstance.ZookeeperId}, Name: {zookeeperInstance.Name}");
+                if (zookeeperInstance is ISaveable saveableObject)
+                {
+                    saveableObject.Save(transaction);
+                }
+                else
+                {
+                    Debug.WriteLine($"Warning: Zookeeper ID {zookeeperInstance.ZookeeperId} Name: {zookeeperInstance.Name} is not ISaveable and was not saved.");
+                }
+            }
+        }
+
         private void SaveAnimals(SqliteTransaction transaction, List<Habitat> habitats)
         {
             foreach (Animal animalInstance in habitats.SelectMany(x => x.GetAnimals()))
@@ -272,7 +289,7 @@ namespace ZooTycoonManager
             saveMoneyCmd.ExecuteNonQuery();
         }
 
-        private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds, List<int> currentShopIds)
+        private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds, List<int> currentShopIds, List<int> currentZookeeperIds)
         {
             var deleteCmd = _connection.CreateCommand();
             deleteCmd.Transaction = transaction;
@@ -339,6 +356,20 @@ namespace ZooTycoonManager
                 deleteCmd.CommandText = "DELETE FROM Shop";
                 deleteCmd.ExecuteNonQuery();
             }
+
+            // Delete removed zookeepers
+            if (currentZookeeperIds.Any())
+            {
+                deleteCmd.CommandText = @"
+                    DELETE FROM Zookeeper 
+                    WHERE zookeeper_id NOT IN (" + string.Join(",", currentZookeeperIds) + ")";
+                deleteCmd.ExecuteNonQuery();
+            }
+            else
+            {
+                deleteCmd.CommandText = "DELETE FROM Zookeeper";
+                deleteCmd.ExecuteNonQuery();
+            }
         }
 
         private void SaveRoadTiles(SqliteTransaction transaction)
@@ -379,13 +410,15 @@ namespace ZooTycoonManager
                     var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
                     var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
                     var currentShopIds = GameWorld.Instance.GetShops().Select(s => s.ShopId).ToList();
+                    var currentZookeeperIds = habitats.SelectMany(h => h.GetZookeepers()).Select(zk => zk.ZookeeperId).ToList();
 
                     SaveHabitats(transaction, habitats);
+                    SaveZookeepers(transaction, habitats);
                     SaveAnimals(transaction, habitats);
                     SaveVisitors(transaction);
                     SaveShops(transaction, GameWorld.Instance.GetShops());
                     SaveCurrentMoney(transaction);
-                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds);
+                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds, currentZookeeperIds);
                     SaveRoadTiles(transaction);
 
                     transaction.Commit();
@@ -477,6 +510,54 @@ namespace ZooTycoonManager
             }
         }
 
+        private void LoadZookeepers(ContentManager content, List<Habitat> loadedHabitats, out int nextZookeeperId)
+        {
+            nextZookeeperId = 1;
+            var command = _connection.CreateCommand();
+            command.CommandText = "SELECT zookeeper_id, name, upkeep, habitat_id, position_x, position_y FROM Zookeeper";
+            
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var zookeeper = new Zookeeper(); // Parameterless constructor
+                    zookeeper.Load(reader);          // Load basic properties
+                    zookeeper.LoadContent(content);  // Load textures etc.
+
+                    Habitat assignedHabitat = null;
+                    if (zookeeper.AssignedHabitatId != -1)
+                    {
+                        assignedHabitat = loadedHabitats.FirstOrDefault(h => h.HabitatId == zookeeper.AssignedHabitatId);
+                    }
+
+                    if (assignedHabitat != null)
+                    {
+                        zookeeper.SetAssignedHabitat(assignedHabitat);
+                        assignedHabitat.AddZookeeper(zookeeper); // Assumes Habitat has AddZookeeper
+                        Debug.WriteLine($"Loaded Zookeeper ID {zookeeper.ZookeeperId} ({zookeeper.Name}) and assigned to Habitat ID {assignedHabitat.HabitatId}");
+                    }
+                    else if (zookeeper.AssignedHabitatId != -1)
+                    {
+                        Debug.WriteLine($"Warning: Zookeeper ID {zookeeper.ZookeeperId} ({zookeeper.Name}) refers to Habitat ID {zookeeper.AssignedHabitatId}, which was not found.");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Warning: Zookeeper ID {zookeeper.ZookeeperId} ({zookeeper.Name}) is not assigned to any habitat.");
+                        // Decide how to handle unassigned zookeepers if necessary, for now they are loaded but not in a habitat's list
+                    }
+
+                    zookeeper.InitializeBehavioralState(); // Initialize pathfinding, logic timers etc.
+                    zookeeper.StartUpdateThread();       // Start its own update loop
+
+                    if (zookeeper.ZookeeperId >= nextZookeeperId)
+                    {
+                        nextZookeeperId = zookeeper.ZookeeperId + 1;
+                    }
+                }
+            }
+            Debug.WriteLine($"Loaded zookeepers. Next Zookeeper ID will be {nextZookeeperId}");
+        }
+
         private void LoadVisitors(ContentManager content, out int nextVisitorId)
         {
             nextVisitorId = 1;
@@ -546,12 +627,12 @@ namespace ZooTycoonManager
             }
         }
 
-        public (List<Habitat> habitats, List<Shop> shops, int nextHabitatId, int nextAnimalId, int nextVisitorId, int nextShopId, decimal currentMoney) LoadGame(ContentManager content)
+        public (List<Habitat> habitats, List<Shop> shops, int nextHabitatId, int nextAnimalId, int nextVisitorId, int nextShopId, int nextZookeeperId, decimal currentMoney) LoadGame(ContentManager content)
         {
             Debug.WriteLine("Loading game state...");
             List<Habitat> loadedHabitats;
             List<Shop> loadedShops;
-            int nextHabitatId, nextAnimalId, nextVisitorId, nextShopId;
+            int nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId;
             decimal currentMoney;
 
             try
@@ -560,6 +641,7 @@ namespace ZooTycoonManager
                 loadedHabitats = LoadHabitats(content, out nextHabitatId);
                 loadedShops = LoadShops(content, out nextShopId);
                 LoadAnimals(content, loadedHabitats, out nextAnimalId);
+                LoadZookeepers(content, loadedHabitats, out nextZookeeperId);
                 LoadVisitors(content, out nextVisitorId);
                 LoadRoadTiles();
 
@@ -574,10 +656,11 @@ namespace ZooTycoonManager
                 nextAnimalId = 1;
                 nextVisitorId = 1;
                 nextShopId = 1;
+                nextZookeeperId = 1;
                 currentMoney = 20000;
             }
 
-            return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, currentMoney);
+            return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId, currentMoney);
         }
 
         public string GetSpeciesNameById(int speciesId)
