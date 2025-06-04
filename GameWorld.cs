@@ -1488,7 +1488,7 @@ namespace ZooTycoonManager
             _animalMenu.IsVisible = false;
             _zookeeperMenu.IsVisible = false;
 
-            if (name == "Zookeeper 5.000")
+            if (name == "Zookeeper - 5.000")
             {
                 _currentPlacement = PlacementMode.PlaceZookeeper;
                 Console.WriteLine("Placement mode: Zookeeper activated");
