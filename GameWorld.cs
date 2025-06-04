@@ -1592,52 +1592,42 @@ namespace ZooTycoonManager
             if (animalType == "Buffalo - 1.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
-                //Console.WriteLine($"Placement mode: Buffalo (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Kangaroo - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
-                //Console.WriteLine($"Placement mode: Kangaroo (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Polarbear - 10.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
-                //Console.WriteLine($"Placement mode: Polarbear (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Bear - 9.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Bear;
-                //Console.WriteLine($"Placement mode: Bear (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Chimpanze - 2.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
-                //Console.WriteLine($"Placement mode: Chimpanze (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Elephant - 8.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
-                //Console.WriteLine($"Placement mode: Elephant (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Orangutan - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
-                //Console.WriteLine($"Placement mode: Orangutan (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Turtle - 5.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
-                //Console.WriteLine($"Placement mode: Turtle (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Wolf - 4.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
-                //Console.WriteLine($"Placement mode: Wolf (ID: {speciesIdToPlace}) activated");
             }
             if (animalType == "Camel - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Camel;
-                //Console.WriteLine($"Placement mode: Camel (ID: {speciesIdToPlace}) activated");
             }
         }
 
