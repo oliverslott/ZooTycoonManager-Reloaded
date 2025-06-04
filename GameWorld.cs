@@ -79,21 +79,17 @@ namespace ZooTycoonManager
         private Button _infoButton;
         private bool _showInfoPanel = false;
 
-        // zookeeper
-
-
         // Money Management
         private MoneyDisplay _moneyDisplay;
 
         public bool[,] WalkableMap { get; private set; }
 
-        private enum PlacementMode
+        private enum PlacementMode // Enum til placering af ting
         {
             None,
             PlaceSmallHabitat,
             PlaceMediumHabitat,
             PlaceLargeHabitat,
-
             PlaceZookeeper,
             PlaceVisitorShop,
             PlaceAnimal_Buffalo,
@@ -109,7 +105,7 @@ namespace ZooTycoonManager
             PlaceTree,
             PlaceWaterhole
         }
-        public enum GameState
+        public enum GameState // Enum til Menu
         {
             MainMenu,
             Playing,
@@ -156,7 +152,6 @@ namespace ZooTycoonManager
         {
             Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
 
-            // Vi antager at UI sidder fast på skærmen, så vi tjekker mod deres skærmpositioner
             if (_shopWindow.IsVisible && _shopWindow.Contains(mousePosition)) return true;
             if (_buildingsMenu.IsVisible && _buildingsMenu.Contains(mousePosition)) return true;
             if (_habitatMenu.IsVisible && _habitatMenu.Contains(mousePosition)) return true;
@@ -245,7 +240,7 @@ namespace ZooTycoonManager
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
                 Vector2 newShopPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    _graphics.PreferredBackBufferWidth - 260, // reposition af knapper
                     90
 );
                 _shopWindow.Reposition(newShopPos);
@@ -262,7 +257,7 @@ namespace ZooTycoonManager
                 _infoButton.SetPosition(newIonfoButtonPos);
 
                 Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                _graphics.PreferredBackBufferWidth - 465, // reposition af knapper
                 90
 );
 
@@ -281,7 +276,6 @@ namespace ZooTycoonManager
                 (int)Math.Floor(pixelPos.Y / TILE_SIZE)
             );
         }
-
 
         public static Vector2 TileToPixel(Vector2 tilePos)
         {
@@ -334,7 +328,7 @@ namespace ZooTycoonManager
             SpriteFont uiFont = Content.Load<SpriteFont>("UIFont");
 
 
-            // Menu fonts and textures
+            // Menu fonts og textures
             _menuFont = Content.Load<SpriteFont>("MenuFont");
             _buttonTexture = Content.Load<Texture2D>("ButtonTexture");
             _buttonLabels = new List<string> { "Start Game", "Load Game", "Exit" };
@@ -343,24 +337,24 @@ namespace ZooTycoonManager
 
             // Initialize shopButton textures and position
 
-            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");  // background texture for shop button
-            Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          // icon texture for shop button
+            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");  
+            Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          
 
             Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - shopButtonBackgroundTexture.Width - 10, 30);
             shopButton = new Button(shopButtonBackgroundTexture, shopButtonIconTexture, shopButtonPosition);
 
-            // Use _buttonTexture for your menu buttons
+            
             int buttonWidth = _buttonTexture.Width;
             int buttonHeight = _buttonTexture.Height;
 
-            // Center the shopButton (the button that opens the shop window)
+            // Centrering af shopknap
             Vector2 centerShopButton = new Vector2(
                 (GraphicsDevice.Viewport.Width - buttonWidth) / 2,
                 (GraphicsDevice.Viewport.Height - buttonHeight) / 2
             );
             shopButton.Position = centerShopButton;
 
-            // Calculate menu button rectangles for Start Game, Load Game, Exit
+            
             int startY = 200;
             Vector2 _buttonSize = new Vector2(buttonWidth, buttonHeight);
             for (int i = 0; i < _buttonLabels.Count; i++)
@@ -373,15 +367,15 @@ namespace ZooTycoonManager
                 ));
             }
 
-            // Load shop window textures and fonts
+            //shop window textures og font
             Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
             Texture2D startButtonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
 
-            // Assign font for shop and start button
+            
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
-            // Lists for menus
+            // Menuliste
             string[] buildings = { "Tiles - 10", "Shop - 1.000", "Tree", "Waterhole" };
             string[] habitattype = { "Small - 5.000", "Medium - 10.000", "Large - 15.000" };
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
@@ -389,17 +383,17 @@ namespace ZooTycoonManager
 
             Vector2 subMenuPos = new Vector2(870, 75); // position for submenus
 
-            // Initialize submenus
+            //Submenus
             _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, buildings);
             _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, habitattype);
             _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, animals);
             _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, zookeepers);
 
-            // Initialize shop window
+            //shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90);
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
 
-            // Initialize MoneyDisplay here after _font is loaded
+            //Moneydisplay
             Texture2D moneyBackground = Content.Load<Texture2D>("Button_Blue_3Slides");
             Vector2 moneyPosition = new Vector2(10, 20);
 
