@@ -909,12 +909,11 @@ namespace ZooTycoonManager
                 _showInfoPanel = !_showInfoPanel;
             }
 
+            saveButton.Update(gameTime, mouseState, prevMouseState);
+
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
-            MouseState currentMouseState = Mouse.GetState();
-            saveButton.Update(gameTime, currentMouseState, prevMouseState);
-            prevMouseState = currentMouseState;
 
             base.Update(gameTime);
         }
