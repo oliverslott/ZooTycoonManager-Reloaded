@@ -118,11 +118,6 @@ namespace ZooTycoonManager
         }
         private GameState _currentGameState = GameState.MainMenu;
 
-        // Menu options
-        private List<string> _menuOptions = new List<string> { "Start Game", "Instructions", "Exit" };
-        private int _selectedOptionIndex = 0;
-        private MouseState _previousMouse;
-
 
         private PlacementMode _currentPlacement = PlacementMode.None;
 
@@ -489,7 +484,7 @@ namespace ZooTycoonManager
 
                     if (buttonRect.Contains(mousePos) &&
                         mouse.LeftButton == ButtonState.Pressed &&
-                        _previousMouse.LeftButton == ButtonState.Released)
+                        prevMouseState.LeftButton == ButtonState.Pressed)
                     {
                         string label = _buttonLabels[i];
 
@@ -853,7 +848,6 @@ namespace ZooTycoonManager
                         }
                     }
                 }
-                _previousMouse = mouse;
             }
 
 
