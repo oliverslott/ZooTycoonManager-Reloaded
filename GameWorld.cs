@@ -425,10 +425,10 @@ namespace ZooTycoonManager
             _treePreviewTexture = Content.Load<Texture2D>("treegpt");
             _waterholePreviewTexture = Content.Load<Texture2D>("watergpt");
 
-            // Initialize entity info popup after font load
+            // entity info popup
             _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font);
 
-            // Load tile textures and create renderer
+            //tile textures
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
@@ -438,7 +438,7 @@ namespace ZooTycoonManager
             FenceRenderer.LoadContent(Content);
             InitializeBoundaryFences();
 
-            // Load tree texture and initialize trees
+            //tree texture
             _treeTexture = Content.Load<Texture2D>("tree1");
             InitializeStaticTrees();
 
@@ -449,7 +449,7 @@ namespace ZooTycoonManager
             }
             Habitat.LoadContent(Content);
 
-            // Initialize start game button with texture and center it on screen
+            //start game
             _startGameButtonTexture = startButtonTexture;
             _startGameButton = new Button(_startGameButtonTexture);
 
@@ -504,13 +504,13 @@ namespace ZooTycoonManager
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            _fpsCounter.Update(gameTime);  // Update FPS counter
+            _fpsCounter.Update(gameTime); //FPS
             _visitorDisplay.SetText($"Visitors: {visitors.Count}");
             _animalDisplay.SetText($"Animals: {habitats.Sum(h => h.GetAnimals().Count)}");
 
             KeyboardState keyboard = Keyboard.GetState();
 
-            // Handle F11 for fullscreen toggle
+            // F11 = Fullscreen
             if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Keys.F11))
             {
                 ToggleFullscreen();
@@ -541,12 +541,12 @@ namespace ZooTycoonManager
 
             if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
             {
-                // Create and execute the place animal command
+                //place animal command
                 var placeZookeeperCommand = new PlaceZookeeperCommand(worldMousePosition);
                 CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
             }
 
-            // Handle automatic visitor spawning
+            //visitor spawn
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
             {
@@ -565,7 +565,7 @@ namespace ZooTycoonManager
             }
             else
             {
-                _visitorSpawnTimer = 0f; // Reset timer if no animals exist to prevent instant spawn when an animal is added
+                _visitorSpawnTimer = 0f; // Reset timer for spawn
             }
 
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
