@@ -594,7 +594,7 @@ namespace ZooTycoonManager
 
             if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
             {
-                DatabaseManager.Instance.SaveGame(habitats);
+                DatabaseManager.Instance.SaveGame();
             }
 
             if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))

@@ -414,13 +414,14 @@ namespace ZooTycoonManager
             }
         }
 
-        public void SaveGame(List<Habitat> habitats)
+        public void SaveGame()
         {
             Debug.WriteLine("Save Game button clicked. Saving game state...");
             using (var transaction = _connection.BeginTransaction())
             {
                 try
                 {
+                    var habitats = GameWorld.Instance.GetHabitats();
                     var currentHabitatIds = habitats.Select(h => h.HabitatId).ToList();
                     var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
                     var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
