@@ -21,7 +21,7 @@ namespace ZooTycoonManager
         private Vector2 position;
         private List<Node> path;
         private int currentNodeIndex = 0;
-        private float speed = 80f;
+        private float speed = 40f;
         private AStarPathfinding pathfinder;
         private Random random = new Random();
         private float timeSinceLastRandomWalk = 0f;
@@ -50,6 +50,7 @@ namespace ZooTycoonManager
         private const int HIGH_HUNGER_THRESHOLD = 80;
         private const float MOOD_PENALTY_PER_SECOND_HIGH_HUNGER = 1.0f;
         private const float MOOD_RECOVERY_PER_SECOND_NOT_HUNGRY = 0.5f;
+        private const int MOOD_INFLUENCE_ON_SCORE = 3;
         private float _uncommittedMoodChangePoints = 0f;
 
         public bool IsSelected { get; set; }
@@ -283,11 +284,11 @@ namespace ZooTycoonManager
 
         public void LoadContent(ContentManager contentManager)
         {
-            sprite = contentManager.Load<Texture2D>("Pawn_Blue_Cropped_resized");
+            sprite = contentManager.Load<Texture2D>("294f5329-d985-4d20-86d5-98e9dfb256fc");
             
             _thoughtBubble = new ThoughtBubble();
             _thoughtBubble.LoadContent(contentManager);
-            _animalInThoughtTexture = contentManager.Load<Texture2D>("NibblingGoat");
+            _animalInThoughtTexture = contentManager.Load<Texture2D>("binoculars");
             _sadTexture = contentManager.Load<Texture2D>("sad");
             _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
 
@@ -498,6 +499,7 @@ namespace ZooTycoonManager
             if (_isExiting && (path == null || path.Count == 0 || currentNodeIndex >= path.Count))
             {
                 _isRunning = false;
+                UpdateScoreBasedOnMood();
                 GameWorld.Instance.ConfirmDespawn(this);
                 return;
             }
@@ -510,9 +512,23 @@ namespace ZooTycoonManager
                 if (_isExiting)
                 {
                     _isRunning = false;
+                    UpdateScoreBasedOnMood();
                     GameWorld.Instance.ConfirmDespawn(this);
                 }
             }
+        }
+
+        private void UpdateScoreBasedOnMood()
+        {
+            if(Mood > 50)
+            {
+                ScoreManager.Instance.Score += MOOD_INFLUENCE_ON_SCORE;
+            }
+            else if(Mood < 50)
+            {
+                ScoreManager.Instance.Score -= MOOD_INFLUENCE_ON_SCORE;
+            }
+            //Mood = 50 has no influence on the zoo score
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -549,7 +565,7 @@ namespace ZooTycoonManager
                 _thoughtBubble != null && 
                 _animalInThoughtTexture != null)
             {
-                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, new Rectangle(0, 0, 16, 16));
+                _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _animalInThoughtTexture, contentScale: 0.35f);
             }
         }
 

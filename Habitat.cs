@@ -200,11 +200,6 @@ namespace ZooTycoonManager
             {
                 animal.Update(gameTime);
             }
-
-            foreach (var zookeeper in zookeepers)
-            {
-                zookeeper.Update(gameTime);
-            }
         }
 
         public void LoadAnimalContent(ContentManager content)
