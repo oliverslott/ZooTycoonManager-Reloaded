@@ -79,21 +79,17 @@ namespace ZooTycoonManager
         private Button _infoButton;
         private bool _showInfoPanel = false;
 
-        // zookeeper
-
-
         // Money Management
         private MoneyDisplay _moneyDisplay;
 
         public bool[,] WalkableMap { get; private set; }
 
-        private enum PlacementMode
+        private enum PlacementMode // Enum til placering af ting
         {
             None,
             PlaceSmallHabitat,
             PlaceMediumHabitat,
             PlaceLargeHabitat,
-
             PlaceZookeeper,
             PlaceVisitorShop,
             PlaceAnimal_Buffalo,
@@ -109,7 +105,7 @@ namespace ZooTycoonManager
             PlaceTree,
             PlaceWaterhole
         }
-        public enum GameState
+        public enum GameState // Enum til Menu
         {
             MainMenu,
             Playing,
@@ -156,7 +152,6 @@ namespace ZooTycoonManager
         {
             Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
 
-            // Vi antager at UI sidder fast på skærmen, så vi tjekker mod deres skærmpositioner
             if (_shopWindow.IsVisible && _shopWindow.Contains(mousePosition)) return true;
             if (_buildingsMenu.IsVisible && _buildingsMenu.Contains(mousePosition)) return true;
             if (_habitatMenu.IsVisible && _habitatMenu.Contains(mousePosition)) return true;
@@ -245,7 +240,7 @@ namespace ZooTycoonManager
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
                 Vector2 newShopPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    _graphics.PreferredBackBufferWidth - 260, // reposition af knapper
                     90
 );
                 _shopWindow.Reposition(newShopPos);
@@ -262,7 +257,7 @@ namespace ZooTycoonManager
                 _infoButton.SetPosition(newIonfoButtonPos);
 
                 Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                _graphics.PreferredBackBufferWidth - 465, // reposition af knapper
                 90
 );
 
@@ -281,7 +276,6 @@ namespace ZooTycoonManager
                 (int)Math.Floor(pixelPos.Y / TILE_SIZE)
             );
         }
-
 
         public static Vector2 TileToPixel(Vector2 tilePos)
         {
@@ -334,7 +328,7 @@ namespace ZooTycoonManager
             SpriteFont uiFont = Content.Load<SpriteFont>("UIFont");
 
 
-            // Menu fonts and textures
+            // Menu fonts og textures
             _menuFont = Content.Load<SpriteFont>("MenuFont");
             _buttonTexture = Content.Load<Texture2D>("ButtonTexture");
             _buttonLabels = new List<string> { "Start Game", "Load Game", "Exit" };
@@ -343,24 +337,24 @@ namespace ZooTycoonManager
 
             // Initialize shopButton textures and position
 
-            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");  // background texture for shop button
-            Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          // icon texture for shop button
+            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");  
+            Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          
 
             Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - shopButtonBackgroundTexture.Width - 10, 30);
             shopButton = new Button(shopButtonBackgroundTexture, shopButtonIconTexture, shopButtonPosition);
 
-            // Use _buttonTexture for your menu buttons
+            
             int buttonWidth = _buttonTexture.Width;
             int buttonHeight = _buttonTexture.Height;
 
-            // Center the shopButton (the button that opens the shop window)
+            // Centrering af shopknap
             Vector2 centerShopButton = new Vector2(
                 (GraphicsDevice.Viewport.Width - buttonWidth) / 2,
                 (GraphicsDevice.Viewport.Height - buttonHeight) / 2
             );
             shopButton.Position = centerShopButton;
 
-            // Calculate menu button rectangles for Start Game, Load Game, Exit
+            
             int startY = 200;
             Vector2 _buttonSize = new Vector2(buttonWidth, buttonHeight);
             for (int i = 0; i < _buttonLabels.Count; i++)
@@ -373,15 +367,15 @@ namespace ZooTycoonManager
                 ));
             }
 
-            // Load shop window textures and fonts
+            //shop window textures og font
             Texture2D shopBackgroundTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
             Texture2D startButtonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
 
-            // Assign font for shop and start button
+            
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
-            // Lists for menus
+            // Menuliste
             string[] buildings = { "Tiles - 10", "Shop - 1.000", "Tree", "Waterhole" };
             string[] habitattype = { "Small - 5.000", "Medium - 10.000", "Large - 15.000" };
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
@@ -389,17 +383,17 @@ namespace ZooTycoonManager
 
             Vector2 subMenuPos = new Vector2(870, 75); // position for submenus
 
-            // Initialize submenus
+            //Submenus
             _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, buildings);
             _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, habitattype);
             _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, animals);
             _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, zookeepers);
 
-            // Initialize shop window
+            //shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90);
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
 
-            // Initialize MoneyDisplay here after _font is loaded
+            //Moneydisplay
             Texture2D moneyBackground = Content.Load<Texture2D>("Button_Blue_3Slides");
             Vector2 moneyPosition = new Vector2(10, 20);
 
@@ -431,10 +425,10 @@ namespace ZooTycoonManager
             _treePreviewTexture = Content.Load<Texture2D>("treegpt");
             _waterholePreviewTexture = Content.Load<Texture2D>("watergpt");
 
-            // Initialize entity info popup after font load
+            // entity info popup
             _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font);
 
-            // Load tile textures and create renderer
+            //tile textures
             tileTextures = new Texture2D[2];
             tileTextures[0] = Content.Load<Texture2D>("Grass1");
             tileTextures[1] = Content.Load<Texture2D>("Dirt1");
@@ -444,7 +438,7 @@ namespace ZooTycoonManager
             FenceRenderer.LoadContent(Content);
             InitializeBoundaryFences();
 
-            // Load tree texture and initialize trees
+            //tree texture
             _treeTexture = Content.Load<Texture2D>("tree1");
             InitializeStaticTrees();
 
@@ -455,7 +449,7 @@ namespace ZooTycoonManager
             }
             Habitat.LoadContent(Content);
 
-            // Initialize start game button with texture and center it on screen
+            //start game
             _startGameButtonTexture = startButtonTexture;
             _startGameButton = new Button(_startGameButtonTexture);
 
@@ -510,13 +504,13 @@ namespace ZooTycoonManager
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            _fpsCounter.Update(gameTime);  // Update FPS counter
+            _fpsCounter.Update(gameTime); //FPS
             _visitorDisplay.SetText($"Visitors: {visitors.Count}");
             _animalDisplay.SetText($"Animals: {habitats.Sum(h => h.GetAnimals().Count)}");
 
             KeyboardState keyboard = Keyboard.GetState();
 
-            // Handle F11 for fullscreen toggle
+            // F11 = Fullscreen
             if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Keys.F11))
             {
                 ToggleFullscreen();
@@ -547,12 +541,12 @@ namespace ZooTycoonManager
 
             if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
             {
-                // Create and execute the place animal command
+                //place animal command
                 var placeZookeeperCommand = new PlaceZookeeperCommand(worldMousePosition);
                 CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
             }
 
-            // Handle automatic visitor spawning
+            //visitor spawn
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
             {
@@ -571,7 +565,7 @@ namespace ZooTycoonManager
             }
             else
             {
-                _visitorSpawnTimer = 0f; // Reset timer if no animals exist to prevent instant spawn when an animal is added
+                _visitorSpawnTimer = 0f; // Reset timer for spawn
             }
 
             if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
@@ -611,13 +605,13 @@ namespace ZooTycoonManager
                 _nextAnimalId = 1;
                 _nextVisitorId = 1;
                 _nextZookeeperId = 1;
-                CommandManager.Instance.Clear(); // Clear command history when clearing everything
+                CommandManager.Instance.Clear(); // Clear command
             }
 
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
             {
                 MoneyManager.Instance.AddMoney(100000);
-                Debug.WriteLine("Added $100,000 for debugging.");
+                Debug.WriteLine("Added $100,000 for debugging."); // Cheat code
             }
 
             if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) &&
@@ -632,7 +626,7 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
-            // Debug key for placing a shop
+            // Debug key = shop
             if (keyboard.IsKeyDown(Keys.J) && !prevKeyboardState.IsKeyDown(Keys.J))
             {
                 var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, DEFAULT_SHOP_COST);
@@ -771,26 +765,21 @@ namespace ZooTycoonManager
                 }
                 else if (_currentPlacement == PlacementMode.PlaceTree)
                 {
-                    // Her kunne du tilføje dem til en liste af bruger-placerede træer fx
-                    placeTrees.Add(worldMousePos); // eller din egen placering
+                    placeTrees.Add(worldMousePos); 
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceWaterhole)
                 {
-                    // Det samme – du kan evt. lave en separat liste for vandhuller
-                    placeWaterholes.Add(worldMousePos); // eller hvad du vil bruge
+                    placeWaterholes.Add(worldMousePos);
                     _currentPlacement = PlacementMode.None;
                 }
 
                 else
                 {
-                    // evt. eksisterende logik for andre klik
-                    // Convert mouse position to world coordinates for checking entity clicks
                     Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
                     bool entityClickedThisFrame = false;
                     IInspectableEntity clickedEntity = null;
 
-                    // Check for animal clicks first
                     foreach (var habitat in habitats)
                     {
                         foreach (var animal in habitat.GetAnimals())
@@ -812,7 +801,6 @@ namespace ZooTycoonManager
 
                         _currentPlacement = PlacementMode.None;
                     }
-
 
                     if (!entityClickedThisFrame)
                     {
@@ -874,16 +862,15 @@ namespace ZooTycoonManager
             MouseState mouseState = Mouse.GetState();
             shopButton.Update(mouseState, prevMouseState);
 
-            // Når du klikker på shop-ikonet, viser vi vinduet
+            // Shop ikon
             if (!shopButton.IsClicked)
             {
             }
             else
             {
-                // Toggle shop window
+                // Shop vindue
                 _shopWindow.IsVisible = !_shopWindow.IsVisible;
 
-                // Luk alle under-menuer, uanset hvad
                 _buildingsMenu.IsVisible = false;
                 _habitatMenu.IsVisible = false;
                 _animalMenu.IsVisible = false;
@@ -927,7 +914,7 @@ namespace ZooTycoonManager
             _graphics.ApplyChanges();
             _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
             Vector2 newShopPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    _graphics.PreferredBackBufferWidth - 260, // repostion af knap
                     90
 );
             _shopWindow.Reposition(newShopPos);
@@ -944,19 +931,14 @@ namespace ZooTycoonManager
             _infoButton.SetPosition(newIonfoButtonPos);
             shopButton.SetPosition(newShopButtonPos);
             Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                _graphics.PreferredBackBufferWidth - 465, // repostion af knap
                 90
 );
-
-
             _buildingsMenu.Reposition(newSubMenuPos);
             _habitatMenu.Reposition(newSubMenuPos);
             _animalMenu.Reposition(newSubMenuPos);
             _zookeeperMenu.Reposition(newSubMenuPos);
-
-
         }
-
 
         protected override void Draw(GameTime gameTime)
         {
@@ -965,7 +947,7 @@ namespace ZooTycoonManager
             if (_currentGameState == GameState.MainMenu)
             {
 
-                // --- Begin UI sprite batch for menu or pre-game ---
+                //UI spritebatch
                 _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
                 if (StartScreen != null)
@@ -992,15 +974,13 @@ namespace ZooTycoonManager
                 _spriteBatch.End();
 
                 return;
-
             }
 
             if (!_hasGameStarted)
             {
-                // Draw menu background (optional, if black is enough, skip)
                 // _spriteBatch.Draw(_menuBackgroundTexture, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.Black);
 
-                // Draw menu buttons
+                // menu knapper
                 MouseState mouse = Mouse.GetState();
                 Point mousePos = mouse.Position;
 
@@ -1023,19 +1003,19 @@ namespace ZooTycoonManager
                 }
 
 
-                _spriteBatch.End(); // ✅ END UI batch before returning
+                _spriteBatch.End(); // end ui
                 return;
             }
 
 
 
-            // --- Begin world/game drawing (with camera) ---
+            // world/game drawing
             GraphicsDevice.Clear(Color.CornflowerBlue);
             Matrix transform = _camera.GetTransformMatrix();
 
             _spriteBatch.Begin(transformMatrix: transform, samplerState: SamplerState.PointClamp);
 
-            // Draw tile map
+            // tegn map
             if (_currentGameState == GameState.Playing)
             {
                 tileRenderer.Draw(_spriteBatch, map);
@@ -1051,7 +1031,7 @@ namespace ZooTycoonManager
                 _spriteBatch.Draw(_waterholePreviewTexture, waterhole, Color.White);
             }
 
-            // Static trees (behind other elements)
+            // static trees 
             if (_treeTexture != null && _staticTreePositions != null)
             {
                 foreach (var treePos in _staticTreePositions)
@@ -1142,7 +1122,7 @@ namespace ZooTycoonManager
                 _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f);
             }
 
-            // Shop placement preview
+            // Shop placering preview
             if (_currentPlacement == PlacementMode.PlaceVisitorShop && _shopPreviewTexture != null)
             {
                 MouseState mouse = Mouse.GetState();
@@ -1195,9 +1175,9 @@ namespace ZooTycoonManager
             }
 
 
-            _spriteBatch.End(); // ✅ END game world sprite batch
+            _spriteBatch.End(); // ✅ END spritebach gameworld
 
-            // --- Begin final UI layer (always visible) ---
+            // UI
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
             if (_isPlacingRoadModeActive)
@@ -1301,23 +1281,22 @@ namespace ZooTycoonManager
 
         public int GetNextAnimalId()
         {
-            return _nextAnimalId++;
+            return _nextAnimalId++; // unique animal ID
         }
 
         public int GetNextHabitatId()
         {
-            return _nextHabitatId++;
+            return _nextHabitatId++; // unique habitat ID
         }
 
         public int GetNextZookeeperId()
         {
-            // Logic to generate a unique zookeeper ID
-            return _nextZookeeperId++;
+            return _nextZookeeperId++; // unique zookeeper ID
         }
 
         public int GetNextShopId()
         {
-            return _nextShopId++;
+            return _nextShopId++; // unique shop ID
         }
 
         public bool GetOriginalWalkableState(int x, int y)
@@ -1521,7 +1500,6 @@ namespace ZooTycoonManager
         }
         public void ShowSubMenu(string type)
         {
-            // Hvis den allerede er åben → luk den
             if ((type == "Buildings" && _buildingsMenu.IsVisible) ||
                 (type == "Habitats" && _habitatMenu.IsVisible) ||
                 (type == "Animals" && _animalMenu.IsVisible) ||
@@ -1534,7 +1512,6 @@ namespace ZooTycoonManager
                 return;
             }
 
-            // Ellers → vis den ønskede og luk de andre
             _buildingsMenu.IsVisible = false;
             _habitatMenu.IsVisible = false;
             _animalMenu.IsVisible = false;
@@ -1592,8 +1569,6 @@ namespace ZooTycoonManager
         public void ToggleTilePlacementMode()
         {
             _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
-
-            // Luk menuerne for visuel konsistens
             _buildingsMenu.IsVisible = false;
             _habitatMenu.IsVisible = false;
             _animalMenu.IsVisible = false;
@@ -1614,55 +1589,45 @@ namespace ZooTycoonManager
             //    return; 
             //}           
 
-            if (animalType == "Buffalo - 1.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Buffalo - 1.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
-                //Console.WriteLine($"Placement mode: Buffalo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Kangaroo - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Kangaroo - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
-                //Console.WriteLine($"Placement mode: Kangaroo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Polarbear - 10.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Polarbear - 10.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
-                //Console.WriteLine($"Placement mode: Polarbear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Bear - 9.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Bear - 9.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Bear;
-                //Console.WriteLine($"Placement mode: Bear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Chimpanze - 2.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Chimpanze - 2.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
-                //Console.WriteLine($"Placement mode: Chimpanze (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Elephant - 8.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Elephant - 8.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
-                //Console.WriteLine($"Placement mode: Elephant (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Orangutan - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Orangutan - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
-                //Console.WriteLine($"Placement mode: Orangutan (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Turtle - 5.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Turtle - 5.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
-                //Console.WriteLine($"Placement mode: Turtle (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Wolf - 4.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Wolf - 4.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
-                //Console.WriteLine($"Placement mode: Wolf (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Camel - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Camel - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Camel;
-                //Console.WriteLine($"Placement mode: Camel (ID: {speciesIdToPlace}) activated");
             }
         }
 
