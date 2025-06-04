@@ -195,6 +195,12 @@ namespace ZooTycoonManager
                 insertDefaultMoneyCmd.Transaction = transaction;
                 insertDefaultMoneyCmd.CommandText = "INSERT OR IGNORE INTO GameVariables (key, value_numeric) VALUES ('CurrentMoney', 20000);";
                 insertDefaultMoneyCmd.ExecuteNonQuery();
+
+                // Add this to save the score
+                var insertDefaultScoreCmd = _connection.CreateCommand();
+                insertDefaultScoreCmd.CommandText = "INSERT OR IGNORE INTO GameVariables (key, value_numeric) VALUES ('CurrentScore', 60);"; // Default score 100
+                insertDefaultScoreCmd.ExecuteNonQuery();
+
                 transaction.Commit();
             }
         }
@@ -287,6 +293,15 @@ namespace ZooTycoonManager
             saveMoneyCmd.CommandText = "UPDATE GameVariables SET value_numeric = @money WHERE key = 'CurrentMoney'";
             saveMoneyCmd.Parameters.AddWithValue("@money", MoneyManager.Instance.CurrentMoney);
             saveMoneyCmd.ExecuteNonQuery();
+        }
+
+        private void SaveScore(SqliteTransaction transaction)
+        {
+            var saveScoreCmd = _connection.CreateCommand();
+            saveScoreCmd.Transaction = transaction;
+            saveScoreCmd.CommandText = "UPDATE GameVariables SET value_numeric = @score WHERE key = 'CurrentScore'";
+            saveScoreCmd.Parameters.AddWithValue("@score", ScoreManager.Instance.Score);
+            saveScoreCmd.ExecuteNonQuery();
         }
 
         private void DeleteRemovedEntities(SqliteTransaction transaction, List<int> currentHabitatIds, List<int> currentAnimalIds, List<int> currentVisitorIds, List<int> currentShopIds, List<int> currentZookeeperIds)
@@ -418,6 +433,7 @@ namespace ZooTycoonManager
                     SaveVisitors(transaction);
                     SaveShops(transaction, GameWorld.Instance.GetShops());
                     SaveCurrentMoney(transaction);
+                    SaveScore(transaction);
                     DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds, currentZookeeperIds);
                     SaveRoadTiles(transaction);
 
@@ -457,6 +473,19 @@ namespace ZooTycoonManager
                 currentMoney = Convert.ToDecimal(moneyResult);
             }
             return currentMoney;
+        }
+
+        private int LoadScore()
+        {
+            int currentScore = 100; // Default score
+            var scoreCommand = _connection.CreateCommand();
+            scoreCommand.CommandText = "SELECT value_numeric FROM GameVariables WHERE key = 'CurrentScore'";
+            var scoreResult = scoreCommand.ExecuteScalar();
+            if (scoreResult != null && scoreResult != DBNull.Value)
+            {
+                currentScore = Convert.ToInt32(scoreResult);
+            }
+            return currentScore;
         }
 
         private List<Habitat> LoadHabitats(ContentManager content, out int nextHabitatId)
@@ -627,17 +656,19 @@ namespace ZooTycoonManager
             }
         }
 
-        public (List<Habitat> habitats, List<Shop> shops, int nextHabitatId, int nextAnimalId, int nextVisitorId, int nextShopId, int nextZookeeperId, decimal currentMoney) LoadGame(ContentManager content)
+        public (List<Habitat> habitats, List<Shop> shops, int nextHabitatId, int nextAnimalId, int nextVisitorId, int nextShopId, int nextZookeeperId, decimal currentMoney, int currentScore) LoadGame(ContentManager content)
         {
             Debug.WriteLine("Loading game state...");
             List<Habitat> loadedHabitats;
             List<Shop> loadedShops;
             int nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId;
             decimal currentMoney;
+            int currentScore;
 
             try
             {
                 currentMoney = LoadCurrentMoney();
+                currentScore = LoadScore();
                 loadedHabitats = LoadHabitats(content, out nextHabitatId);
                 loadedShops = LoadShops(content, out nextShopId);
                 LoadAnimals(content, loadedHabitats, out nextAnimalId);
@@ -658,9 +689,10 @@ namespace ZooTycoonManager
                 nextShopId = 1;
                 nextZookeeperId = 1;
                 currentMoney = 20000;
+                currentScore = 100; // Default score if loading fails
             }
 
-            return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId, currentMoney);
+            return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId, currentMoney, currentScore);
         }
 
         public string GetSpeciesNameById(int speciesId)

@@ -293,7 +293,7 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, nextZookeeperIdVal, loadedMoney) = DatabaseManager.Instance.LoadGame(Content);
+            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, nextZookeeperIdVal, loadedMoney, loadedScore) = DatabaseManager.Instance.LoadGame(Content);
             habitats = loadedHabitats;
             shops = loadedShops;
             _nextHabitatId = nextHabitatId;
@@ -302,6 +302,7 @@ namespace ZooTycoonManager
             _nextShopId = nextShopIdVal;
             _nextZookeeperId = nextZookeeperIdVal;
             MoneyManager.Instance.Initialize(loadedMoney);
+            ScoreManager.Instance.Score = loadedScore;
 
             foreach (var shop in shops)
             {
@@ -1281,6 +1282,7 @@ namespace ZooTycoonManager
                     panelRect.Y + 10
                 );
                 _spriteBatch.Draw(_infoRibbonTexture, ribbonPos, Color.White);
+                ScoreManager.Instance.Draw(_spriteBatch, _font, ribbonPos + new Vector2(_infoRibbonTexture.Width / 2-5f, _infoRibbonTexture.Height / 2 - 10f));
 
                 // Tekst – start lidt under ribbon
                 Vector2 textStart = new Vector2(panelRect.X + horizontalPadding, ribbonPos.Y + _infoRibbonTexture.Height + 20);
