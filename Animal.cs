@@ -37,7 +37,7 @@ namespace ZooTycoonManager
 
         private ThoughtBubble _thoughtBubble;
         private Texture2D _drumstickTexture;
-        private float _scale = 2f; // Default scale
+        private float _scale = 2f; 
 
         public bool IsPathfinding { get; private set; }
         public bool IsSelected { get; set; }
@@ -328,7 +328,7 @@ namespace ZooTycoonManager
                 _uncommittedHungerPoints -= wholePointsToAdd;
             }
 
-            // Calculate Mood based on Hunger and Stress
+            // Calculate Mood --> Hunger og stress
             float calculatedMood = 100f - (Hunger * 0.5f) - (Stress * 0.5f);
             Mood = (int)Math.Max(0, Math.Min(100, calculatedMood));
 

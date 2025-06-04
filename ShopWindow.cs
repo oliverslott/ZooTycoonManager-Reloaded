@@ -22,7 +22,7 @@ namespace ZooTycoonManager
 
         public bool Contains(Vector2 screenPos)
         {
-            return backgroundRect.Contains(screenPos); // ShopWindow
+            return backgroundRect.Contains(screenPos);
         }
 
         public ShopWindow(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position)
@@ -44,7 +44,6 @@ namespace ZooTycoonManager
 
             backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
 
-            // Justér knappernes positioner:
             buttons.Clear();
             for (int i = 0; i < buttonTexts.Length; i++)
             {
@@ -98,7 +97,6 @@ namespace ZooTycoonManager
 
             backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
 
-            // Re-position buttons
             for (int i = 0; i < buttons.Count; i++)
             {
                 Vector2 newButtonPos = new Vector2(position.X + padding, position.Y + padding + i * (buttonHeight + spacing));

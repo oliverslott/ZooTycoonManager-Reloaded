@@ -23,7 +23,7 @@ public class Button
 
     public bool Contains(Vector2 screenPos)
     {
-        return bounds.Contains(screenPos); // Button-klassen
+        return bounds.Contains(screenPos);
     }
 
     public Button(Texture2D backgroundTexture, Texture2D iconTexture, Vector2 position, string text = null, SpriteFont font = null)
@@ -56,21 +56,15 @@ public class Button
 
     public void Draw(SpriteBatch spriteBatch)
     {
-        // Tegn baggrund
+        
         spriteBatch.Draw(backgroundTexture, position, Color.White);
-
-        // Tegn ikon centreret i knappen (hvis det findes)
         if (iconTexture != null)
         {
             Vector2 iconSize = new Vector2(iconTexture.Width, iconTexture.Height);
             Vector2 backgroundSize = new Vector2(backgroundTexture.Width, backgroundTexture.Height);
             Vector2 iconOffset = (backgroundSize - iconSize) / 2 + new Vector2(0, -7f);
-
-
             spriteBatch.Draw(iconTexture, position + iconOffset, Color.White);
         }
-
-        // Tegn tekst centreret (hvis der er tekst)
         if (!string.IsNullOrEmpty(Text) && font != null)
         {
             Vector2 textSize = font.MeasureString(Text);

@@ -7,7 +7,6 @@ namespace ZooTycoonManager
     public class ThoughtBubble
     {
         private Texture2D _thoughtBubbleTexture;
-        // The texture to display inside the bubble will be passed to the Draw method
 
         public ThoughtBubble()
         {
@@ -26,9 +25,7 @@ namespace ZooTycoonManager
 
             spriteBatch.Draw(_thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(_thoughtBubbleTexture.Width / 2, _thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
 
-            // Adjust position for the content texture to be centered within the bubble
-            // This might need fine-tuning based on the actual bubble and content asset dimensions
-            Vector2 contentTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4); // Small offset for appearance
+            Vector2 contentTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
 
             Rectangle finalSourceRect;
             Vector2 origin;

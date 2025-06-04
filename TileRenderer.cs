@@ -21,15 +21,14 @@ namespace ZooTycoonManager
 
         public void Draw(SpriteBatch spriteBatch, Map map)
         {
-            // Calculate the extended drawing boundaries
             int bufferTiles = (int)(Camera.CAMERA_BOUNDS_BUFFER / tileSize);
             int startX = -bufferTiles;
             int endX = map.Width + bufferTiles;
             int startY = -bufferTiles;
             int endY = map.Height + bufferTiles;
 
-            Texture2D grassTexture = tileTextures[0]; // Assuming grass is always at index 0
-            Texture2D dirtTexture = tileTextures[1]; // Assuming dirt is always at index 1
+            Texture2D grassTexture = tileTextures[0];
+            Texture2D dirtTexture = tileTextures[1]; 
 
             for (int x = startX; x < endX; x++)
             {
@@ -46,7 +45,7 @@ namespace ZooTycoonManager
                             Color.White
                         );
                     }
-                    // If within the original map boundaries, draw the actual map tile
+                    
                     else if (x >= 0 && x < map.Width && y >= 0 && y < map.Height)
                     {
                         Tile tile = map.Tiles[x, y];
@@ -57,7 +56,7 @@ namespace ZooTycoonManager
                             Color.White
                         );
                     }
-                    else // Otherwise, if outside the map and not a special dirt spot, draw a grass tile
+                    else 
                     {
                         spriteBatch.Draw(
                             grassTexture,

@@ -50,8 +50,6 @@ namespace ZooTycoonManager
                 Vector2 textSize = _font.MeasureString(_text) * _scale;
                 Vector2 bgSize = new Vector2(_background.Width, _background.Height) * _bgScale;
                 Vector2 textOffset = (bgSize - textSize) / 2;
-
-                // Juster Y-linjen lidt op, hvis det ser for lavt ud
                 textOffset.Y -= 4;
 
                 spriteBatch.DrawString(_font, _text, _position + _bgOffset + textOffset, _textColor, 0f, Vector2.Zero, _scale, SpriteEffects.None, 0);
