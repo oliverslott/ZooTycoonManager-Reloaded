@@ -605,13 +605,13 @@ namespace ZooTycoonManager
                 _nextAnimalId = 1;
                 _nextVisitorId = 1;
                 _nextZookeeperId = 1;
-                CommandManager.Instance.Clear(); // Clear command history when clearing everything
+                CommandManager.Instance.Clear(); // Clear command
             }
 
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
             {
                 MoneyManager.Instance.AddMoney(100000);
-                Debug.WriteLine("Added $100,000 for debugging.");
+                Debug.WriteLine("Added $100,000 for debugging."); // Cheat code
             }
 
             if (keyboard.IsKeyDown(Keys.LeftControl) && keyboard.IsKeyDown(Keys.Z) &&
@@ -626,7 +626,7 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
-            // Debug key for placing a shop
+            // Debug key = shop
             if (keyboard.IsKeyDown(Keys.J) && !prevKeyboardState.IsKeyDown(Keys.J))
             {
                 var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, DEFAULT_SHOP_COST);
@@ -765,26 +765,21 @@ namespace ZooTycoonManager
                 }
                 else if (_currentPlacement == PlacementMode.PlaceTree)
                 {
-                    // Her kunne du tilføje dem til en liste af bruger-placerede træer fx
-                    placeTrees.Add(worldMousePos); // eller din egen placering
+                    placeTrees.Add(worldMousePos); 
                     _currentPlacement = PlacementMode.None;
                 }
                 else if (_currentPlacement == PlacementMode.PlaceWaterhole)
                 {
-                    // Det samme – du kan evt. lave en separat liste for vandhuller
-                    placeWaterholes.Add(worldMousePos); // eller hvad du vil bruge
+                    placeWaterholes.Add(worldMousePos);
                     _currentPlacement = PlacementMode.None;
                 }
 
                 else
                 {
-                    // evt. eksisterende logik for andre klik
-                    // Convert mouse position to world coordinates for checking entity clicks
                     Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
                     bool entityClickedThisFrame = false;
                     IInspectableEntity clickedEntity = null;
 
-                    // Check for animal clicks first
                     foreach (var habitat in habitats)
                     {
                         foreach (var animal in habitat.GetAnimals())
@@ -806,7 +801,6 @@ namespace ZooTycoonManager
 
                         _currentPlacement = PlacementMode.None;
                     }
-
 
                     if (!entityClickedThisFrame)
                     {
@@ -868,16 +862,15 @@ namespace ZooTycoonManager
             MouseState mouseState = Mouse.GetState();
             shopButton.Update(mouseState, prevMouseState);
 
-            // Når du klikker på shop-ikonet, viser vi vinduet
+            // Shop ikon
             if (!shopButton.IsClicked)
             {
             }
             else
             {
-                // Toggle shop window
+                // Shop vindue
                 _shopWindow.IsVisible = !_shopWindow.IsVisible;
 
-                // Luk alle under-menuer, uanset hvad
                 _buildingsMenu.IsVisible = false;
                 _habitatMenu.IsVisible = false;
                 _animalMenu.IsVisible = false;
@@ -921,7 +914,7 @@ namespace ZooTycoonManager
             _graphics.ApplyChanges();
             _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
             Vector2 newShopPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - 260, // juster tallet hvis nødvendigt
+                    _graphics.PreferredBackBufferWidth - 260, // repostion af knap
                     90
 );
             _shopWindow.Reposition(newShopPos);
@@ -938,19 +931,14 @@ namespace ZooTycoonManager
             _infoButton.SetPosition(newIonfoButtonPos);
             shopButton.SetPosition(newShopButtonPos);
             Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // justér hvis nødvendigt
+                _graphics.PreferredBackBufferWidth - 465, // repostion af knap
                 90
 );
-
-
             _buildingsMenu.Reposition(newSubMenuPos);
             _habitatMenu.Reposition(newSubMenuPos);
             _animalMenu.Reposition(newSubMenuPos);
             _zookeeperMenu.Reposition(newSubMenuPos);
-
-
         }
-
 
         protected override void Draw(GameTime gameTime)
         {
@@ -959,7 +947,7 @@ namespace ZooTycoonManager
             if (_currentGameState == GameState.MainMenu)
             {
 
-                // --- Begin UI sprite batch for menu or pre-game ---
+                //UI spritebatch
                 _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
                 if (StartScreen != null)
@@ -986,15 +974,13 @@ namespace ZooTycoonManager
                 _spriteBatch.End();
 
                 return;
-
             }
 
             if (!_hasGameStarted)
             {
-                // Draw menu background (optional, if black is enough, skip)
                 // _spriteBatch.Draw(_menuBackgroundTexture, new Rectangle(0, 0, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight), Color.Black);
 
-                // Draw menu buttons
+                // menu knapper
                 MouseState mouse = Mouse.GetState();
                 Point mousePos = mouse.Position;
 
@@ -1017,19 +1003,19 @@ namespace ZooTycoonManager
                 }
 
 
-                _spriteBatch.End(); // ✅ END UI batch before returning
+                _spriteBatch.End(); // end ui
                 return;
             }
 
 
 
-            // --- Begin world/game drawing (with camera) ---
+            // world/game drawing
             GraphicsDevice.Clear(Color.CornflowerBlue);
             Matrix transform = _camera.GetTransformMatrix();
 
             _spriteBatch.Begin(transformMatrix: transform, samplerState: SamplerState.PointClamp);
 
-            // Draw tile map
+            // tegn map
             if (_currentGameState == GameState.Playing)
             {
                 tileRenderer.Draw(_spriteBatch, map);
@@ -1045,7 +1031,7 @@ namespace ZooTycoonManager
                 _spriteBatch.Draw(_waterholePreviewTexture, waterhole, Color.White);
             }
 
-            // Static trees (behind other elements)
+            // static trees 
             if (_treeTexture != null && _staticTreePositions != null)
             {
                 foreach (var treePos in _staticTreePositions)
@@ -1136,7 +1122,7 @@ namespace ZooTycoonManager
                 _spriteBatch.Draw(_habitatPreviewTexture, destRect, Color.White * 0.5f);
             }
 
-            // Shop placement preview
+            // Shop placering preview
             if (_currentPlacement == PlacementMode.PlaceVisitorShop && _shopPreviewTexture != null)
             {
                 MouseState mouse = Mouse.GetState();
@@ -1189,9 +1175,9 @@ namespace ZooTycoonManager
             }
 
 
-            _spriteBatch.End(); // ✅ END game world sprite batch
+            _spriteBatch.End(); // ✅ END spritebach gameworld
 
-            // --- Begin final UI layer (always visible) ---
+            // UI
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
             if (_isPlacingRoadModeActive)
@@ -1295,23 +1281,22 @@ namespace ZooTycoonManager
 
         public int GetNextAnimalId()
         {
-            return _nextAnimalId++;
+            return _nextAnimalId++; // unique animal ID
         }
 
         public int GetNextHabitatId()
         {
-            return _nextHabitatId++;
+            return _nextHabitatId++; // unique habitat ID
         }
 
         public int GetNextZookeeperId()
         {
-            // Logic to generate a unique zookeeper ID
-            return _nextZookeeperId++;
+            return _nextZookeeperId++; // unique zookeeper ID
         }
 
         public int GetNextShopId()
         {
-            return _nextShopId++;
+            return _nextShopId++; // unique shop ID
         }
 
         public bool GetOriginalWalkableState(int x, int y)
@@ -1515,7 +1500,6 @@ namespace ZooTycoonManager
         }
         public void ShowSubMenu(string type)
         {
-            // Hvis den allerede er åben → luk den
             if ((type == "Buildings" && _buildingsMenu.IsVisible) ||
                 (type == "Habitats" && _habitatMenu.IsVisible) ||
                 (type == "Animals" && _animalMenu.IsVisible) ||
@@ -1528,7 +1512,6 @@ namespace ZooTycoonManager
                 return;
             }
 
-            // Ellers → vis den ønskede og luk de andre
             _buildingsMenu.IsVisible = false;
             _habitatMenu.IsVisible = false;
             _animalMenu.IsVisible = false;
@@ -1586,8 +1569,6 @@ namespace ZooTycoonManager
         public void ToggleTilePlacementMode()
         {
             _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
-
-            // Luk menuerne for visuel konsistens
             _buildingsMenu.IsVisible = false;
             _habitatMenu.IsVisible = false;
             _animalMenu.IsVisible = false;
@@ -1608,52 +1589,52 @@ namespace ZooTycoonManager
             //    return; 
             //}           
 
-            if (animalType == "Buffalo - 1.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Buffalo - 1.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
                 //Console.WriteLine($"Placement mode: Buffalo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Kangaroo - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Kangaroo - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
                 //Console.WriteLine($"Placement mode: Kangaroo (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Polarbear - 10.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Polarbear - 10.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
                 //Console.WriteLine($"Placement mode: Polarbear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Bear - 9.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Bear - 9.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Bear;
                 //Console.WriteLine($"Placement mode: Bear (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Chimpanze - 2.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Chimpanze - 2.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
                 //Console.WriteLine($"Placement mode: Chimpanze (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Elephant - 8.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Elephant - 8.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
                 //Console.WriteLine($"Placement mode: Elephant (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Orangutan - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Orangutan - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
                 //Console.WriteLine($"Placement mode: Orangutan (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Turtle - 5.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Turtle - 5.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
                 //Console.WriteLine($"Placement mode: Turtle (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Wolf - 4.000") // Du kan udvide til flere dyr senere
+            if (animalType == "Wolf - 4.000") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
                 //Console.WriteLine($"Placement mode: Wolf (ID: {speciesIdToPlace}) activated");
             }
-            if (animalType == "Camel - 2.500") // Du kan udvide til flere dyr senere
+            if (animalType == "Camel - 2.500") 
             {
                 _currentPlacement = PlacementMode.PlaceAnimal_Camel;
                 //Console.WriteLine($"Placement mode: Camel (ID: {speciesIdToPlace}) activated");
