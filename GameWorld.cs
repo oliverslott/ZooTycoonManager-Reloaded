@@ -381,7 +381,7 @@ namespace ZooTycoonManager
             Vector2 saveButtonPos = new Vector2(5, 80);
 
             
-            saveButton = new SaveButton(shopBackgroundTexture, buttonTexture, _font, saveButtonPos);
+            saveButton = new SaveButton(shopButtonBackgroundTexture, _font, saveButtonPos);
 
 
             // Menuliste

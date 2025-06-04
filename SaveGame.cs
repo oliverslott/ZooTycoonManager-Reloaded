@@ -26,14 +26,13 @@ namespace ZooTycoonManager
         private List<Habitat> habitats;
 
 
-        public SaveButton(Texture2D backgroundTexture, Texture2D buttonTexture, SpriteFont font, Vector2 position)
+        public SaveButton(Texture2D buttonTexture, SpriteFont font, Vector2 position)
         {
-            this.backgroundTexture = backgroundTexture;
             this.position = position;
 
             buttons = new List<Button>();
 
-            string[] buttonTexts = { "SaveGame"};
+            string[] buttonTexts = { "Save"};
 
             int padding = 10;
             int spacing = 10;
@@ -44,7 +43,6 @@ namespace ZooTycoonManager
 
             backgroundRect = new Rectangle((int)position.X, (int)position.Y, backgroundWidth, backgroundHeight);
 
-            // Justér knappens positioner:
             buttons.Clear();
             for (int i = 0; i < buttonTexts.Length; i++)
             {
@@ -71,8 +69,6 @@ namespace ZooTycoonManager
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(backgroundTexture, backgroundRect, Color.White);
-
             foreach (var button in buttons)
             {
                 button.Draw(spriteBatch);
