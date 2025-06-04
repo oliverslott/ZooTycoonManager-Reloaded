@@ -112,6 +112,8 @@ namespace ZooTycoonManager
         private EntityInfoPopup _entityInfoPopup;
         private IInspectableEntity _selectedEntity;
 
+        private SaveButton saveButton;
+
         private bool IsMouseOverUI(Vector2 mousePosition)
         {
             Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
@@ -300,15 +302,22 @@ namespace ZooTycoonManager
             string[] zookeepers = { "Experienced Zookeeper" };
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
+            Vector2 saveButtonPos = new Vector2(5, 80);
 
             _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, buildings);
             _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, habitattype);
             _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, animals);
             _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, _font, subMenuPos, zookeepers);
+            saveButton = new SaveButton(backgroundTexture, buttonTexture, _font, saveButtonPos);
+
 
             // Lav shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90); // fx midt på skærmen
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, font, shopWindowPosition);
+
+            // Save game button
+            Vector2 saveGamePosition = new Vector2(500, 90);
+            
 
 
             // Initialize MoneyDisplay here after _font is loaded
@@ -380,17 +389,6 @@ namespace ZooTycoonManager
 
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
-
-
-            
-
-            if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
-            {
-                // Create and execute the place animal command
-                var placeZookeeperCommand = new PlaceZookeeperCommand(worldMousePosition);
-                CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
-            }
-
             // Handle automatic visitor spawning
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
@@ -437,10 +435,7 @@ namespace ZooTycoonManager
                 }
             }
 
-            if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
-            {
-                DatabaseManager.Instance.SaveGame(habitats);
-            }
+            
 
             if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
             {
@@ -713,7 +708,10 @@ namespace ZooTycoonManager
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
-            
+            MouseState currentMouseState = Mouse.GetState();
+            saveButton.Update(gameTime, currentMouseState, prevMouseState);
+            prevMouseState = currentMouseState;
+
 
             base.Update(gameTime);
         }
@@ -903,7 +901,7 @@ namespace ZooTycoonManager
                 _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
             }
 
-
+            saveButton.Draw(_spriteBatch);
 
             _fpsCounter.Draw(_spriteBatch);
 
@@ -916,6 +914,8 @@ namespace ZooTycoonManager
             Vector2 undoRedoPosition = new Vector2(10, 40);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
+
+
 
             // Tegn shop knappen
             shopButton.Draw(_spriteBatch);
