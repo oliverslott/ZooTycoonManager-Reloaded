@@ -528,7 +528,6 @@ namespace ZooTycoonManager
             {
                 ScoreManager.Instance.Score -= MOOD_INFLUENCE_ON_SCORE;
             }
-            //Mood = 50 has no influence on the zoo score
         }
 
         public void Draw(SpriteBatch spriteBatch)
