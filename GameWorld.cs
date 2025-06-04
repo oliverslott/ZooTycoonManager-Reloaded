@@ -148,6 +148,8 @@ namespace ZooTycoonManager
         private EntityInfoPopup _entityInfoPopup;
         private IInspectableEntity _selectedEntity;
 
+        private SaveButton saveButton;
+
         private bool IsMouseOverUI(Vector2 mousePosition)
         {
             Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
@@ -375,13 +377,21 @@ namespace ZooTycoonManager
             
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
+            Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
+            Vector2 saveButtonPos = new Vector2(5, 80);
+
+            
+            saveButton = new SaveButton(shopBackgroundTexture, buttonTexture, _font, saveButtonPos);
+
+
             // Menuliste
             string[] buildings = { "Tiles - 10", "Shop - 1.000", "Tree", "Waterhole" };
             string[] habitattype = { "Small - 5.000", "Medium - 10.000", "Large - 15.000" };
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
             string[] zookeepers = { "Zookeeper - 5.000" };
 
-            Vector2 subMenuPos = new Vector2(870, 75); // position for submenus
+            
+
 
             //Submenus
             _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, buildings);
@@ -389,9 +399,16 @@ namespace ZooTycoonManager
             _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, animals);
             _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, zookeepers);
 
+
+            // Save game button
+            Vector2 saveGamePosition = new Vector2(500, 90);
+            
+
+
             //shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90);
             _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
+
 
             //Moneydisplay
             Texture2D moneyBackground = Content.Load<Texture2D>("Button_Blue_3Slides");
@@ -539,6 +556,7 @@ namespace ZooTycoonManager
 
 
 
+
             if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
             {
                 //place animal command
@@ -546,7 +564,7 @@ namespace ZooTycoonManager
                 CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
             }
 
-            //visitor spawn
+
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
             {
@@ -592,10 +610,12 @@ namespace ZooTycoonManager
                 }
             }
 
+
             if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
             {
                 DatabaseManager.Instance.SaveGame();
             }
+
 
             if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
             {
@@ -889,8 +909,11 @@ namespace ZooTycoonManager
                 _showInfoPanel = !_showInfoPanel;
             }
 
+            saveButton.Update(gameTime, mouseState, prevMouseState);
+
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
+
 
             base.Update(gameTime);
         }
@@ -1187,6 +1210,9 @@ namespace ZooTycoonManager
                 _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
             }
 
+
+            saveButton.Draw(_spriteBatch);
+
             _fpsCounter.Draw(_spriteBatch);
 
             string instructions = "Press 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
@@ -1200,6 +1226,12 @@ namespace ZooTycoonManager
             Vector2 undoRedoPosition = new Vector2(10, 75);
             string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
             _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
+
+
+
+
+            // Tegn shop knappen
+            shopButton.Draw(_spriteBatch);
 
             // UI windows and buttons
             shopButton.Draw(_spriteBatch);
