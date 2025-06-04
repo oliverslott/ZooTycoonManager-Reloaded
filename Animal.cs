@@ -21,10 +21,10 @@ namespace ZooTycoonManager
         private float timeSinceLastRandomWalk = 0f;
         private const float RANDOM_WALK_INTERVAL = 3f;
 
-        private const float HUNGER_INCREASE_RATE = 5.5f;
+        private const float HUNGER_INCREASE_RATE = 0.8f;
         private float _uncommittedHungerPoints = 0f;
 
-        private const float STRESS_INCREASE_RATE_OVERCROWDING = 25.0f;
+        private const float STRESS_INCREASE_RATE_OVERCROWDING = 5.0f;
         private float _uncommittedStressPoints = 0f;
 
         private Thread _pathfindingWorkerThread;
