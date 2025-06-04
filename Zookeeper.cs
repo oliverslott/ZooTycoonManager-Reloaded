@@ -88,7 +88,7 @@ namespace ZooTycoonManager
                 lastUpdate = currentTime;
 
                 Update(gameTime);
-                Thread.Sleep(16); // Aim for ~60 FPS updates
+                Thread.Sleep(16); // 60 FPS
             }
         }
 
