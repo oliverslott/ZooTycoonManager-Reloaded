@@ -81,7 +81,7 @@ namespace ZooTycoonManager
 
         private void SaveGame()
         {
-            DatabaseManager.Instance.SaveGame(habitats);
+            DatabaseManager.Instance.SaveGame();
             Debug.WriteLine("Save Game");
         }
     }
