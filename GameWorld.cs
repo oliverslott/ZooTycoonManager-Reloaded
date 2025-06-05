@@ -589,12 +589,6 @@ namespace ZooTycoonManager
                 }
             }
 
-
-            if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
-            {
-                DatabaseManager.Instance.SaveGame();
-            }
-
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
             {
                 MoneyManager.Instance.AddMoney(100000);
@@ -611,13 +605,6 @@ namespace ZooTycoonManager
                 !prevKeyboardState.IsKeyDown(Keys.Y))
             {
                 CommandManager.Instance.Redo();
-            }
-
-            // Debug key = shop
-            if (keyboard.IsKeyDown(Keys.J) && !prevKeyboardState.IsKeyDown(Keys.J))
-            {
-                var placeShopCommand = new PlaceShopCommand(_camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y)), 3, 3, DEFAULT_SHOP_COST);
-                CommandManager.Instance.ExecuteCommand(placeShopCommand);
             }
 
             bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
