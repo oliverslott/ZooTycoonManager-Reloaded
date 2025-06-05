@@ -16,12 +16,9 @@ namespace ZooTycoonManager
 
         public abstract void LoadContent(ContentManager contentManager);
 
-        /// <summary>
-        /// Used for when the object is reused in the object pool
-        /// </summary>
         public virtual void Reset()
         {
-            //No default behaviour here..
+
         }
     }
 }

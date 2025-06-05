@@ -209,14 +209,9 @@ namespace ZooTycoonManager
         {
             foreach (Habitat habitatInstance in habitats)
             {
-                Debug.WriteLine($"Attempting to save Habitat ID: {habitatInstance.HabitatId}, Name: {habitatInstance.Name}, Type: {habitatInstance.Type}");
                 if (habitatInstance is ISaveable saveableObject)
                 {
                     saveableObject.Save(transaction);
-                }
-                else
-                {
-                    Debug.WriteLine($"Warning: Habitat ID {habitatInstance.HabitatId} Name: {habitatInstance.Name} is not ISaveable and was not saved.");
                 }
             }
         }
@@ -372,7 +367,7 @@ namespace ZooTycoonManager
                 deleteCmd.ExecuteNonQuery();
             }
 
-            // Delete removed zookeepers
+
             if (currentZookeeperIds.Any())
             {
                 deleteCmd.CommandText = @"
@@ -416,50 +411,27 @@ namespace ZooTycoonManager
 
         public void SaveGame()
         {
-            Debug.WriteLine("Save Game button clicked. Saving game state...");
             using (var transaction = _connection.BeginTransaction())
             {
-                try
-                {
-                    var habitats = GameWorld.Instance.GetHabitats();
-                    var currentHabitatIds = habitats.Select(h => h.HabitatId).ToList();
-                    var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
-                    var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
-                    var currentShopIds = GameWorld.Instance.GetShops().Select(s => s.ShopId).ToList();
-                    var currentZookeeperIds = habitats.SelectMany(h => h.GetZookeepers()).Select(zk => zk.ZookeeperId).ToList();
+                var habitats = GameWorld.Instance.GetHabitats();
+                var currentHabitatIds = habitats.Select(h => h.HabitatId).ToList();
+                var currentAnimalIds = habitats.SelectMany(h => h.GetAnimals()).Select(a => a.AnimalId).ToList();
+                var currentVisitorIds = GameWorld.Instance.GetVisitors().Select(v => v.VisitorId).ToList();
+                var currentShopIds = GameWorld.Instance.GetShops().Select(s => s.ShopId).ToList();
+                var currentZookeeperIds = habitats.SelectMany(h => h.GetZookeepers()).Select(zk => zk.ZookeeperId).ToList();
 
-                    SaveHabitats(transaction, habitats);
-                    SaveZookeepers(transaction, habitats);
-                    SaveAnimals(transaction, habitats);
-                    SaveVisitors(transaction);
-                    SaveShops(transaction, GameWorld.Instance.GetShops());
-                    SaveCurrentMoney(transaction);
-                    SaveScore(transaction);
-                    DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds, currentZookeeperIds);
-                    SaveRoadTiles(transaction);
+                SaveHabitats(transaction, habitats);
+                SaveZookeepers(transaction, habitats);
+                SaveAnimals(transaction, habitats);
+                SaveVisitors(transaction);
+                SaveShops(transaction, GameWorld.Instance.GetShops());
+                SaveCurrentMoney(transaction);
+                SaveScore(transaction);
+                DeleteRemovedEntities(transaction, currentHabitatIds, currentAnimalIds, currentVisitorIds, currentShopIds, currentZookeeperIds);
+                SaveRoadTiles(transaction);
 
-                    transaction.Commit();
-                    Debug.WriteLine("Game state saved successfully.");
-                }
-                catch (SqliteException sqliteEx)
-                {
-                    Debug.WriteLine($"SQLite Error saving game state: {sqliteEx.Message}");
-                    Debug.WriteLine($"SQLite Error Code: {sqliteEx.SqliteErrorCode}");
-                    Debug.WriteLine($"SQLite Extended Error Code: {sqliteEx.SqliteExtendedErrorCode}");
-                    transaction.Rollback();
-                    Debug.WriteLine("Save transaction rolled back due to SQLite error.");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Generic error saving game state: {ex.Message}");
-                    Debug.WriteLine($"Exception Type: {ex.GetType().FullName}");
-                    if (ex.InnerException != null)
-                    {
-                        Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                    }
-                    transaction.Rollback();
-                    Debug.WriteLine("Save transaction rolled back due to generic error.");
-                }
+                transaction.Commit();
+                Debug.WriteLine("Game state saved successfully.");
             }
         }
 
@@ -550,9 +522,9 @@ namespace ZooTycoonManager
             {
                 while (reader.Read())
                 {
-                    var zookeeper = new Zookeeper(); // Parameterless constructor
-                    zookeeper.Load(reader);          // Load basic properties
-                    zookeeper.LoadContent(content);  // Load textures etc.
+                    var zookeeper = new Zookeeper();
+                    zookeeper.Load(reader);
+                    zookeeper.LoadContent(content);
 
                     Habitat assignedHabitat = null;
                     if (zookeeper.AssignedHabitatId != -1)
@@ -563,7 +535,7 @@ namespace ZooTycoonManager
                     if (assignedHabitat != null)
                     {
                         zookeeper.SetAssignedHabitat(assignedHabitat);
-                        assignedHabitat.AddZookeeper(zookeeper); // Assumes Habitat has AddZookeeper
+                        assignedHabitat.AddZookeeper(zookeeper);
                         Debug.WriteLine($"Loaded Zookeeper ID {zookeeper.ZookeeperId} ({zookeeper.Name}) and assigned to Habitat ID {assignedHabitat.HabitatId}");
                     }
                     else if (zookeeper.AssignedHabitatId != -1)
@@ -573,11 +545,10 @@ namespace ZooTycoonManager
                     else
                     {
                         Debug.WriteLine($"Warning: Zookeeper ID {zookeeper.ZookeeperId} ({zookeeper.Name}) is not assigned to any habitat.");
-                        // Decide how to handle unassigned zookeepers if necessary, for now they are loaded but not in a habitat's list
                     }
 
-                    zookeeper.InitializeBehavioralState(); // Initialize pathfinding, logic timers etc.
-                    zookeeper.StartUpdateThread();       // Start its own update loop
+                    zookeeper.InitializeBehavioralState();
+                    zookeeper.StartUpdateThread();
 
                     if (zookeeper.ZookeeperId >= nextZookeeperId)
                     {
@@ -690,7 +661,7 @@ namespace ZooTycoonManager
                 nextShopId = 1;
                 nextZookeeperId = 1;
                 currentMoney = 20000;
-                currentScore = 100; // Default score if loading fails
+                currentScore = 100;
             }
 
             return (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopId, nextZookeeperId, currentMoney, currentScore);
