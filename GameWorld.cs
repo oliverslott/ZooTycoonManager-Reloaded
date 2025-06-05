@@ -552,19 +552,6 @@ namespace ZooTycoonManager
 
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
-
-
-
-
-
-            if (keyboard.IsKeyDown(Keys.Z) && !prevKeyboardState.IsKeyDown(Keys.Z))
-            {
-                //place animal command
-                var placeZookeeperCommand = new PlaceZookeeperCommand(worldMousePosition);
-                CommandManager.Instance.ExecuteCommand(placeZookeeperCommand);
-            }
-
-
             bool animalsExist = habitats.Any(h => h.GetAnimals().Count > 0);
             if (animalsExist)
             {
