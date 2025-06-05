@@ -573,14 +573,6 @@ namespace ZooTycoonManager
                 _visitorSpawnTimer = 0f; // Reset timer for spawn
             }
 
-            if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
-            {
-                Visitor newVisitor = new Visitor(_visitorSpawnTileCoord, _nextVisitorId++);
-                newVisitor.LoadContent(Content);
-                visitors.Add(newVisitor);
-                Debug.WriteLine($"Manually spawned visitor at {_visitorSpawnTileCoord} for debugging.");
-            }
-
             if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 Vector2 screenMousePos = new Vector2(mouse.X, mouse.Y);
@@ -601,18 +593,6 @@ namespace ZooTycoonManager
             if (keyboard.IsKeyDown(Keys.S) && !prevKeyboardState.IsKeyDown(Keys.S))
             {
                 DatabaseManager.Instance.SaveGame();
-            }
-
-
-            if (keyboard.IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
-            {
-                habitats.Clear();
-                visitors.Clear();
-                _nextHabitatId = 1;
-                _nextAnimalId = 1;
-                _nextVisitorId = 1;
-                _nextZookeeperId = 1;
-                CommandManager.Instance.Clear(); // Clear command
             }
 
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
@@ -1202,20 +1182,9 @@ namespace ZooTycoonManager
 
             _fpsCounter.Draw(_spriteBatch);
 
-            string instructions = "Press 'B' for spawning visitor\nPress 'S' to save\nPress 'O' to clear everything\nPress 'M' to add $100k (debug)\nPress 'F11' to toggle fullscreen\nUse middle mouse or arrow keys to move camera\nUse mouse wheel to zoom\nCtrl+Z to undo, Ctrl+Y to redo";
-            Vector2 textPosition = new Vector2(10, _graphics.PreferredBackBufferHeight - 200);
-            _spriteBatch.DrawString(_font, instructions, textPosition, Color.White);
-
             _moneyDisplay.Draw(_spriteBatch);
             _visitorDisplay.Draw(_spriteBatch);
             _animalDisplay.Draw(_spriteBatch);
-
-            Vector2 undoRedoPosition = new Vector2(10, 75);
-            string undoRedoText = $"Undo: {CommandManager.Instance.GetUndoDescription()}\nRedo: {CommandManager.Instance.GetRedoDescription()}";
-            _spriteBatch.DrawString(_font, undoRedoText, undoRedoPosition, Color.LightBlue);
-
-
-
 
             // Tegn shop knappen
             shopButton.Draw(_spriteBatch);
@@ -1236,13 +1205,17 @@ namespace ZooTycoonManager
                 // Info panel tekstlinjer
                 string[] lines = new[]
                 {
-        "Remember to keep your visitors happy!",
-        "They like to see happy animals, and have easy access to food when they're hungry.",
-        "",
-        "Remember to hire zookeepers to look out for your animals!",
-        "",
-        "You can undo and redo your actions by pressing Ctrl + Z and Ctrl + Y"
-    };
+                    "The big number at the top is your Zoo Score. It is influenced by the visitors' mood.",
+                    "So, remember to keep your visitors happy!",
+                    "They like to see happy animals, and have easy access to food when they're hungry.",
+                    "Remember to hire zookeepers to look out for your animals!",
+                    "",
+                    "Controls: ",
+                    "Use middle mouse or arrow keys to move camera",
+                    "Use mouse wheel to zoom",
+                    "You can undo and redo your actions by pressing Ctrl + Z and Ctrl + Y",
+                    "",
+                };
 
                 // Beregn bredeste linje
                 float maxWidth = lines.Max(line => _font.MeasureString(line).X);
