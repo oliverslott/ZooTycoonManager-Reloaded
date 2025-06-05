@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace ZooTycoonManager
 {
-    public class Animal: ISaveable, ILoadable, IInspectableEntity, IStressableEntity
+    public class Animal: ISaveable, ILoadable, IStressableEntity
     {
         Texture2D sprite;
         List<Node> path;
