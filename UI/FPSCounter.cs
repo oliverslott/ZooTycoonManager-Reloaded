@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class FPSCounter
     {

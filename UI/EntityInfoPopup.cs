@@ -2,8 +2,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class EntityInfoPopup
     {

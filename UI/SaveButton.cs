@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class SaveButton
     {

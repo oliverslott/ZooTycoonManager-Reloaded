@@ -10,10 +10,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.GameObjects
 {
-    public class Zookeeper : ISaveable, ILoadable
+    public class Zookeeper : GameObject, ISaveable, ILoadable
     {
         private Texture2D sprite;
         private Vector2 position;
@@ -198,11 +199,6 @@ namespace ZooTycoonManager
             }
         }
 
-        public void LoadContent(ContentManager contentManager)
-        {
-            sprite = contentManager.Load<Texture2D>("zookeeper");
-        }
-
         private void Update(GameTime gameTime)
         {
             UpdateActivity(gameTime);
@@ -349,15 +345,6 @@ namespace ZooTycoonManager
             }
         }
 
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            if (sprite == null) return;
-            lock (_positionLock)
-            {
-                spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
-            }
-        }
-
         public void Save(SqliteTransaction transaction)
         {
             var command = transaction.Connection.CreateCommand();
@@ -366,7 +353,7 @@ namespace ZooTycoonManager
             command.Parameters.AddWithValue("$zookeeper_id", ZookeeperId);
             command.Parameters.AddWithValue("$name", Name);
             command.Parameters.AddWithValue("$upkeep", Upkeep);
-            command.Parameters.AddWithValue("$habitat_id", AssignedHabitatId == -1 ? (object)DBNull.Value : AssignedHabitatId);
+            command.Parameters.AddWithValue("$habitat_id", AssignedHabitatId == -1 ? DBNull.Value : AssignedHabitatId);
             command.Parameters.AddWithValue("$position_x", PositionX);
             command.Parameters.AddWithValue("$position_y", PositionY);
 
@@ -413,6 +400,25 @@ namespace ZooTycoonManager
         {
             _assignedHabitat = habitat;
             AssignedHabitatId = habitat?.HabitatId ?? -1;
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            if (sprite == null) return;
+            lock (_positionLock)
+            {
+                spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
+            }
+        }
+
+        public override void Update()
+        {
+
+        }
+
+        public override void LoadContent()
+        {
+            sprite = GameWorld.Instance.Content.Load<Texture2D>("zookeeper");
         }
     }
 }

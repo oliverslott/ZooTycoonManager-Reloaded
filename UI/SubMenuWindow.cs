@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class SubMenuWindow
     {

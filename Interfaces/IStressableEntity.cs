@@ -1,4 +1,4 @@
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Interfaces
 {
     public interface IStressableEntity : IInspectableEntity
     {

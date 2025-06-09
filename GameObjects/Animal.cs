@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.GameObjects
 {
-    public class Animal: ISaveable, ILoadable, IStressableEntity
+    public class Animal: GameObject, ISaveable, ILoadable, IStressableEntity
     {
         Texture2D sprite;
         List<Node> path;
@@ -122,11 +123,11 @@ namespace ZooTycoonManager
             _uncommittedStressPoints = 0f;
         }
 
-        private void TryRandomWalk(GameTime gameTime)
+        private void TryRandomWalk()
         {
             if (currentHabitat == null || IsPathfinding) return;
 
-            timeSinceLastRandomWalk += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            timeSinceLastRandomWalk += GameWorld.Instance.deltaTime;
             if (timeSinceLastRandomWalk >= RANDOM_WALK_INTERVAL)
             {
                 timeSinceLastRandomWalk = 0f;                
@@ -215,206 +216,13 @@ namespace ZooTycoonManager
             _pathfindingRequestEvent.Set();
         }
 
-        public void LoadContent(ContentManager contentManager)
-        {
-            _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
-            _thoughtBubble = new ThoughtBubble();
-            _thoughtBubble.LoadContent(contentManager);
-            string speciesNameForTexture = DatabaseManager.Instance.GetSpeciesNameById(SpeciesId);
-
-            switch (speciesNameForTexture)
-            {
-                case "Buffalo":
-                    sprite = contentManager.Load<Texture2D>("EnragedBuffalo");
-                    break;
-                case "Orangutan":
-                    sprite = contentManager.Load<Texture2D>("AgitatedOrangutan");
-                    break;
-                case "Kangaroo":
-                    sprite = contentManager.Load<Texture2D>("HoppingKangaroo");
-                    break;
-                case "Elephant":
-                    sprite = contentManager.Load<Texture2D>("StompingElephant");
-                    break;
-                case "Polarbear":
-                    sprite = contentManager.Load<Texture2D>("PolarBear");
-                    break;
-                case "Turtle":
-                    sprite = contentManager.Load<Texture2D>("SlowTurtle");
-                    break;
-                case "Camel":
-                    sprite = contentManager.Load<Texture2D>("ThirstyCamel");
-                    break;
-                case "Bear":
-                    sprite = contentManager.Load<Texture2D>("KodiakBear");
-                    break;
-                case "Wolf":
-                    sprite = contentManager.Load<Texture2D>("ArcticWolf");
-                    break;
-                case "Chimpanze":
-                    sprite = contentManager.Load<Texture2D>("MindfulChimpanze");
-                    break;
-            }
-
-            switch (speciesNameForTexture)
-            {
-                case "Elephant":
-                    _scale = 3f;
-                    break;
-                case "Polarbear":
-                    _scale = 2.8f;
-                    break;
-                case "Bear":
-                    _scale = 2.5f;
-                    break;
-                case "Buffalo":
-                    _scale = 2.2f;
-                    break;
-                case "Turtle":
-                    _scale = 1.5f;
-                    break;
-            }
-        }
-
-        public void Update(GameTime gameTime)
-        {
-            TryRandomWalk(gameTime);
-
-            // Overcrowding Stress Update
-            if (currentHabitat != null)
-            {
-                if (currentHabitat.GetAnimals().Count > currentHabitat.MaxAnimalsBeforeStress)
-                {
-                    _uncommittedStressPoints += STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                }
-                else 
-                {
-                    _uncommittedStressPoints -= STRESS_INCREASE_RATE_OVERCROWDING * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                }
-            }
-
-            if (_uncommittedStressPoints >= 1.0f)
-            {
-                int wholeStressToAdd = (int)_uncommittedStressPoints;
-                Stress += wholeStressToAdd;
-                if (Stress > 100)
-                {
-                    Stress = 100;
-                }
-                _uncommittedStressPoints -= wholeStressToAdd;
-            }
-            else if (_uncommittedStressPoints <= -1.0f)
-            {
-                int wholeStressToRemove = (int)Math.Abs(_uncommittedStressPoints);
-                Stress -= wholeStressToRemove;
-                if (Stress < 0)
-                {
-                    Stress = 0;
-                }
-                _uncommittedStressPoints += wholeStressToRemove;
-            }
-
-            // Hunger Update
-            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-            if (_uncommittedHungerPoints >= 1.0f)
-            {
-                int wholePointsToAdd = (int)_uncommittedHungerPoints;
-                Hunger += wholePointsToAdd;
-                if (Hunger > 100)
-                {
-                    Hunger = 100;
-                }
-                _uncommittedHungerPoints -= wholePointsToAdd;
-            }
-
-            // Calculate Mood --> Hunger og stress
-            float calculatedMood = 100f - (Hunger * 0.5f) - (Stress * 0.5f);
-            Mood = (int)Math.Max(0, Math.Min(100, calculatedMood));
-
-            if (IsPathfinding) 
-            {
-                bool pathProcessed = false;
-                lock (_pendingPathResultLock)
-                {
-                    if (_pendingPathResult != null)
-                    {
-                        path = _pendingPathResult;
-                        currentNodeIndex = 0;
-                        _pendingPathResult = null;
-                        pathProcessed = true;
-                    }
-                }
-
-                if (pathProcessed)
-                {
-                    IsPathfinding = false;
-                }
-            }
-
-            if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
-            {
-                return;
-            }
-
-            float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            float remainingMoveThisFrame = speed * deltaTime;
-
-            while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
-            {
-                Node targetNode = path[currentNodeIndex];
-                Vector2 targetNodePosition = GameWorld.TileToPixel(new Vector2(targetNode.X, targetNode.Y));
-                Vector2 directionToNode = targetNodePosition - Position;
-                float distanceToNode = directionToNode.Length();
-
-                if (distanceToNode <= remainingMoveThisFrame)
-                {
-                    Position = targetNodePosition;
-                    currentNodeIndex++;
-                    remainingMoveThisFrame -= distanceToNode;
-                }
-                else
-                {
-                    if (distanceToNode > 0)
-                    {
-                        directionToNode.Normalize();
-                        Vector2 newPosition = Position + directionToNode * remainingMoveThisFrame;
-                        Position = newPosition;
-                    }
-                    remainingMoveThisFrame = 0;
-                }
-            }
-
-            if (currentNodeIndex >= path.Count)
-            {
-                path = null;
-                currentNodeIndex = 0;
-            }
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            if (sprite == null) return;
-            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), _scale, SpriteEffects.None, 0f);
-
-            if (Hunger > 50 && _thoughtBubble != null && _drumstickTexture != null)
-            {
-                _thoughtBubble.Draw(spriteBatch, Position, sprite.Height * 2, _drumstickTexture, null, 0.3f);
-            }
-
-            if (IsSelected)
-            {
-                DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow);
-            }
-        }
-
         private void DrawBorder(SpriteBatch spriteBatch, Rectangle rectangleToBorder, int thicknessOfBorder, Color borderColor)
         {
             if (_borderTexture == null) return;
 
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, rectangleToBorder.Width, thicknessOfBorder), borderColor);
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
-            spriteBatch.Draw(_borderTexture, new Rectangle((rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder), rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y + rectangleToBorder.Height - thicknessOfBorder, rectangleToBorder.Width, thicknessOfBorder), borderColor);
         }
 
@@ -484,6 +292,200 @@ namespace ZooTycoonManager
             timeSinceLastRandomWalk = RANDOM_WALK_INTERVAL;
             _uncommittedHungerPoints = 0f;
             _uncommittedStressPoints = 0f;
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            if (sprite == null) return;
+            spriteBatch.Draw(sprite, Position, new Rectangle(0, 0, 16, 16), Color.White, 0f, new Vector2(8, 8), _scale, SpriteEffects.None, 0f);
+
+            if (Hunger > 50 && _thoughtBubble != null && _drumstickTexture != null)
+            {
+                _thoughtBubble.Draw(spriteBatch, Position, sprite.Height * 2, _drumstickTexture, null, 0.3f);
+            }
+
+            if (IsSelected)
+            {
+                DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow);
+            }
+        }
+
+        public override void Update()
+        {
+            TryRandomWalk();
+
+            // Overcrowding Stress Update
+            if (currentHabitat != null)
+            {
+                if (currentHabitat.GetAnimals().Count > currentHabitat.MaxAnimalsBeforeStress)
+                {
+                    _uncommittedStressPoints += STRESS_INCREASE_RATE_OVERCROWDING * GameWorld.Instance.deltaTime;
+                }
+                else
+                {
+                    _uncommittedStressPoints -= STRESS_INCREASE_RATE_OVERCROWDING * GameWorld.Instance.deltaTime;
+                }
+            }
+
+            if (_uncommittedStressPoints >= 1.0f)
+            {
+                int wholeStressToAdd = (int)_uncommittedStressPoints;
+                Stress += wholeStressToAdd;
+                if (Stress > 100)
+                {
+                    Stress = 100;
+                }
+                _uncommittedStressPoints -= wholeStressToAdd;
+            }
+            else if (_uncommittedStressPoints <= -1.0f)
+            {
+                int wholeStressToRemove = (int)Math.Abs(_uncommittedStressPoints);
+                Stress -= wholeStressToRemove;
+                if (Stress < 0)
+                {
+                    Stress = 0;
+                }
+                _uncommittedStressPoints += wholeStressToRemove;
+            }
+
+            // Hunger Update
+            _uncommittedHungerPoints += HUNGER_INCREASE_RATE * GameWorld.Instance.deltaTime;
+
+            if (_uncommittedHungerPoints >= 1.0f)
+            {
+                int wholePointsToAdd = (int)_uncommittedHungerPoints;
+                Hunger += wholePointsToAdd;
+                if (Hunger > 100)
+                {
+                    Hunger = 100;
+                }
+                _uncommittedHungerPoints -= wholePointsToAdd;
+            }
+
+            // Calculate Mood --> Hunger og stress
+            float calculatedMood = 100f - Hunger * 0.5f - Stress * 0.5f;
+            Mood = (int)Math.Max(0, Math.Min(100, calculatedMood));
+
+            if (IsPathfinding)
+            {
+                bool pathProcessed = false;
+                lock (_pendingPathResultLock)
+                {
+                    if (_pendingPathResult != null)
+                    {
+                        path = _pendingPathResult;
+                        currentNodeIndex = 0;
+                        _pendingPathResult = null;
+                        pathProcessed = true;
+                    }
+                }
+
+                if (pathProcessed)
+                {
+                    IsPathfinding = false;
+                }
+            }
+
+            if (path == null || path.Count == 0 || currentNodeIndex >= path.Count)
+            {
+                return;
+            }
+
+            float deltaTime = GameWorld.Instance.deltaTime;
+            float remainingMoveThisFrame = speed * deltaTime;
+
+            while (remainingMoveThisFrame > 0 && currentNodeIndex < path.Count)
+            {
+                Node targetNode = path[currentNodeIndex];
+                Vector2 targetNodePosition = GameWorld.TileToPixel(new Vector2(targetNode.X, targetNode.Y));
+                Vector2 directionToNode = targetNodePosition - Position;
+                float distanceToNode = directionToNode.Length();
+
+                if (distanceToNode <= remainingMoveThisFrame)
+                {
+                    Position = targetNodePosition;
+                    currentNodeIndex++;
+                    remainingMoveThisFrame -= distanceToNode;
+                }
+                else
+                {
+                    if (distanceToNode > 0)
+                    {
+                        directionToNode.Normalize();
+                        Vector2 newPosition = Position + directionToNode * remainingMoveThisFrame;
+                        Position = newPosition;
+                    }
+                    remainingMoveThisFrame = 0;
+                }
+            }
+
+            if (currentNodeIndex >= path.Count)
+            {
+                path = null;
+                currentNodeIndex = 0;
+            }
+        }
+
+        public override void LoadContent()
+        {
+
+            _drumstickTexture = GameWorld.Instance.Content.Load<Texture2D>("drumstick");
+            _thoughtBubble = new ThoughtBubble();
+            _thoughtBubble.LoadContent();
+            string speciesNameForTexture = DatabaseManager.Instance.GetSpeciesNameById(SpeciesId);
+
+            switch (speciesNameForTexture)
+            {
+                case "Buffalo":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("EnragedBuffalo");
+                    break;
+                case "Orangutan":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("AgitatedOrangutan");
+                    break;
+                case "Kangaroo":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("HoppingKangaroo");
+                    break;
+                case "Elephant":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("StompingElephant");
+                    break;
+                case "Polarbear":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("PolarBear");
+                    break;
+                case "Turtle":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("SlowTurtle");
+                    break;
+                case "Camel":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("ThirstyCamel");
+                    break;
+                case "Bear":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("KodiakBear");
+                    break;
+                case "Wolf":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("ArcticWolf");
+                    break;
+                case "Chimpanze":
+                    sprite = GameWorld.Instance.Content.Load<Texture2D>("MindfulChimpanze");
+                    break;
+            }
+
+            switch (speciesNameForTexture)
+            {
+                case "Elephant":
+                    _scale = 3f;
+                    break;
+                case "Polarbear":
+                    _scale = 2.8f;
+                    break;
+                case "Bear":
+                    _scale = 2.5f;
+                    break;
+                case "Buffalo":
+                    _scale = 2.2f;
+                    break;
+                case "Turtle":
+                    _scale = 1.5f;
+                    break;
+            }
         }
     }
 }

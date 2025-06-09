@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {
@@ -95,9 +96,9 @@ namespace ZooTycoonManager.Commands
             }
 
             _placedShop = new Shop(snappedPixelPosition, _widthInTiles, _heightInTiles, GameWorld.Instance.GetNextShopId(), _cost);
-            _placedShop.LoadContent(GameWorld.Instance.Content);
+            _placedShop.LoadContent();
             
-            GameWorld.Instance.GetShops().Add(_placedShop);
+            GameWorld.Instance.Instantiate(_placedShop);
 
             Debug.WriteLine($"Executed PlaceShopCommand: Shop {_placedShop.ShopId} at {snappedPixelPosition}, Cost: {_cost}");
             return true;
@@ -107,7 +108,7 @@ namespace ZooTycoonManager.Commands
         {
             if (_placedShop != null)
             {
-                GameWorld.Instance.GetShops().Remove(_placedShop);
+                GameWorld.Instance.Despawn(_placedShop);
 
                 Vector2 startTile = GameWorld.PixelToTile(_placedShop.Position);
                 for (int x = 0; x < _placedShop.WidthInPixels / GameWorld.TILE_SIZE; x++)

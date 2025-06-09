@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using System.Linq;
 using Microsoft.Xna.Framework.Content;
+using ZooTycoonManager.GameObjects;
+using ZooTycoonManager.Interfaces;
 
 namespace ZooTycoonManager
 {
@@ -494,8 +496,9 @@ namespace ZooTycoonManager
                 while (reader.Read())
                 {
                     var animal = new Animal();
+
                     animal.Load(reader);
-                    animal.LoadContent(content);
+                    animal.LoadContent();
 
                     var habitat = loadedHabitats.FirstOrDefault(h => h.HabitatId == animal.HabitatId);
                     if (habitat != null)
@@ -508,6 +511,8 @@ namespace ZooTycoonManager
                     {
                         nextAnimalId = animal.AnimalId + 1;
                     }
+
+                    GameWorld.Instance.Instantiate(animal);
                 }
             }
         }
@@ -524,7 +529,7 @@ namespace ZooTycoonManager
                 {
                     var zookeeper = new Zookeeper();
                     zookeeper.Load(reader);
-                    zookeeper.LoadContent(content);
+                    zookeeper.LoadContent();
 
                     Habitat assignedHabitat = null;
                     if (zookeeper.AssignedHabitatId != -1)
@@ -570,7 +575,7 @@ namespace ZooTycoonManager
                 {
                     var visitor = new Visitor(Vector2.Zero);
                     visitor.Load(reader);
-                    visitor.LoadContent(content);
+                    visitor.LoadContent();
                     GameWorld.Instance.GetVisitors().Add(visitor);
 
                     if (visitor.VisitorId >= nextVisitorId)
@@ -593,7 +598,7 @@ namespace ZooTycoonManager
                 {
                     var shop = new Shop();
                     shop.Load(reader);
-                    shop.LoadContent(content);
+                    shop.LoadContent();
                     loadedShops.Add(shop);
 
                     if (shop.ShopId >= nextShopId)

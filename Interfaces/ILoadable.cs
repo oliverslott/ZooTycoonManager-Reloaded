@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Interfaces
 {
     public interface ILoadable
     {

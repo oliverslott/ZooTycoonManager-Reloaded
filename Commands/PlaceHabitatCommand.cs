@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using System.Diagnostics;
+using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {

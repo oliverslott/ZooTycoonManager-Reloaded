@@ -8,10 +8,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using System.Linq;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.GameObjects
 {
-    public class Visitor : ISaveable, ILoadable, IInspectableEntity
+    public class Visitor : GameObject, ISaveable, ILoadable, IInspectableEntity
     {
         private Texture2D sprite;
         private ThoughtBubble _thoughtBubble;
@@ -168,7 +169,7 @@ namespace ZooTycoonManager
             if (unvisitedHabitats.Count == 0)
             {
                 InitiateExit();
-                return (path != null && path.Count > 0);
+                return path != null && path.Count > 0;
             }
 
             if (random.NextDouble() < 0.7)
@@ -279,24 +280,6 @@ namespace ZooTycoonManager
             else
             {
                 path = null;
-            }
-        }
-
-        public void LoadContent(ContentManager contentManager)
-        {
-            sprite = contentManager.Load<Texture2D>("294f5329-d985-4d20-86d5-98e9dfb256fc");
-            
-            _thoughtBubble = new ThoughtBubble();
-            _thoughtBubble.LoadContent(contentManager);
-            _animalInThoughtTexture = contentManager.Load<Texture2D>("binoculars");
-            _sadTexture = contentManager.Load<Texture2D>("sad");
-            _drumstickTexture = contentManager.Load<Texture2D>("drumstick");
-
-
-            if (_borderTexture == null)
-            {
-                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
-                _borderTexture.SetData(new[] { Color.White });
             }
         }
 
@@ -500,7 +483,7 @@ namespace ZooTycoonManager
             {
                 _isRunning = false;
                 UpdateScoreBasedOnMood();
-                GameWorld.Instance.ConfirmDespawn(this);
+                GameWorld.Instance.Despawn(this);
                 return;
             }
 
@@ -513,7 +496,7 @@ namespace ZooTycoonManager
                 {
                     _isRunning = false;
                     UpdateScoreBasedOnMood();
-                    GameWorld.Instance.ConfirmDespawn(this);
+                    GameWorld.Instance.Despawn(this);
                 }
             }
         }
@@ -527,33 +510,6 @@ namespace ZooTycoonManager
             else if(Mood < 50)
             {
                 ScoreManager.Instance.Score -= MOOD_INFLUENCE_ON_SCORE;
-            }
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            if (sprite == null) return;
-            lock (_positionLock)
-            {
-                spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
-
-                if (_showSadThoughtBubbleTimer > 0 && _thoughtBubble != null && _sadTexture != null)
-                {
-                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
-                }
-                else if (Hunger > HUNGER_PRIORITY_THRESHOLD && _thoughtBubble != null && _drumstickTexture != null)
-                {
-                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _drumstickTexture, null, 0.3f);
-                }
-                else
-                {
-                    DrawVisitingHabitatThoughtBubble(spriteBatch);
-                }
-
-                if (IsSelected)
-                {
-                    DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow); 
-                }
             }
         }
 
@@ -574,7 +530,7 @@ namespace ZooTycoonManager
 
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, rectangleToBorder.Width, thicknessOfBorder), borderColor);
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
-            spriteBatch.Draw(_borderTexture, new Rectangle((rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder), rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
+            spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X + rectangleToBorder.Width - thicknessOfBorder, rectangleToBorder.Y, thicknessOfBorder, rectangleToBorder.Height), borderColor);
             spriteBatch.Draw(_borderTexture, new Rectangle(rectangleToBorder.X, rectangleToBorder.Y + rectangleToBorder.Height - thicknessOfBorder, rectangleToBorder.Width, thicknessOfBorder), borderColor);
         }
 
@@ -637,8 +593,8 @@ namespace ZooTycoonManager
             Money = reader.GetInt32(2);
             Mood = reader.GetInt32(3);
             Hunger = reader.GetInt32(4);
-            HabitatId = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5);
-            ShopId = reader.IsDBNull(6) ? null : (int?)reader.GetInt32(6);
+            HabitatId = reader.IsDBNull(5) ? null : reader.GetInt32(5);
+            ShopId = reader.IsDBNull(6) ? null : reader.GetInt32(6);
             int posX = reader.GetInt32(7);
             int posY = reader.GetInt32(8);
 
@@ -696,6 +652,56 @@ namespace ZooTycoonManager
         {
             PathfindTo(targetExitTile);
             return path != null && path.Count > 0;
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            if (sprite == null) return;
+            lock (_positionLock)
+            {
+                spriteBatch.Draw(sprite, position, new Rectangle(0, 0, 32, 32), Color.White, 0f, new Vector2(16, 16), 1f, SpriteEffects.None, 0f);
+
+                if (_showSadThoughtBubbleTimer > 0 && _thoughtBubble != null && _sadTexture != null)
+                {
+                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _sadTexture, new Rectangle(0, 0, _sadTexture.Width, _sadTexture.Height), 0.3f);
+                }
+                else if (Hunger > HUNGER_PRIORITY_THRESHOLD && _thoughtBubble != null && _drumstickTexture != null)
+                {
+                    _thoughtBubble.Draw(spriteBatch, position, sprite.Height, _drumstickTexture, null, 0.3f);
+                }
+                else
+                {
+                    DrawVisitingHabitatThoughtBubble(spriteBatch);
+                }
+
+                if (IsSelected)
+                {
+                    DrawBorder(spriteBatch, BoundingBox, 2, Color.Yellow);
+                }
+            }
+        }
+
+        public override void Update()
+        {
+            //Do nothing, update is in its own thread
+        }
+
+        public override void LoadContent()
+        {
+            sprite = GameWorld.Instance.Content.Load<Texture2D>("294f5329-d985-4d20-86d5-98e9dfb256fc");
+
+            _thoughtBubble = new ThoughtBubble();
+            _thoughtBubble.LoadContent();
+            _animalInThoughtTexture = GameWorld.Instance.Content.Load<Texture2D>("binoculars");
+            _sadTexture = GameWorld.Instance.Content.Load<Texture2D>("sad");
+            _drumstickTexture = GameWorld.Instance.Content.Load<Texture2D>("drumstick");
+
+
+            if (_borderTexture == null)
+            {
+                _borderTexture = new Texture2D(GameWorld.Instance.GraphicsDevice, 1, 1);
+                _borderTexture.SetData(new[] { Color.White });
+            }
         }
     }
 }

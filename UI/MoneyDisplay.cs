@@ -1,8 +1,9 @@
 using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class MoneyDisplay : IObserver
     {
@@ -43,7 +44,7 @@ namespace ZooTycoonManager
             if (_font != null && !string.IsNullOrEmpty(MoneyText))
             {
                 Vector2 textSize = _font.MeasureString(MoneyText) * _scale;
-                Vector2 bgSize = (_background != null)
+                Vector2 bgSize = _background != null
                     ? new Vector2(_background.Width, _background.Height) * _bgScale
                     : textSize;
 

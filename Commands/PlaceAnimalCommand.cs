@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using System.Diagnostics;
 using System.Linq;
+using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {
@@ -51,10 +52,12 @@ namespace ZooTycoonManager.Commands
             Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
             _createdAnimal = new Animal(GameWorld.Instance.GetNextAnimalId(), _speciesId);
             _createdAnimal.SetPosition(spawnPos);
-            _createdAnimal.LoadContent(GameWorld.Instance.Content);
+            _createdAnimal.LoadContent();
             _createdAnimal.SetHabitat(_targetHabitat);
             
             _targetHabitat.AddAnimal(_createdAnimal);
+
+            GameWorld.Instance.Instantiate(_createdAnimal);
             
             Debug.WriteLine($"Placed animal at {_position} for ${_cost}");
             return true;
@@ -69,6 +72,7 @@ namespace ZooTycoonManager.Commands
             }
             
             _targetHabitat.GetAnimals().Remove(_createdAnimal);
+            GameWorld.Instance.Despawn(_createdAnimal);
             
             MoneyManager.Instance.AddMoney(_cost);
             

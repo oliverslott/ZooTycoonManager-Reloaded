@@ -6,8 +6,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.Data.Sqlite;
+using System;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.GameObjects
 {
     public enum HabitatSizeType
     {
@@ -16,7 +18,7 @@ namespace ZooTycoonManager
         Large
     }
 
-    public class Habitat: ISaveable, ILoadable
+    public class Habitat: GameObject, ISaveable, ILoadable
     {
         private const int MAX_VISITORS = 3;
         private const float FENCE_DRAW_SCALE = 2.67f;
@@ -83,41 +85,36 @@ namespace ZooTycoonManager
 
         public Habitat(Vector2 centerPosition, HabitatSizeType sizeType, int habitatId)
         {
-            this.animals = new List<Animal>();
-            this.zookeepers = new List<Zookeeper>();
-            this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
-            this.currentVisitors = new HashSet<Visitor>();
-            this.fencePositions = new List<Vector2>();
-            this.fenceTileCoordinates = new HashSet<Vector2>();
+            animals = new List<Animal>();
+            zookeepers = new List<Zookeeper>();
+            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+            currentVisitors = new HashSet<Visitor>();
+            fencePositions = new List<Vector2>();
+            fenceTileCoordinates = new HashSet<Vector2>();
 
-            this.HabitatId = habitatId;
-            this.CurrentSizeType = sizeType;
+            HabitatId = habitatId;
+            CurrentSizeType = sizeType;
             
-            this.width = (GetEnclosureRadius() * 2) + 1;
-            this.height = (GetEnclosureRadius() * 2) + 1;
+            width = GetEnclosureRadius() * 2 + 1;
+            height = GetEnclosureRadius() * 2 + 1;
             
-            this.MaxAnimals = 10;
-            this.Name = $"{sizeType} Habitat";
-            this.Type = "Normal";
+            MaxAnimals = 10;
+            Name = $"{sizeType} Habitat";
+            Type = "Normal";
 
-            this.CenterPosition = centerPosition;
+            CenterPosition = centerPosition;
 
-            PlaceEnclosure(this.CenterPosition);
+            PlaceEnclosure(CenterPosition);
         }
 
         public Habitat()
         {
-            this.animals = new List<Animal>();
-            this.zookeepers = new List<Zookeeper>();
-            this.visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
-            this.currentVisitors = new HashSet<Visitor>();
-            this.fencePositions = new List<Vector2>();
-            this.fenceTileCoordinates = new HashSet<Vector2>();
-        }
-
-        public static void LoadContent(ContentManager content)
-        {
-
+            animals = new List<Animal>();
+            zookeepers = new List<Zookeeper>();
+            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+            currentVisitors = new HashSet<Visitor>();
+            fencePositions = new List<Vector2>();
+            fenceTileCoordinates = new HashSet<Vector2>();
         }
 
         public void AddFencePosition(Vector2 position)
@@ -177,42 +174,6 @@ namespace ZooTycoonManager
         public int GetHeight()
         {
             return height;
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            FenceRenderer.Draw(spriteBatch, fencePositions, fenceTileCoordinates, FENCE_DRAW_SCALE);
-
-            foreach (var animal in animals)
-            {
-                animal.Draw(spriteBatch);
-            }
-
-            foreach (var zookeeper in zookeepers)
-            {
-                zookeeper.Draw(spriteBatch);
-            }
-        }
-
-        public void Update(GameTime gameTime)
-        {
-            foreach (var animal in animals)
-            {
-                animal.Update(gameTime);
-            }
-        }
-
-        public void LoadAnimalContent(ContentManager content)
-        {
-            foreach (var animal in animals)
-            {
-                animal.LoadContent(content);
-            }
-
-            foreach (var zookeeper in zookeepers)
-            {
-                zookeeper.LoadContent(content);
-            }
         }
 
         public void PlaceEnclosure(Vector2 centerPixelPosition)
@@ -306,7 +267,7 @@ namespace ZooTycoonManager
                     
                     Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
                     newAnimal.SetPosition(spawnPos);
-                    newAnimal.LoadContent(GameWorld.Instance.Content);
+                    newAnimal.LoadContent();
                     newAnimal.SetHabitat(this);
                     AddAnimal(newAnimal);
                     return true;
@@ -344,7 +305,7 @@ namespace ZooTycoonManager
                         Vector2 adjacentTile = new Vector2(adjacentTileX, adjacentTileY);
                         if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY] &&
                             !fenceTileCoordinates.Contains(adjacentTile) && 
-                            !this.ContainsPosition(GameWorld.TileToPixel(adjacentTile)))
+                            !ContainsPosition(GameWorld.TileToPixel(adjacentTile)))
                         {
                             visitingSpots.Add(adjacentTile);
                         }
@@ -438,14 +399,29 @@ namespace ZooTycoonManager
             Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
             CenterPosition = pixelPos;
             
-            width = (GetEnclosureRadius() * 2) + 1;
-            height = (GetEnclosureRadius() * 2) + 1;
+            width = GetEnclosureRadius() * 2 + 1;
+            height = GetEnclosureRadius() * 2 + 1;
             fencePositions = new List<Vector2>();
             animals = new List<Animal>();
             visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
             currentVisitors = new HashSet<Visitor>();
 
             PlaceEnclosure(pixelPos);
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            FenceRenderer.Draw(spriteBatch, fencePositions, fenceTileCoordinates, FENCE_DRAW_SCALE);
+        }
+
+        public override void Update()
+        {
+
+        }
+
+        public override void LoadContent()
+        {
+
         }
 
         public int Size

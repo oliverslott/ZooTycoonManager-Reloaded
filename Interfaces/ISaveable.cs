@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.Interfaces
 {
     public interface ISaveable
     {

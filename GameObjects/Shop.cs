@@ -7,10 +7,12 @@ using System.Threading;
 using System.Linq;
 using Microsoft.Data.Sqlite;
 using System;
+using System.Reflection.Metadata;
+using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.GameObjects
 {
-    public class Shop : ISaveable, ILoadable
+    public class Shop : GameObject, ISaveable, ILoadable
     {
         private Texture2D _texture;
         private Vector2 _position;
@@ -107,23 +109,6 @@ namespace ZooTycoonManager
         {
             Vector2 tile = GameWorld.PixelToTile(pixelPosition);
             return new Vector2(tile.X * GameWorld.TILE_SIZE, tile.Y * GameWorld.TILE_SIZE);
-        }
-
-        public void LoadContent(ContentManager content)
-        {
-            _texture = content.Load<Texture2D>("foodshopsprite_cut");
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            if (_texture != null)
-            {
-                spriteBatch.Draw(_texture, _bounds, Color.White);
-            }
-        }
-
-        public void Update(GameTime gameTime)
-        {
         }
 
         public List<Vector2> GetWalkableVisitingSpots()
@@ -246,6 +231,24 @@ namespace ZooTycoonManager
 
             InitializeShopState();
             Debug.WriteLine($"Loaded Shop ID: {ShopId}, Type: {Type}, Cost: {Cost} at tile ({PositionX},{PositionY}), Default Size ({_widthInTiles}x{_heightInTiles})");
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            if (_texture != null)
+            {
+                spriteBatch.Draw(_texture, _bounds, Color.White);
+            }
+        }
+
+        public override void Update()
+        {
+
+        }
+
+        public override void LoadContent()
+        {
+            _texture = GameWorld.Instance.Content.Load<Texture2D>("foodshopsprite_cut");
         }
     }
 } 

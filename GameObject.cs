@@ -14,7 +14,7 @@ namespace ZooTycoonManager
 
         public abstract void Update();
 
-        public abstract void LoadContent(ContentManager contentManager);
+        public abstract void LoadContent();
 
         public virtual void Reset()
         {

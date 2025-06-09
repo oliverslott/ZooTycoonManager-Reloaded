@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
-namespace ZooTycoonManager
+namespace ZooTycoonManager.UI
 {
     public class ShopWindow
     {

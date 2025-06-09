@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {
@@ -59,9 +60,10 @@ namespace ZooTycoonManager.Commands
             int zookeeperUpkeep = 100; // Default upkeep
 
             _createdZookeeper = new Zookeeper(GameWorld.Instance.VisitorSpawnTileCoordinate, _createdZookeeperId, _targetHabitat, zookeeperName, zookeeperUpkeep);
-            _createdZookeeper.LoadContent(GameWorld.Instance.Content);
+            _createdZookeeper.LoadContent();
             
             _targetHabitat.AddZookeeper(_createdZookeeper);
+            GameWorld.Instance.Instantiate(_createdZookeeper);
 
             Debug.WriteLine($"Placed zookeeper {_createdZookeeper.Name} (ID: {_createdZookeeperId}) in habitat {_targetHabitat.Name} (spawned at visitor entrance). Cost: ${_cost}");
             return true;
@@ -77,6 +79,7 @@ namespace ZooTycoonManager.Commands
 
             // Remove the zookeeper from the habitat
             _targetHabitat.GetZookeepers().Remove(_createdZookeeper);
+            GameWorld.Instance.Despawn(_createdZookeeper);
 
             // Refund the money
             MoneyManager.Instance.AddMoney(_cost);

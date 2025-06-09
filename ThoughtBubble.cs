@@ -12,9 +12,9 @@ namespace ZooTycoonManager
         {
         }
 
-        public void LoadContent(ContentManager contentManager)
+        public void LoadContent()
         {
-            _thoughtBubbleTexture = contentManager.Load<Texture2D>("Thought_bubble");
+            _thoughtBubbleTexture = GameWorld.Instance.Content.Load<Texture2D>("Thought_bubble");
         }
 
         public void Draw(SpriteBatch spriteBatch, Vector2 parentPosition, float parentSpriteHeight, Texture2D contentTexture, Rectangle? sourceRectangleForContent = null, float contentScale = 1f)
