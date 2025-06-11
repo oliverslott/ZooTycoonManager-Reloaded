@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using ZooTycoonManager.Commands;
-using ZooTycoonManager.GameObjects;
+using ZooTycoonManager.Components;
+using ZooTycoonManager.Enums;
 using ZooTycoonManager.Interfaces;
 using ZooTycoonManager.UI;
 
@@ -37,7 +38,6 @@ namespace ZooTycoonManager
         public Map map { get; private set; }
         TileRenderer tileRenderer;
         private Texture2D[] tileTextures;
-        private FPSCounter _fpsCounter;
         private Texture2D _habitatPreviewTexture;
         private Texture2D _shopPreviewTexture;
         private Texture2D _treePreviewTexture;
@@ -52,13 +52,13 @@ namespace ZooTycoonManager
         private List<string> _buttonLabels;
 
         // UI
-        Button shopButton;
+        //Button shopButton;
         Texture2D shopIconTexture;
-        private ShopWindow _shopWindow;
-        SubMenuWindow _buildingsMenu;
-        SubMenuWindow _habitatMenu;
-        SubMenuWindow _animalMenu;
-        SubMenuWindow _zookeeperMenu;
+        GameObject _shopWindow;
+        GameObject _buildingsMenu;
+        GameObject _habitatMenu;
+        GameObject _animalMenu;
+        GameObject _zookeeperMenu;
         private StatDisplay _visitorDisplay;
         private StatDisplay _animalDisplay;
 
@@ -87,6 +87,8 @@ namespace ZooTycoonManager
 
         public bool[,] WalkableMap { get; private set; }
 
+        public HashSet<(int x, int y)> RoadTiles { get; set; } = new HashSet<(int x, int y)>();
+
         private enum PlacementMode // Enum til placering af ting
         {
             None,
@@ -95,16 +97,7 @@ namespace ZooTycoonManager
             PlaceLargeHabitat,
             PlaceZookeeper,
             PlaceVisitorShop,
-            PlaceAnimal_Buffalo,
-            PlaceAnimal_Camel,
-            PlaceAnimal_Wolf,
-            PlaceAnimal_Bear,
-            PlaceAnimal_Chimpanze,
-            PlaceAnimal_Elephant,
-            PlaceAnimal_Orangutan,
-            PlaceAnimal_Polarbear,
-            PlaceAnimal_Turtle,
-            PlaceAnimal_Kangaroo,
+            PlaceAnimal,
             PlaceTree,
             PlaceWaterhole
         }
@@ -119,6 +112,8 @@ namespace ZooTycoonManager
 
 
         private PlacementMode _currentPlacement = PlacementMode.None;
+        private AnimalTypes _animalTypeToPlace;
+        private int _animalCostToPlace;
 
         private List<GameObject> gameObjects = new List<GameObject>();
         private int _nextHabitatId = 1;
@@ -142,6 +137,7 @@ namespace ZooTycoonManager
         private bool _isFullscreen = false;
 
         private bool _isPlacingRoadModeActive = false;
+        private bool _ignoreNextMouseClick = false;
 
         private List<GameObject> _gameObjectsToRemove = new List<GameObject>();
 
@@ -150,33 +146,27 @@ namespace ZooTycoonManager
 
         private SaveButton saveButton;
 
-        private bool IsMouseOverUI(Vector2 mousePosition)
+        private PlacementMode _previousPlacement;
+        private bool _wasPlacingRoadModeActive;
+
+        public List<GameObject> GetAnimals()
         {
-            Rectangle mouseRect = new Rectangle((int)mousePosition.X, (int)mousePosition.Y, 1, 1);
-
-            if (_shopWindow.IsVisible && _shopWindow.Contains(mousePosition)) return true;
-            if (_buildingsMenu.IsVisible && _buildingsMenu.Contains(mousePosition)) return true;
-            if (_habitatMenu.IsVisible && _habitatMenu.Contains(mousePosition)) return true;
-            if (_animalMenu.IsVisible && _animalMenu.Contains(mousePosition)) return true;
-            if (_zookeeperMenu.IsVisible && _zookeeperMenu.Contains(mousePosition)) return true;
-            if (shopButton.Contains(mousePosition)) return true;
-
-            return false;
+            return gameObjects.Where(x => x.TryGetComponent<AnimalComponent>(out _)).ToList();
         }
 
-        public List<Habitat> GetHabitats()
+        public List<GameObject> GetHabitats()
         {
-            return gameObjects.OfType<Habitat>().ToList();
+            return gameObjects.Where(x => x.TryGetComponent<HabitatComponent>(out _)).ToList();
         }
 
-        public List<Visitor> GetVisitors()
+        public List<GameObject> GetVisitors()
         {
-            return gameObjects.OfType<Visitor>().ToList();
+            return gameObjects.Where(x => x.TryGetComponent<VisitorComponent>(out _)).ToList();
         }
 
-        public List<Shop> GetShops()
+        public List<GameObject> GetShops()
         {
-            return gameObjects.OfType<Shop>().ToList();
+            return gameObjects.Where(x => x.TryGetComponent<ShopComponent>(out _)).ToList();
         }
 
         public static GameWorld Instance
@@ -214,10 +204,10 @@ namespace ZooTycoonManager
 
             map = new Map(GRID_WIDTH, GRID_HEIGHT);
 
+
             _camera = new Camera(_graphics);
             _camera.SetMapDimensions(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
 
-            WalkableMap = map.ToWalkableArray();
             _boundaryFenceTilePositions = new List<Vector2>();
             _boundaryFenceTileCoordinates = new HashSet<Vector2>();
 
@@ -237,16 +227,6 @@ namespace ZooTycoonManager
                 _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
-                Vector2 newShopPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - 260, // reposition af knapper
-                    90
-);
-                _shopWindow.Reposition(newShopPos);
-                Vector2 newShopButtonPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
-                    30
-);
-                shopButton.SetPosition(newShopButtonPos);
 
                 Vector2 newIonfoButtonPos = new Vector2(
                     _graphics.PreferredBackBufferWidth - _infoButton.GetWidth() - 70,
@@ -254,15 +234,6 @@ namespace ZooTycoonManager
 );
                 _infoButton.SetPosition(newIonfoButtonPos);
 
-                Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // reposition af knapper
-                90
-);
-
-                _buildingsMenu.Reposition(newSubMenuPos);
-                _habitatMenu.Reposition(newSubMenuPos);
-                _animalMenu.Reposition(newSubMenuPos);
-                _zookeeperMenu.Reposition(newSubMenuPos);
             }
         }
 
@@ -285,36 +256,36 @@ namespace ZooTycoonManager
 
         protected override void Initialize()
         {
-            var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, nextZookeeperIdVal, loadedMoney, loadedScore) = DatabaseManager.Instance.LoadGame(Content);
-            foreach(var loadedHabitat in loadedHabitats)
-            {
-                gameObjects.Add(loadedHabitat);
-            }
-            foreach (var loadedShop in loadedShops)
-            {
-                gameObjects.Add(loadedShop);
-                Vector2 startTile = GameWorld.PixelToTile(loadedShop.Position);
-                for (int x = 0; x < loadedShop.WidthInTiles; x++)
-                {
-                    for (int y = 0; y < loadedShop.HeightInTiles; y++)
-                    {
-                        int tileX = (int)startTile.X + x;
-                        int tileY = (int)startTile.Y + y;
-                        if (tileX >= 0 && tileX < GRID_WIDTH && tileY >= 0 && tileY < GRID_HEIGHT)
-                        {
-                            WalkableMap[tileX, tileY] = false;
-                        }
-                    }
-                }
-            }
+            //var (loadedHabitats, loadedShops, nextHabitatId, nextAnimalId, nextVisitorId, nextShopIdVal, nextZookeeperIdVal, loadedMoney, loadedScore) = DatabaseManager.Instance.LoadGame(Content);
+            //foreach(var loadedHabitat in loadedHabitats)
+            //{
+            //    gameObjects.Add(loadedHabitat);
+            //}
+            //foreach (var loadedShop in loadedShops)
+            //{
+            //    gameObjects.Add(loadedShop);
+            //    Vector2 startTile = GameWorld.PixelToTile(loadedShop.Position);
+            //    for (int x = 0; x < loadedShop.WidthInTiles; x++)
+            //    {
+            //        for (int y = 0; y < loadedShop.HeightInTiles; y++)
+            //        {
+            //            int tileX = (int)startTile.X + x;
+            //            int tileY = (int)startTile.Y + y;
+            //            if (tileX >= 0 && tileX < GRID_WIDTH && tileY >= 0 && tileY < GRID_HEIGHT)
+            //            {
+            //                WalkableMap[tileX, tileY] = false;
+            //            }
+            //        }
+            //    }
+            //}
 
-            _nextHabitatId = nextHabitatId;
-            _nextAnimalId = nextAnimalId;
-            _nextVisitorId = nextVisitorId;
-            _nextShopId = nextShopIdVal;
-            _nextZookeeperId = nextZookeeperIdVal;
-            MoneyManager.Instance.Initialize(loadedMoney);
-            ScoreManager.Instance.Score = loadedScore;
+            //_nextHabitatId = nextHabitatId;
+            //_nextAnimalId = nextAnimalId;
+            //_nextVisitorId = nextVisitorId;
+            //_nextShopId = nextShopIdVal;
+            //_nextZookeeperId = nextZookeeperIdVal;
+            //MoneyManager.Instance.Initialize(loadedMoney);
+            //ScoreManager.Instance.Score = loadedScore;
 
             base.Initialize();
         }
@@ -323,16 +294,15 @@ namespace ZooTycoonManager
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("font");
-            _fpsCounter = new FPSCounter(_font, _graphics);
             _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
             _shopPreviewTexture = Content.Load<Texture2D>("foodshopsprite_cut");
             SpriteFont uiFont = Content.Load<SpriteFont>("UIFont");
 
 
-            foreach(var gameObject in gameObjects)
-            {
-                gameObject.LoadContent();
-            }
+            //foreach(var gameObject in gameObjects)
+            //{
+            //    gameObject.LoadContent();
+            //}
 
             // Menu fonts og textures
             _menuFont = Content.Load<SpriteFont>("MenuFont");
@@ -343,13 +313,13 @@ namespace ZooTycoonManager
 
             // Initialize shopButton textures and position
 
-            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");  
-            Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          
+            Texture2D shopButtonBackgroundTexture = Content.Load<Texture2D>("Button_Blue");
+            //Texture2D shopButtonIconTexture = Content.Load<Texture2D>("Regular_07");          
 
-            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - shopButtonBackgroundTexture.Width - 10, 30);
-            shopButton = new Button(shopButtonBackgroundTexture, shopButtonIconTexture, shopButtonPosition);
+            //Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - shopButtonBackgroundTexture.Width - 10, 30);
+            //shopButton = new Button(shopButtonBackgroundTexture, shopButtonIconTexture, shopButtonPosition);
 
-            
+
             int buttonWidth = _buttonTexture.Width;
             int buttonHeight = _buttonTexture.Height;
 
@@ -358,9 +328,9 @@ namespace ZooTycoonManager
                 (GraphicsDevice.Viewport.Width - buttonWidth) / 2,
                 (GraphicsDevice.Viewport.Height - buttonHeight) / 2
             );
-            shopButton.Position = centerShopButton;
+            //shopButton.Position = centerShopButton;
 
-            
+
             int startY = 200;
             Vector2 _buttonSize = new Vector2(buttonWidth, buttonHeight);
             for (int i = 0; i < _buttonLabels.Count; i++)
@@ -378,13 +348,13 @@ namespace ZooTycoonManager
             Texture2D buttonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
             Texture2D startButtonTexture = Content.Load<Texture2D>("Button_Blue_3Slides");
 
-            
+
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
             Vector2 saveButtonPos = new Vector2(5, 80);
 
-            
+
             saveButton = new SaveButton(shopButtonBackgroundTexture, _font, saveButtonPos);
 
 
@@ -394,24 +364,15 @@ namespace ZooTycoonManager
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
             string[] zookeepers = { "Zookeeper - 5.000" };
 
-            
-
-
-            //Submenus
-            _buildingsMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, buildings);
-            _habitatMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, habitattype);
-            _animalMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, animals);
-            _zookeeperMenu = new SubMenuWindow(shopBackgroundTexture, buttonTexture, uiFont, subMenuPos, zookeepers);
-
 
             // Save game button
             Vector2 saveGamePosition = new Vector2(500, 90);
-            
+
 
 
             //shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90);
-            _shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
+            //_shopWindow = new ShopWindow(shopBackgroundTexture, buttonTexture, uiFont, shopWindowPosition);
 
 
             //Moneydisplay
@@ -463,27 +424,96 @@ namespace ZooTycoonManager
             _treeTexture = Content.Load<Texture2D>("tree1");
             InitializeStaticTrees();
 
-            // Load animal content for habitats
-            //foreach (var habitat in habitats)
-            //{
-            //    habitat.LoadAnimalContent(Content);
-            //}
+            var shopPos = new Vector2(GraphicsDevice.Viewport.Width - 100, 200);
 
-            //start game
-            _startGameButtonTexture = startButtonTexture;
-            _startGameButton = new Button(_startGameButtonTexture);
+            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - 40, 60);
+            Instantiate(EntityFactory.CreateButton(shopButtonPosition, "Shop", ToggleShop, ButtonSize.Small));
 
-            Vector2 centerStartButton = new Vector2(
-                (GraphicsDevice.Viewport.Width - _startGameButtonTexture.Width) / 2,
-                (GraphicsDevice.Viewport.Height - _startGameButtonTexture.Height) / 2
-            );
-            _startGameButton.Position = centerStartButton;
+            var menuBtns = new List<GameObject>();
+            var BuildingsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y - 50), "Buildings", () => { ShowSubMenu("Buildings"); });
+            var HabitatsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y), "Habitats", () => { ShowSubMenu("Habitats"); });
+            var AnimalsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 50), "Animals", () => { ShowSubMenu("Animals"); });
+            var ZookeepersBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 100), "Zookeepers", () => { ShowSubMenu("Zookeepers"); });
+
+
+            menuBtns.Add(BuildingsBtn);
+            menuBtns.Add(HabitatsBtn);
+            menuBtns.Add(AnimalsBtn);
+            menuBtns.Add(ZookeepersBtn);
+
+            _shopWindow = Instantiate(EntityFactory.CreateMenu(new Vector2(shopPos.X, shopPos.Y), menuBtns));
+            _shopWindow.IsActive = false;
+
+            var buildingsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
+
+            var buildingsBtns = new List<GameObject>();
+            var tilesBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y - 50), "Tiles - 10", () => { _isPlacingRoadModeActive = true; ToggleShop(); });
+            var shopBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), "Shop - 1.000", () => { StartShopPlacement("Shop - 1.000"); });
+            var treeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 50), "Tree", () => { StartTreePlacement(); });
+            var waterholeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 100), "Waterhole", () => { StartWaterholePlacement(); });
+
+            buildingsBtns.Add(tilesBtn);
+            buildingsBtns.Add(shopBtn);
+            buildingsBtns.Add(treeBtn);
+            buildingsBtns.Add(waterholeBtn);
+
+            _buildingsMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), buildingsBtns));
+            _buildingsMenu.IsActive = false;
+
+            var habitatsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
+            var habitatsBtns = new List<GameObject>();
+            var smallBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y - 50), "Small - 5.000", () => { StartHabitatPlacement("Small - 5.000"); });
+            var mediumBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), "Medium - 10.000", () => { StartHabitatPlacement("Medium - 10.000"); });
+            var largeBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, buildingsMenuPos.Y + 50), "Large - 15.000", () => { StartHabitatPlacement("Large - 15.000"); });
+
+            habitatsBtns.Add(smallBtn);
+            habitatsBtns.Add(mediumBtn);
+            habitatsBtns.Add(largeBtn);
+
+            _habitatMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), habitatsBtns));
+            _habitatMenu.IsActive = false;
+
+            var animalMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
+            var animalsBtns = new List<GameObject>();
+
+            for (int i = 0; i < animals.Length; i++)
+            {
+                string animal = animals[i];
+                var btn = EntityFactory.CreateButton(new Vector2(animalMenuPos.X, animalMenuPos.Y + (-50 + 50 * i)), animal, () => { StartAnimalPlacement(animal); });
+                animalsBtns.Add(btn);
+            }
+
+            _animalMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(animalMenuPos.X, animalMenuPos.Y), animalsBtns));
+            _animalMenu.IsActive = false;
+
+            var zookeeperMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
+            var zookeeperBtns = new List<GameObject>();
+
+            for (int i = 0; i < zookeepers.Length; i++)
+            {
+                string zookeeper = zookeepers[i];
+                var btn = EntityFactory.CreateButton(new Vector2(zookeeperMenuPos.X, zookeeperMenuPos.Y - (50 + 50 * i)), zookeeper, () => { StartZookeeperPlacement(zookeeper); });
+                zookeeperBtns.Add(btn);
+            }
+
+            _zookeeperMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(zookeeperMenuPos.X, zookeeperMenuPos.Y), zookeeperBtns));
+            _zookeeperMenu.IsActive = false;
+
+            Instantiate(EntityFactory.CreateFPSCounter(new Vector2(_graphics.PreferredBackBufferWidth - 60, 20)));
+        }
+
+        public void ToggleShop()
+        {
+            _shopWindow.IsActive = !_shopWindow.IsActive;
+
+            _buildingsMenu.IsActive = false;
+            _habitatMenu.IsActive = false;
+            _animalMenu.IsActive = false;
+            _zookeeperMenu.IsActive = false;
         }
 
         MouseState prevMouseState;
         KeyboardState prevKeyboardState;
-        private Texture2D _startGameButtonTexture;
-        private Button _startGameButton;
 
         protected override void Update(GameTime gameTime)
         {
@@ -521,20 +551,26 @@ namespace ZooTycoonManager
                 }
             }
 
-
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
-
-            foreach(var gameObject in gameObjects)
+            foreach (var gameObject in gameObjects)
             {
-                gameObject.Update();
+                gameObject.Update(gameTime);
             }
 
-            _fpsCounter.Update(gameTime); //FPS
-            _visitorDisplay.SetText($"Visitors: {gameObjects.Count(x=>x is Visitor)}");
-            _animalDisplay.SetText($"Animals: {gameObjects.OfType<Habitat>().Sum(h => h.GetAnimals().Count)}");
+            if ((_currentPlacement != PlacementMode.None && _previousPlacement == PlacementMode.None) || (_isPlacingRoadModeActive && !_wasPlacingRoadModeActive))
+            {
+                _ignoreNextMouseClick = true;
+            }
+
+            _visitorDisplay.SetText($"Visitors: {GetVisitors().Count}");
+            _animalDisplay.SetText($"Animals: {GetAnimals().Count}");
 
             KeyboardState keyboard = Keyboard.GetState();
+
+            if (keyboard.IsKeyDown(Keys.Escape) && !prevKeyboardState.IsKeyDown(Keys.Escape))
+            {
+                _isPlacingRoadModeActive = false;
+                _currentPlacement = PlacementMode.None;
+            }
 
             // F11 = Fullscreen
             if (keyboard.IsKeyDown(Keys.F11) && !prevKeyboardState.IsKeyDown(Keys.F11))
@@ -549,19 +585,26 @@ namespace ZooTycoonManager
                 _camera.ToggleClamping();
             }
 
-            if (keyboard.IsKeyDown(Keys.P) && !prevKeyboardState.IsKeyDown(Keys.P))
+            if (keyboard.IsKeyDown(Keys.B) && !prevKeyboardState.IsKeyDown(Keys.B))
             {
-                if (_isPlacingRoadModeActive)
-                {
-                    _isPlacingRoadModeActive = false;
-                    Debug.WriteLine("Exited tile placement mode");
-                }
+                Instantiate(EntityFactory.CreateVisitor(_camera.ScreenToWorld(mouse.Position.ToVector2())));
             }
 
+            if (mouse.RightButton == ButtonState.Pressed && prevMouseState.RightButton != ButtonState.Pressed)
+            {
+                var newPos = PixelToTile(_camera.ScreenToWorld(mouse.Position.ToVector2()));
+                var visitor = GetVisitors()[0];
+                bool[,] tempWalkableMap = new bool[100, 100];
+                for (int x = 0; x < 100; x++)
+                    for (int y = 0; y < 100; y++)
+                        tempWalkableMap[x, y] = true;
+
+                visitor.GetComponent<MovableComponent>().PathfindTo(newPos, tempWalkableMap);
+            }
 
             Vector2 worldMousePosition = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
 
-            bool animalsExist = gameObjects.OfType<Habitat>().Any(h => h.GetAnimals().Count > 0);
+            bool animalsExist = GetAnimals().Count > 0;
             if (animalsExist)
             {
                 _visitorSpawnTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -569,10 +612,8 @@ namespace ZooTycoonManager
                 {
                     _visitorSpawnTimer = 0f;
 
-                    Visitor newVisitor = new Visitor(_visitorSpawnTileCoord, _nextVisitorId++);
-                    newVisitor.LoadContent();
-                    //visitors.Add(newVisitor);
-                    gameObjects.Add(newVisitor);
+                    _nextVisitorId++;
+                    gameObjects.Add(EntityFactory.CreateVisitor(_visitorSpawnTileCoord));
 
                     MoneyManager.Instance.AddMoney(VISITOR_SPAWN_REWARD);
                     Debug.WriteLine($"Visitor spawned at {_visitorSpawnTileCoord}. Added ${VISITOR_SPAWN_REWARD}.");
@@ -581,22 +622,6 @@ namespace ZooTycoonManager
             else
             {
                 _visitorSpawnTimer = 0f; // Reset timer for spawn
-            }
-
-            if (_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
-            {
-                Vector2 screenMousePos = new Vector2(mouse.X, mouse.Y);
-                if (!IsMouseOverUI(screenMousePos))
-                {
-                    PlaceRoadTile(PixelToTile(worldMousePosition));
-                }
-            }
-            else if (!_isPlacingRoadModeActive && mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
-            {
-                if (GetHabitats().Count > 0 && GetHabitats()[0].GetAnimals().Count > 0)
-                {
-                    GetHabitats()[0].GetAnimals()[0].PathfindTo(worldMousePosition);
-                }
             }
 
             if (keyboard.IsKeyDown(Keys.M) && !prevKeyboardState.IsKeyDown(Keys.M))
@@ -617,212 +642,121 @@ namespace ZooTycoonManager
                 CommandManager.Instance.Redo();
             }
 
-            bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
-
-            if (mouse.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
+            // This new block handles resetting the ignore flag on mouse release.
+            if (mouse.LeftButton == ButtonState.Released)
             {
-                Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
-
-                if (_currentPlacement == PlacementMode.PlaceSmallHabitat)
+                if (_ignoreNextMouseClick)
                 {
-                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Small, cost: 5000);
-                    CommandManager.Instance.ExecuteCommand(command);
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
-                {
-                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Medium, cost: 10000);
-                    CommandManager.Instance.ExecuteCommand(command);
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceLargeHabitat)
-                {
-                    var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Large, cost: 15000);
-                    CommandManager.Instance.ExecuteCommand(command);
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceVisitorShop)
-                {
-                    var placeShopCommand = new PlaceShopCommand(worldMousePos, 3, 3, DEFAULT_SHOP_COST);
-                    CommandManager.Instance.ExecuteCommand(placeShopCommand);
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Buffalo)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Buffalo");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 1000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Orangutan)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Orangutan");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2500);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Chimpanze)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Chimpanze");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Kangaroo)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Kangaroo");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2500);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Elephant)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Elephant");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 8000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Camel)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Camel");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 2500);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Wolf)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Wolf");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 4000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Bear)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Bear");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 9000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Turtle)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Turtle");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 5000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceAnimal_Polarbear)
-                {
-                    int speciesId = DatabaseManager.Instance.GetSpeciesIdByName("Polarbear");
-                    if (speciesId != -1)
-                    {
-                        var command = new PlaceAnimalCommand(worldMousePos, speciesId, cost: 10000);
-                        CommandManager.Instance.ExecuteCommand(command);
-                    }
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceTree)
-                {
-                    placeTrees.Add(worldMousePos); 
-                    _currentPlacement = PlacementMode.None;
-                }
-                else if (_currentPlacement == PlacementMode.PlaceWaterhole)
-                {
-                    placeWaterholes.Add(worldMousePos);
-                    _currentPlacement = PlacementMode.None;
-                }
-
-                else
-                {
-                    Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
-                    bool entityClickedThisFrame = false;
-                    IInspectableEntity clickedEntity = null;
-
-                    foreach (var habitat in GetHabitats())
-                    {
-                        foreach (var animal in habitat.GetAnimals())
-                        {
-                            if (animal.BoundingBox.Contains(worldMousePosForEntityCheck))
-                            {
-                                clickedEntity = animal;
-                                entityClickedThisFrame = true;
-                                break;
-                            }
-                        }
-                        if (entityClickedThisFrame) break;
-                    }
-
-                    if (_currentPlacement == PlacementMode.PlaceZookeeper)
-                    {
-                        var command = new PlaceZookeeperCommand(worldMousePos, cost: 5000);
-                        CommandManager.Instance.ExecuteCommand(command);
-
-                        _currentPlacement = PlacementMode.None;
-                    }
-
-                    if (!entityClickedThisFrame)
-                    {
-                        foreach (Visitor visitor in gameObjects.Where(x=>x is Visitor).Cast<Visitor>())
-                        {
-                            Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
-                            if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
-                            {
-                                clickedEntity = visitor;
-                                entityClickedThisFrame = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (clickedEntity != null)
-                    {
-                        if (_selectedEntity != null && _selectedEntity != clickedEntity)
-                        {
-                            _selectedEntity.IsSelected = false;
-                        }
-                        _selectedEntity = clickedEntity;
-                        _selectedEntity.IsSelected = true;
-                        _entityInfoPopup.Show(_selectedEntity);
-                    }
-
-                    else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick)
-                    {
-                        _entityInfoPopup.Hide();
-                        if (_selectedEntity != null)
-                        {
-                            _selectedEntity.IsSelected = false;
-                            _selectedEntity = null;
-                        }
-                    }
+                    _ignoreNextMouseClick = false;
                 }
             }
 
+            bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
+
+            // This consolidated block handles all left-click actions.
+            if (mouse.LeftButton == ButtonState.Pressed)
+            {
+                if (_ignoreNextMouseClick)
+                {
+                    // The click that initiated placement mode is being ignored until the button is released.
+                }
+                else if (_isPlacingRoadModeActive)
+                {
+                    // If we are in road placement mode, place tiles continuously.
+                    var placeRoadCommand = new PlaceRoadCommand(PixelToTile(worldMousePosition), 10);
+                    CommandManager.Instance.ExecuteCommand(placeRoadCommand);
+                }
+                else if (prevMouseState.LeftButton != ButtonState.Pressed && !popupHandledClick)
+                {
+                    // This handles single-click actions for all other placement modes.
+                    Vector2 worldMousePos = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+
+                    if (_currentPlacement == PlacementMode.PlaceSmallHabitat)
+                    {
+                        var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Small, cost: 5000);
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceMediumHabitat)
+                    {
+                        var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Medium, cost: 10000);
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceLargeHabitat)
+                    {
+                        var command = new PlaceHabitatCommand(worldMousePos, HabitatSizeType.Large, cost: 15000);
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceVisitorShop)
+                    {
+                        var placeShopCommand = new PlaceShopCommand(worldMousePos, 3, 3, DEFAULT_SHOP_COST);
+                        CommandManager.Instance.ExecuteCommand(placeShopCommand);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceAnimal)
+                    {
+                        var command = new PlaceAnimalCommand(worldMousePos, _animalTypeToPlace, cost: _animalCostToPlace);
+                        CommandManager.Instance.ExecuteCommand(command);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceTree)
+                    {
+                        placeTrees.Add(worldMousePos);
+                    }
+                    else if (_currentPlacement == PlacementMode.PlaceWaterhole)
+                    {
+                        placeWaterholes.Add(worldMousePos);
+                    }
+
+                    else
+                    {
+                        Vector2 worldMousePosForEntityCheck = _camera.ScreenToWorld(new Vector2(mouse.X, mouse.Y));
+                        bool entityClickedThisFrame = false;
+                        IInspectableEntity clickedEntity = null;
+
+                        if (_currentPlacement == PlacementMode.PlaceZookeeper)
+                        {
+                            var command = new PlaceZookeeperCommand(worldMousePos, cost: 5000);
+                            CommandManager.Instance.ExecuteCommand(command);
+
+                            _currentPlacement = PlacementMode.None;
+                        }
+
+                        if (!entityClickedThisFrame)
+                        {
+                            //foreach (Visitor visitor in gameObjects.Where(x=>x is Visitor).Cast<Visitor>())
+                            //{
+                            //    Rectangle visitorBoundingBox = new Rectangle((int)(visitor.Position.X - 16), (int)(visitor.Position.Y - 16), 32, 32);
+                            //    if (visitorBoundingBox.Contains(worldMousePosForEntityCheck))
+                            //    {
+                            //        clickedEntity = visitor;
+                            //        entityClickedThisFrame = true;
+                            //        break;
+                            //    }
+                            //}
+                        }
+
+                        if (clickedEntity != null)
+                        {
+                            if (_selectedEntity != null && _selectedEntity != clickedEntity)
+                            {
+                                _selectedEntity.IsSelected = false;
+                            }
+                            _selectedEntity = clickedEntity;
+                            _selectedEntity.IsSelected = true;
+                            _entityInfoPopup.Show(_selectedEntity);
+                        }
+
+                        else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick)
+                        {
+                            _entityInfoPopup.Hide();
+                            if (_selectedEntity != null)
+                            {
+                                _selectedEntity.IsSelected = false;
+                                _selectedEntity = null;
+                            }
+                        }
+                    }
+
+                }
+            }
             if (_gameObjectsToRemove.Count > 0)
             {
                 foreach (var gameObjectToRemove in _gameObjectsToRemove)
@@ -834,42 +768,49 @@ namespace ZooTycoonManager
                 _gameObjectsToRemove.Clear();
             }
             MouseState mouseState = Mouse.GetState();
-            shopButton.Update(mouseState, prevMouseState);
+            //shopButton.Update(mouseState, prevMouseState);
 
             // Shop ikon
-            if (!shopButton.IsClicked)
-            {
-            }
-            else
-            {
-                // Shop vindue
-                _shopWindow.IsVisible = !_shopWindow.IsVisible;
+            //if (!shopButton.IsClicked)
+            //{
+            //}
+            //else
+            //{
+            //    // Shop vindue
+            //    _shopWindow.IsVisible = !_shopWindow.IsVisible;
 
-                _buildingsMenu.IsVisible = false;
-                _habitatMenu.IsVisible = false;
-                _animalMenu.IsVisible = false;
-                _zookeeperMenu.IsVisible = false;
-            }
+            //    _buildingsMenu.IsVisible = false;
+            //    _habitatMenu.IsVisible = false;
+            //    _animalMenu.IsVisible = false;
+            //    _zookeeperMenu.IsVisible = false;
+            //}
 
-            _shopWindow.Update(gameTime, mouseState, prevMouseState);
-            _buildingsMenu.Update(mouseState, prevMouseState);
-            _habitatMenu.Update(mouseState, prevMouseState);
-            _animalMenu.Update(mouseState, prevMouseState);
-            _zookeeperMenu.Update(mouseState, prevMouseState);
+            //_shopWindow.Update(gameTime, mouseState, prevMouseState);
+            //_buildingsMenu.Update(mouseState, prevMouseState);
+            //_habitatMenu.Update(mouseState, prevMouseState);
+            //_animalMenu.Update(mouseState, prevMouseState);
+            //_zookeeperMenu.Update(mouseState, prevMouseState);
 
             _infoButton.Update(Mouse.GetState(), prevMouseState);
-            if (_infoButton.IsClicked)
-            {
-                _showInfoPanel = !_showInfoPanel;
-            }
+            //if (_infoButton.IsClicked)
+            //{
+            //    _showInfoPanel = !_showInfoPanel;
+            //}
 
             saveButton.Update(gameTime, mouseState, prevMouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
 
+            _previousPlacement = _currentPlacement;
+            _wasPlacingRoadModeActive = _isPlacingRoadModeActive;
 
             base.Update(gameTime);
+        }
+
+        void HandleInput()
+        {
+
         }
 
 
@@ -894,27 +835,12 @@ namespace ZooTycoonManager
                     _graphics.PreferredBackBufferWidth - 260, // repostion af knap
                     90
 );
-            _shopWindow.Reposition(newShopPos);
-            Vector2 newShopButtonPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - shopButton.GetWidth() - 10,
-                30
-);
-            shopButton.SetPosition(newShopButtonPos);
 
             Vector2 newIonfoButtonPos = new Vector2(
                 _graphics.PreferredBackBufferWidth - _infoButton.GetWidth() - 70,
                 30
 );
             _infoButton.SetPosition(newIonfoButtonPos);
-            shopButton.SetPosition(newShopButtonPos);
-            Vector2 newSubMenuPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - 465, // repostion af knap
-                90
-);
-            _buildingsMenu.Reposition(newSubMenuPos);
-            _habitatMenu.Reposition(newSubMenuPos);
-            _animalMenu.Reposition(newSubMenuPos);
-            _zookeeperMenu.Reposition(newSubMenuPos);
         }
 
         protected override void Draw(GameTime gameTime)
@@ -1043,7 +969,18 @@ namespace ZooTycoonManager
                 }
             }
 
-            foreach(var gameObject in gameObjects)
+            foreach (var road in RoadTiles)
+            {
+                Rectangle destinationRectangle = new Rectangle(
+                        (int)road.x * TILE_SIZE,
+                        (int)road.y * TILE_SIZE,
+                        TILE_SIZE,
+                        TILE_SIZE
+                    );
+                _spriteBatch.Draw(tileTextures[ROAD_TEXTURE_INDEX], destinationRectangle, Color.White);
+            }
+
+            foreach (var gameObject in gameObjects.Where(x => x.Layer == RenderLayer.World))
             {
                 gameObject.Draw(_spriteBatch);
             }
@@ -1139,37 +1076,22 @@ namespace ZooTycoonManager
             }
 
 
-            _spriteBatch.End(); // ✅ END spritebach gameworld
+            _spriteBatch.End();
 
             // UI
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            if (_isPlacingRoadModeActive)
+            foreach (var gameObject in gameObjects.Where(x => x.Layer == RenderLayer.Screen))
             {
-                Vector2 infoPosition = new Vector2(550, 650);
-                _spriteBatch.DrawString(_font, "Press Mouse 1 to place tiles", infoPosition, Color.Yellow);
-                _spriteBatch.DrawString(_font, "Press P to exit tile mode", infoPosition + new Vector2(0, 25), Color.Yellow);
+                gameObject.Draw(_spriteBatch);
             }
 
-
             saveButton.Draw(_spriteBatch);
-
-            _fpsCounter.Draw(_spriteBatch);
 
             _moneyDisplay.Draw(_spriteBatch);
             _visitorDisplay.Draw(_spriteBatch);
             _animalDisplay.Draw(_spriteBatch);
 
-            // Tegn shop knappen
-            shopButton.Draw(_spriteBatch);
-
-            // UI windows and buttons
-            shopButton.Draw(_spriteBatch);
-            _shopWindow.Draw(_spriteBatch);
-            _buildingsMenu.Draw(_spriteBatch);
-            _habitatMenu.Draw(_spriteBatch);
-            _animalMenu.Draw(_spriteBatch);
-            _zookeeperMenu.Draw(_spriteBatch);
             _entityInfoPopup.Draw(_spriteBatch);
 
             _infoButton.Draw(_spriteBatch);
@@ -1228,7 +1150,7 @@ namespace ZooTycoonManager
                     panelRect.Y + 10
                 );
                 _spriteBatch.Draw(_infoRibbonTexture, ribbonPos, Color.White);
-                ScoreManager.Instance.Draw(_spriteBatch, _font, ribbonPos + new Vector2(_infoRibbonTexture.Width / 2-5f, _infoRibbonTexture.Height / 2 - 10f));
+                ScoreManager.Instance.Draw(_spriteBatch, _font, ribbonPos + new Vector2(_infoRibbonTexture.Width / 2 - 5f, _infoRibbonTexture.Height / 2 - 10f));
 
                 // Tekst – start lidt under ribbon
                 Vector2 textStart = new Vector2(panelRect.X + horizontalPadding, ribbonPos.Y + _infoRibbonTexture.Height + 20);
@@ -1265,11 +1187,6 @@ namespace ZooTycoonManager
             return _nextShopId++; // unique shop ID
         }
 
-        public bool GetOriginalWalkableState(int x, int y)
-        {
-            return map.IsWalkable(x, y);
-        }
-
         public List<Vector2> GetWalkableTileCoordinates()
         {
             var walkableTiles = new List<Vector2>();
@@ -1295,48 +1212,6 @@ namespace ZooTycoonManager
         public void Despawn(GameObject gameObject)
         {
             _gameObjectsToRemove.Add(gameObject);
-        }
-
-        private void PlaceRoadTile(Vector2 tilePosition)
-        {
-            int x = (int)tilePosition.X;
-            int y = (int)tilePosition.Y;
-
-            if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT)
-            {
-                if (map.Tiles[x, y].Walkable && map.Tiles[x, y].TextureIndex == ROAD_TEXTURE_INDEX)
-                {
-                    return;
-                }
-
-
-                Tile originalTile = map.Tiles[x, y];
-
-                var placeRoadCommand = new PlaceRoadCommand(tilePosition, originalTile, 10);
-                CommandManager.Instance.ExecuteCommand(placeRoadCommand);
-            }
-            else
-            {
-                Debug.WriteLine($"Attempted to place road tile out of bounds at ({x}, {y})");
-            }
-        }
-
-        public void UpdateTile(int x, int y, bool walkable, int textureIndex)
-        {
-            if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT)
-            {
-                map.Tiles[x, y].Walkable = walkable;
-                map.Tiles[x, y].TextureIndex = textureIndex;
-
-                if (WalkableMap != null)
-                {
-                    WalkableMap[x, y] = walkable;
-                }
-            }
-            else
-            {
-                Debug.WriteLine($"Attempted to update tile out of bounds at ({x}, {y})");
-            }
         }
 
         private void InitializeStaticTrees()
@@ -1449,35 +1324,17 @@ namespace ZooTycoonManager
         }
         public void ShowSubMenu(string type)
         {
-            if ((type == "Buildings" && _buildingsMenu.IsVisible) ||
-                (type == "Habitats" && _habitatMenu.IsVisible) ||
-                (type == "Animals" && _animalMenu.IsVisible) ||
-                (type == "Zookeepers" && _zookeeperMenu.IsVisible))
-            {
-                _buildingsMenu.IsVisible = false;
-                _habitatMenu.IsVisible = false;
-                _animalMenu.IsVisible = false;
-                _zookeeperMenu.IsVisible = false;
-                return;
-            }
-
-            _buildingsMenu.IsVisible = false;
-            _habitatMenu.IsVisible = false;
-            _animalMenu.IsVisible = false;
-            _zookeeperMenu.IsVisible = false;
-
             switch (type)
             {
-                case "Buildings": _buildingsMenu.IsVisible = true; break;
-                case "Habitats": _habitatMenu.IsVisible = true; break;
-                case "Animals": _animalMenu.IsVisible = true; break;
-                case "Zookeepers": _zookeeperMenu.IsVisible = true; break;
+                case "Buildings": _buildingsMenu.IsActive = true; break;
+                case "Habitats": _habitatMenu.IsActive = true; break;
+                case "Animals": _animalMenu.IsActive = true; break;
+                case "Zookeepers": _zookeeperMenu.IsActive = true; break;
             }
-
         }
         public void StartHabitatPlacement(string size)
         {
-            HideAllMenus();
+            HideAllPlacementMenus();
 
             if (size == "Small - 5.000")
             {
@@ -1496,18 +1353,18 @@ namespace ZooTycoonManager
             }
         }
 
-        public void HideAllMenus()
+        public void HideAllPlacementMenus()
         {
-            if (_shopWindow != null) _shopWindow.IsVisible = false;
-            if (_buildingsMenu != null) _buildingsMenu.IsVisible = false;
-            if (_habitatMenu != null) _habitatMenu.IsVisible = false;
-            if (_animalMenu != null) _animalMenu.IsVisible = false;
-            if (_zookeeperMenu != null) _zookeeperMenu.IsVisible = false;
+            _shopWindow.IsActive = false;
+            _buildingsMenu.IsActive = false;
+            _habitatMenu.IsActive = false;
+            _animalMenu.IsActive = false;
+            _zookeeperMenu.IsActive = false;
         }
 
         public void StartShopPlacement(string shopType)
         {
-            HideAllMenus();
+            HideAllPlacementMenus();
 
             if (shopType == "Shop - 1.000")
             {
@@ -1518,74 +1375,32 @@ namespace ZooTycoonManager
         public void ToggleTilePlacementMode()
         {
             _isPlacingRoadModeActive = !_isPlacingRoadModeActive;
-            _buildingsMenu.IsVisible = false;
-            _habitatMenu.IsVisible = false;
-            _animalMenu.IsVisible = false;
-            _zookeeperMenu.IsVisible = false;
+            //_buildingsMenu.IsVisible = false;
+            //_habitatMenu.IsVisible = false;
+            //_animalMenu.IsVisible = false;
+            //_zookeeperMenu.IsVisible = false;
         }
         public void StartAnimalPlacement(string animalType)
         {
-            _buildingsMenu.IsVisible = false;
-            _habitatMenu.IsVisible = false;
-            _animalMenu.IsVisible = false;
-            _zookeeperMenu.IsVisible = false;
+            HideAllPlacementMenus();
 
-            //int speciesIdToPlace = DatabaseManager.Instance.GetSpeciesIdByName(animalType);
-            //if (speciesIdToPlace == -1) 
-            //{
-            //    Debug.WriteLine($"Animal placement failed: Species '{animalType}' not found in database.");
-            //    _currentPlacement = PlacementMode.None; 
-            //    return; 
-            //}           
-
-            if (animalType == "Buffalo - 1.000") 
+            var parts = animalType.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2 && Enum.TryParse<AnimalTypes>(parts[0], true, out var type) && int.TryParse(parts[1].Replace(".", ""), out var cost))
             {
-                _currentPlacement = PlacementMode.PlaceAnimal_Buffalo;
+                _currentPlacement = PlacementMode.PlaceAnimal;
+                _animalTypeToPlace = type;
+                _animalCostToPlace = cost;
+                Debug.WriteLine($"Placement mode: {type} activated");
             }
-            if (animalType == "Kangaroo - 2.500") 
+            else
             {
-                _currentPlacement = PlacementMode.PlaceAnimal_Kangaroo;
-            }
-            if (animalType == "Polarbear - 10.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Polarbear;
-            }
-            if (animalType == "Bear - 9.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Bear;
-            }
-            if (animalType == "Chimpanze - 2.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Chimpanze;
-            }
-            if (animalType == "Elephant - 8.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Elephant;
-            }
-            if (animalType == "Orangutan - 2.500") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Orangutan;
-            }
-            if (animalType == "Turtle - 5.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Turtle;
-            }
-            if (animalType == "Wolf - 4.000") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Wolf;
-            }
-            if (animalType == "Camel - 2.500") 
-            {
-                _currentPlacement = PlacementMode.PlaceAnimal_Camel;
+                Debug.WriteLine($"Could not parse animal placement string: {animalType}");
             }
         }
 
         public void StartZookeeperPlacement(string name)
         {
-            _buildingsMenu.IsVisible = false;
-            _habitatMenu.IsVisible = false;
-            _animalMenu.IsVisible = false;
-            _zookeeperMenu.IsVisible = false;
+            HideAllPlacementMenus();
 
             if (name == "Zookeeper - 5.000")
             {
@@ -1595,21 +1410,22 @@ namespace ZooTycoonManager
         }
         public void StartTreePlacement()
         {
-            HideAllMenus();
+            HideAllPlacementMenus();
             _currentPlacement = PlacementMode.PlaceTree;
             Console.WriteLine("Placement mode: Tree activated");
         }
 
         public void StartWaterholePlacement()
         {
-            HideAllMenus();
+            HideAllPlacementMenus();
             _currentPlacement = PlacementMode.PlaceWaterhole;
             Console.WriteLine("Placement mode: Waterhole activated");
         }
 
-        public void Instantiate(GameObject gameObject)
+        public GameObject Instantiate(GameObject gameObject)
         {
             gameObjects.Add(gameObject);
+            return gameObject;
         }
     }
 }

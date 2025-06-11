@@ -1,6 +1,6 @@
-using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Globalization;
 using ZooTycoonManager.Interfaces;
 
 namespace ZooTycoonManager.UI
@@ -54,6 +54,6 @@ namespace ZooTycoonManager.UI
             }
         }
     }
-        
-    
-} 
+
+
+}

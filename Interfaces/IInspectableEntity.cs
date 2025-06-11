@@ -9,4 +9,4 @@ namespace ZooTycoonManager.Interfaces
         int SpeciesId { get; }
         bool IsSelected { get; set; }
     }
-} 
+}

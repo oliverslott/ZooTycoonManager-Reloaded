@@ -1,432 +1,432 @@
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Content;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using Microsoft.Data.Sqlite;
-using System;
-using ZooTycoonManager.Interfaces;
+//using Microsoft.Xna.Framework;
+//using Microsoft.Xna.Framework.Graphics;
+//using Microsoft.Xna.Framework.Content;
+//using System.Collections.Generic;
+//using System.Diagnostics;
+//using System.Linq;
+//using System.Threading;
+//using Microsoft.Data.Sqlite;
+//using System;
+//using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager.GameObjects
-{
-    public enum HabitatSizeType
-    {
-        Small,
-        Medium,
-        Large
-    }
+//namespace ZooTycoonManager.GameObjects
+//{
+//    public enum HabitatSizeType
+//    {
+//        Small,
+//        Medium,
+//        Large
+//    }
 
-    public class Habitat: GameObject, ISaveable, ILoadable
-    {
-        private const int MAX_VISITORS = 3;
-        private const float FENCE_DRAW_SCALE = 2.67f;
+//    public class Habitat: GameObject, ISaveable, ILoadable
+//    {
+//        private const int MAX_VISITORS = 3;
+//        private const float FENCE_DRAW_SCALE = 2.67f;
 
-        private Vector2 centerPosition;
-        private int width;
-        private int height;
-        private List<Vector2> fencePositions;
-        private List<Animal> animals;
-        private HashSet<Vector2> fenceTileCoordinates;
-        private SemaphoreSlim visitorSemaphore;
-        private HashSet<Visitor> currentVisitors;
-        private List<Zookeeper> zookeepers;
-        
-        //Database
-        public int HabitatId { get; set; }
-        public int MaxAnimals { get; set; }
-        public string Name { get; set; }
-        public string Type { get; set; }
-        private int positionX;
-        private int positionY;
+//        private Vector2 centerPosition;
+//        private int width;
+//        private int height;
+//        private List<Vector2> fencePositions;
+//        private List<Animal> animals;
+//        private HashSet<Vector2> fenceTileCoordinates;
+//        private SemaphoreSlim visitorSemaphore;
+//        private HashSet<Visitor> currentVisitors;
+//        private List<Zookeeper> zookeepers;
 
-        public HabitatSizeType CurrentSizeType { get; private set; }
+//        //Database
+//        public int HabitatId { get; set; }
+//        public int MaxAnimals { get; set; }
+//        public string Name { get; set; }
+//        public string Type { get; set; }
+//        private int positionX;
+//        private int positionY;
 
-        public int MaxAnimalsBeforeStress
-        {
-            get
-            {
-                switch (CurrentSizeType)
-                {
-                    case HabitatSizeType.Small: return 3;
-                    case HabitatSizeType.Medium: return 5;
-                    case HabitatSizeType.Large: return 8;
-                    default: return 5;
-                }
-            }
-        }
+//        public HabitatSizeType CurrentSizeType { get; private set; }
 
-        public Vector2 CenterPosition 
-        { 
-            get => centerPosition;
-            private set
-            {
-                centerPosition = value;
-                Vector2 tilePos = GameWorld.PixelToTile(value);
-                positionX = (int)tilePos.X;
-                positionY = (int)tilePos.Y;
-            }
-        }
+//        public int MaxAnimalsBeforeStress
+//        {
+//            get
+//            {
+//                switch (CurrentSizeType)
+//                {
+//                    case HabitatSizeType.Small: return 3;
+//                    case HabitatSizeType.Medium: return 5;
+//                    case HabitatSizeType.Large: return 8;
+//                    default: return 5;
+//                }
+//            }
+//        }
 
-        public int PositionX => positionX;
-        public int PositionY => positionY;
+//        public Vector2 CenterPosition 
+//        { 
+//            get => centerPosition;
+//            private set
+//            {
+//                centerPosition = value;
+//                Vector2 tilePos = GameWorld.PixelToTile(value);
+//                positionX = (int)tilePos.X;
+//                positionY = (int)tilePos.Y;
+//            }
+//        }
 
-        public int GetEnclosureRadius()
-        {
-            switch (CurrentSizeType)
-            {
-                case HabitatSizeType.Small: return 2;
-                case HabitatSizeType.Medium: return 4;
-                case HabitatSizeType.Large: return 6;
-                default: return 4;
-            }
-        }
+//        public int PositionX => positionX;
+//        public int PositionY => positionY;
 
-        public Habitat(Vector2 centerPosition, HabitatSizeType sizeType, int habitatId)
-        {
-            animals = new List<Animal>();
-            zookeepers = new List<Zookeeper>();
-            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
-            currentVisitors = new HashSet<Visitor>();
-            fencePositions = new List<Vector2>();
-            fenceTileCoordinates = new HashSet<Vector2>();
+//        public int GetEnclosureRadius()
+//        {
+//            switch (CurrentSizeType)
+//            {
+//                case HabitatSizeType.Small: return 2;
+//                case HabitatSizeType.Medium: return 4;
+//                case HabitatSizeType.Large: return 6;
+//                default: return 4;
+//            }
+//        }
 
-            HabitatId = habitatId;
-            CurrentSizeType = sizeType;
-            
-            width = GetEnclosureRadius() * 2 + 1;
-            height = GetEnclosureRadius() * 2 + 1;
-            
-            MaxAnimals = 10;
-            Name = $"{sizeType} Habitat";
-            Type = "Normal";
+//        public Habitat(Vector2 centerPosition, HabitatSizeType sizeType, int habitatId)
+//        {
+//            animals = new List<Animal>();
+//            zookeepers = new List<Zookeeper>();
+//            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+//            currentVisitors = new HashSet<Visitor>();
+//            fencePositions = new List<Vector2>();
+//            fenceTileCoordinates = new HashSet<Vector2>();
 
-            CenterPosition = centerPosition;
+//            HabitatId = habitatId;
+//            CurrentSizeType = sizeType;
 
-            PlaceEnclosure(CenterPosition);
-        }
+//            width = GetEnclosureRadius() * 2 + 1;
+//            height = GetEnclosureRadius() * 2 + 1;
 
-        public Habitat()
-        {
-            animals = new List<Animal>();
-            zookeepers = new List<Zookeeper>();
-            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
-            currentVisitors = new HashSet<Visitor>();
-            fencePositions = new List<Vector2>();
-            fenceTileCoordinates = new HashSet<Vector2>();
-        }
+//            MaxAnimals = 10;
+//            Name = $"{sizeType} Habitat";
+//            Type = "Normal";
 
-        public void AddFencePosition(Vector2 position)
-        {
-            fencePositions.Add(position);
-        }
+//            CenterPosition = centerPosition;
 
-        public void AddAnimal(Animal animal)
-        {
-            animals.Add(animal);
-        }
+//            PlaceEnclosure(CenterPosition);
+//        }
 
-        public void AddZookeeper(Zookeeper zookeeper)
-        {
-            zookeepers.Add(zookeeper);
-        }
+//        public Habitat()
+//        {
+//            animals = new List<Animal>();
+//            zookeepers = new List<Zookeeper>();
+//            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+//            currentVisitors = new HashSet<Visitor>();
+//            fencePositions = new List<Vector2>();
+//            fenceTileCoordinates = new HashSet<Vector2>();
+//        }
 
-        public bool ContainsPosition(Vector2 position)
-        {
-            Vector2 tilePos = GameWorld.PixelToTile(position);
-            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
+//        public void AddFencePosition(Vector2 position)
+//        {
+//            fencePositions.Add(position);
+//        }
 
-            int halfWidth = width / 2;
-            int halfHeight = height / 2;
+//        public void AddAnimal(Animal animal)
+//        {
+//            animals.Add(animal);
+//        }
 
-            return tilePos.X >= centerTile.X - halfWidth &&
-                   tilePos.X <= centerTile.X + halfWidth &&
-                   tilePos.Y >= centerTile.Y - halfHeight &&
-                   tilePos.Y <= centerTile.Y + halfHeight;
-        }
+//        public void AddZookeeper(Zookeeper zookeeper)
+//        {
+//            zookeepers.Add(zookeeper);
+//        }
 
-        public List<Vector2> GetFencePositions()
-        {
-            return fencePositions;
-        }
+//        public bool ContainsPosition(Vector2 position)
+//        {
+//            Vector2 tilePos = GameWorld.PixelToTile(position);
+//            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
 
-        public List<Animal> GetAnimals()
-        {
-            return animals;
-        }
+//            int halfWidth = width / 2;
+//            int halfHeight = height / 2;
 
-        public List<Zookeeper> GetZookeepers()
-        {
-            return zookeepers; 
-        }
+//            return tilePos.X >= centerTile.X - halfWidth &&
+//                   tilePos.X <= centerTile.X + halfWidth &&
+//                   tilePos.Y >= centerTile.Y - halfHeight &&
+//                   tilePos.Y <= centerTile.Y + halfHeight;
+//        }
 
-        public Vector2 GetCenterPosition()
-        {
-            return CenterPosition;
-        }
+//        public List<Vector2> GetFencePositions()
+//        {
+//            return fencePositions;
+//        }
 
-        public int GetWidth()
-        {
-            return width;
-        }
+//        public List<Animal> GetAnimals()
+//        {
+//            return animals;
+//        }
 
-        public int GetHeight()
-        {
-            return height;
-        }
+//        public List<Zookeeper> GetZookeepers()
+//        {
+//            return zookeepers; 
+//        }
 
-        public void PlaceEnclosure(Vector2 centerPixelPosition)
-        {            
-            CenterPosition = centerPixelPosition;
-            fencePositions.Clear(); 
-            fenceTileCoordinates.Clear(); 
-            
-            Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
+//        public Vector2 GetCenterPosition()
+//        {
+//            return CenterPosition;
+//        }
 
-            int radius = GetEnclosureRadius();
-            int startX = (int)centerTile.X - radius;
-            int startY = (int)centerTile.Y - radius;
-            int endX = (int)centerTile.X + radius;
-            int endY = (int)centerTile.Y + radius;
+//        public int GetWidth()
+//        {
+//            return width;
+//        }
 
-            for (int x = startX; x <= endX; x++)
-            {
-                PlaceFenceTile(new Vector2(x, startY));
-                PlaceFenceTile(new Vector2(x, endY)); 
-            }
+//        public int GetHeight()
+//        {
+//            return height;
+//        }
 
-            for (int y = startY + 1; y < endY; y++)
-            {
-                PlaceFenceTile(new Vector2(startX, y));
-                PlaceFenceTile(new Vector2(endX, y)); 
-            }
+//        public void PlaceEnclosure(Vector2 centerPixelPosition)
+//        {            
+//            CenterPosition = centerPixelPosition;
+//            fencePositions.Clear(); 
+//            fenceTileCoordinates.Clear(); 
 
-            for (int x = startX + 1; x < endX; x++)
-            {
-                for (int y = startY + 1; y < endY; y++)
-                {
-                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
-                    {
-                        GameWorld.Instance.WalkableMap[x, y] = true;
-                    }
-                }
-            }
-        }
+//            Vector2 centerTile = GameWorld.PixelToTile(centerPixelPosition);
 
-        public void RemoveEnclosure()
-        {
-            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
-            int radius = GetEnclosureRadius();
-            int startX = (int)centerTile.X - radius;
-            int startY = (int)centerTile.Y - radius;
-            int endX = (int)centerTile.X + radius;
-            int endY = (int)centerTile.Y + radius;
+//            int radius = GetEnclosureRadius();
+//            int startX = (int)centerTile.X - radius;
+//            int startY = (int)centerTile.Y - radius;
+//            int endX = (int)centerTile.X + radius;
+//            int endY = (int)centerTile.Y + radius;
 
-            for (int x = startX; x <= endX; x++)
-            {
-                for (int y = startY; y <= endY; y++)
-                {
-                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
-                    {
-                        GameWorld.Instance.WalkableMap[x, y] = GameWorld.Instance.GetOriginalWalkableState(x, y);
-                    }
-                }
-            }
+//            for (int x = startX; x <= endX; x++)
+//            {
+//                PlaceFenceTile(new Vector2(x, startY));
+//                PlaceFenceTile(new Vector2(x, endY)); 
+//            }
 
-            fencePositions.Clear();
-            fenceTileCoordinates.Clear();
-        }
+//            for (int y = startY + 1; y < endY; y++)
+//            {
+//                PlaceFenceTile(new Vector2(startX, y));
+//                PlaceFenceTile(new Vector2(endX, y)); 
+//            }
 
-        private void PlaceFenceTile(Vector2 tilePos)
-        {
-            if (tilePos.X < 0 || tilePos.X >= GameWorld.GRID_WIDTH ||
-                tilePos.Y < 0 || tilePos.Y >= GameWorld.GRID_HEIGHT)
-            {
-                Debug.WriteLine($"Skipping out of bounds fence at: {tilePos}");
-                return;
-            }
+//            for (int x = startX + 1; x < endX; x++)
+//            {
+//                for (int y = startY + 1; y < endY; y++)
+//                {
+//                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
+//                    {
+//                        GameWorld.Instance.WalkableMap[x, y] = true;
+//                    }
+//                }
+//            }
+//        }
 
-            GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
-            AddFencePosition(tilePos);
-            fenceTileCoordinates.Add(tilePos);
-        }
+//        public void RemoveEnclosure()
+//        {
+//            Vector2 centerTile = GameWorld.PixelToTile(CenterPosition);
+//            int radius = GetEnclosureRadius();
+//            int startX = (int)centerTile.X - radius;
+//            int startY = (int)centerTile.Y - radius;
+//            int endX = (int)centerTile.X + radius;
+//            int endY = (int)centerTile.Y + radius;
 
-        public bool SpawnAnimal(Vector2 pixelPosition)
-        {
-            Vector2 tilePos = GameWorld.PixelToTile(pixelPosition);
-            decimal animalCost = 1000;
+//            for (int x = startX; x <= endX; x++)
+//            {
+//                for (int y = startY; y <= endY; y++)
+//                {
+//                    if (x >= 0 && x < GameWorld.GRID_WIDTH && y >= 0 && y < GameWorld.GRID_HEIGHT)
+//                    {
+//                        GameWorld.Instance.WalkableMap[x, y] = GameWorld.Instance.GetOriginalWalkableState(x, y);
+//                    }
+//                }
+//            }
 
-            if (tilePos.X >= 0 && tilePos.X < GameWorld.GRID_WIDTH && 
-                tilePos.Y >= 0 && tilePos.Y < GameWorld.GRID_HEIGHT &&
-                GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y])
-            {
-                if (MoneyManager.Instance.SpendMoney(animalCost))
-                {
-                    Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
-                    
-                    Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
-                    newAnimal.SetPosition(spawnPos);
-                    newAnimal.LoadContent();
-                    newAnimal.SetHabitat(this);
-                    AddAnimal(newAnimal);
-                    return true;
-                }
-                else
-                {
-                    Debug.WriteLine("Not enough money to spawn an animal.");
-                    return false;
-                }
-            }
-            return false;
-        }
+//            fencePositions.Clear();
+//            fenceTileCoordinates.Clear();
+//        }
 
-        public List<Vector2> GetWalkableVisitingSpots()
-        {
-            HashSet<Vector2> visitingSpots = new HashSet<Vector2>();
-            if (fencePositions == null || fencePositions.Count == 0)
-            {
-                return visitingSpots.ToList();
-            }
+//        private void PlaceFenceTile(Vector2 tilePos)
+//        {
+//            if (tilePos.X < 0 || tilePos.X >= GameWorld.GRID_WIDTH ||
+//                tilePos.Y < 0 || tilePos.Y >= GameWorld.GRID_HEIGHT)
+//            {
+//                Debug.WriteLine($"Skipping out of bounds fence at: {tilePos}");
+//                return;
+//            }
 
-            foreach (Vector2 fenceTilePos in fencePositions)
-            {
-                int[] dx = { 0, 0, 1, -1 };
-                int[] dy = { 1, -1, 0, 0 };
+//            GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y] = false;
+//            AddFencePosition(tilePos);
+//            fenceTileCoordinates.Add(tilePos);
+//        }
 
-                for (int i = 0; i < 4; i++)
-                {
-                    int adjacentTileX = (int)fenceTilePos.X + dx[i];
-                    int adjacentTileY = (int)fenceTilePos.Y + dy[i];
+//        public bool SpawnAnimal(Vector2 pixelPosition)
+//        {
+//            Vector2 tilePos = GameWorld.PixelToTile(pixelPosition);
+//            decimal animalCost = 1000;
 
-                    if (adjacentTileX >= 0 && adjacentTileX < GameWorld.GRID_WIDTH &&
-                        adjacentTileY >= 0 && adjacentTileY < GameWorld.GRID_HEIGHT)
-                    {
-                        Vector2 adjacentTile = new Vector2(adjacentTileX, adjacentTileY);
-                        if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY] &&
-                            !fenceTileCoordinates.Contains(adjacentTile) && 
-                            !ContainsPosition(GameWorld.TileToPixel(adjacentTile)))
-                        {
-                            visitingSpots.Add(adjacentTile);
-                        }
-                    }
-                }
-            }
-            return visitingSpots.ToList();
-        }
+//            if (tilePos.X >= 0 && tilePos.X < GameWorld.GRID_WIDTH && 
+//                tilePos.Y >= 0 && tilePos.Y < GameWorld.GRID_HEIGHT &&
+//                GameWorld.Instance.WalkableMap[(int)tilePos.X, (int)tilePos.Y])
+//            {
+//                if (MoneyManager.Instance.SpendMoney(animalCost))
+//                {
+//                    Vector2 spawnPos = GameWorld.TileToPixel(tilePos);
 
-        public bool TryEnterHabitatSync(Visitor visitor)
-        {
-            if (visitorSemaphore.Wait(0))
-            {
-                lock (currentVisitors)
-                {
-                    currentVisitors.Add(visitor);
-                }
-                return true;
-            }
-            return false;
-        }
+//                    Animal newAnimal = new Animal(GameWorld.Instance.GetNextAnimalId());
+//                    newAnimal.SetPosition(spawnPos);
+//                    newAnimal.LoadContent();
+//                    newAnimal.SetHabitat(this);
+//                    AddAnimal(newAnimal);
+//                    return true;
+//                }
+//                else
+//                {
+//                    Debug.WriteLine("Not enough money to spawn an animal.");
+//                    return false;
+//                }
+//            }
+//            return false;
+//        }
 
-        public void LeaveHabitat(Visitor visitor)
-        {
-            lock (currentVisitors)
-            {
-                if (currentVisitors.Remove(visitor))
-                {
-                    visitorSemaphore.Release();
-                }
-            }
-        }
+//        public List<Vector2> GetWalkableVisitingSpots()
+//        {
+//            HashSet<Vector2> visitingSpots = new HashSet<Vector2>();
+//            if (fencePositions == null || fencePositions.Count == 0)
+//            {
+//                return visitingSpots.ToList();
+//            }
 
-        public int GetCurrentVisitorCount()
-        {
-            lock (currentVisitors)
-            {
-                return currentVisitors.Count;
-            }
-        }
+//            foreach (Vector2 fenceTilePos in fencePositions)
+//            {
+//                int[] dx = { 0, 0, 1, -1 };
+//                int[] dy = { 1, -1, 0, 0 };
 
-        public void Save(SqliteTransaction transaction)
-        {
-            var command = transaction.Connection.CreateCommand();
-            command.Transaction = transaction;
+//                for (int i = 0; i < 4; i++)
+//                {
+//                    int adjacentTileX = (int)fenceTilePos.X + dx[i];
+//                    int adjacentTileY = (int)fenceTilePos.Y + dy[i];
 
-            command.Parameters.AddWithValue("$habitat_id", HabitatId);
-            command.Parameters.AddWithValue("$size", Size);
-            command.Parameters.AddWithValue("$max_animals", MaxAnimals);
-            command.Parameters.AddWithValue("$name", Name);
-            command.Parameters.AddWithValue("$type", Type);
-            command.Parameters.AddWithValue("$position_x", PositionX);
-            command.Parameters.AddWithValue("$position_y", PositionY);
+//                    if (adjacentTileX >= 0 && adjacentTileX < GameWorld.GRID_WIDTH &&
+//                        adjacentTileY >= 0 && adjacentTileY < GameWorld.GRID_HEIGHT)
+//                    {
+//                        Vector2 adjacentTile = new Vector2(adjacentTileX, adjacentTileY);
+//                        if (GameWorld.Instance.WalkableMap[adjacentTileX, adjacentTileY] &&
+//                            !fenceTileCoordinates.Contains(adjacentTile) && 
+//                            !ContainsPosition(GameWorld.TileToPixel(adjacentTile)))
+//                        {
+//                            visitingSpots.Add(adjacentTile);
+//                        }
+//                    }
+//                }
+//            }
+//            return visitingSpots.ToList();
+//        }
 
-            try
-            {
-                command.CommandText = @"
-                    INSERT INTO Habitat (habitat_id, size, max_animals, name, type, position_x, position_y)
-                    VALUES ($habitat_id, $size, $max_animals, $name, $type, $position_x, $position_y);
-                ";
-                command.ExecuteNonQuery();
-                Debug.WriteLine($"Inserted Habitat: ID {HabitatId}");
-            }
-            catch (SqliteException ex) when (ex.SqliteErrorCode == 19)
-            {
-                command.CommandText = @"
-                    UPDATE Habitat 
-                    SET size = $size, 
-                        max_animals = $max_animals, 
-                        name = $name, 
-                        type = $type, 
-                        position_x = $position_x, 
-                        position_y = $position_y
-                    WHERE habitat_id = $habitat_id;
-                ";
-                command.ExecuteNonQuery();
-                Debug.WriteLine($"Updated Habitat: ID {HabitatId}");
-            }
-        }
+//        public bool TryEnterHabitatSync(Visitor visitor)
+//        {
+//            if (visitorSemaphore.Wait(0))
+//            {
+//                lock (currentVisitors)
+//                {
+//                    currentVisitors.Add(visitor);
+//                }
+//                return true;
+//            }
+//            return false;
+//        }
 
-        public void Load(SqliteDataReader reader)
-        {
-            HabitatId = reader.GetInt32(0);
-            CurrentSizeType = (HabitatSizeType)reader.GetInt32(1);
-            MaxAnimals = reader.GetInt32(2);
-            Name = reader.GetString(3);
-            Type = reader.GetString(4);
-            int posX = reader.GetInt32(5);
-            int posY = reader.GetInt32(6);
+//        public void LeaveHabitat(Visitor visitor)
+//        {
+//            lock (currentVisitors)
+//            {
+//                if (currentVisitors.Remove(visitor))
+//                {
+//                    visitorSemaphore.Release();
+//                }
+//            }
+//        }
 
-            Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
-            CenterPosition = pixelPos;
-            
-            width = GetEnclosureRadius() * 2 + 1;
-            height = GetEnclosureRadius() * 2 + 1;
-            fencePositions = new List<Vector2>();
-            animals = new List<Animal>();
-            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
-            currentVisitors = new HashSet<Visitor>();
+//        public int GetCurrentVisitorCount()
+//        {
+//            lock (currentVisitors)
+//            {
+//                return currentVisitors.Count;
+//            }
+//        }
 
-            PlaceEnclosure(pixelPos);
-        }
+//        public void Save(SqliteTransaction transaction)
+//        {
+//            var command = transaction.Connection.CreateCommand();
+//            command.Transaction = transaction;
 
-        public override void Draw(SpriteBatch spriteBatch)
-        {
-            FenceRenderer.Draw(spriteBatch, fencePositions, fenceTileCoordinates, FENCE_DRAW_SCALE);
-        }
+//            command.Parameters.AddWithValue("$habitat_id", HabitatId);
+//            command.Parameters.AddWithValue("$size", Size);
+//            command.Parameters.AddWithValue("$max_animals", MaxAnimals);
+//            command.Parameters.AddWithValue("$name", Name);
+//            command.Parameters.AddWithValue("$type", Type);
+//            command.Parameters.AddWithValue("$position_x", PositionX);
+//            command.Parameters.AddWithValue("$position_y", PositionY);
 
-        public override void Update()
-        {
+//            try
+//            {
+//                command.CommandText = @"
+//                    INSERT INTO Habitat (habitat_id, size, max_animals, name, type, position_x, position_y)
+//                    VALUES ($habitat_id, $size, $max_animals, $name, $type, $position_x, $position_y);
+//                ";
+//                command.ExecuteNonQuery();
+//                Debug.WriteLine($"Inserted Habitat: ID {HabitatId}");
+//            }
+//            catch (SqliteException ex) when (ex.SqliteErrorCode == 19)
+//            {
+//                command.CommandText = @"
+//                    UPDATE Habitat 
+//                    SET size = $size, 
+//                        max_animals = $max_animals, 
+//                        name = $name, 
+//                        type = $type, 
+//                        position_x = $position_x, 
+//                        position_y = $position_y
+//                    WHERE habitat_id = $habitat_id;
+//                ";
+//                command.ExecuteNonQuery();
+//                Debug.WriteLine($"Updated Habitat: ID {HabitatId}");
+//            }
+//        }
 
-        }
+//        public void Load(SqliteDataReader reader)
+//        {
+//            HabitatId = reader.GetInt32(0);
+//            CurrentSizeType = (HabitatSizeType)reader.GetInt32(1);
+//            MaxAnimals = reader.GetInt32(2);
+//            Name = reader.GetString(3);
+//            Type = reader.GetString(4);
+//            int posX = reader.GetInt32(5);
+//            int posY = reader.GetInt32(6);
 
-        public override void LoadContent()
-        {
+//            Vector2 pixelPos = GameWorld.TileToPixel(new Vector2(posX, posY));
+//            CenterPosition = pixelPos;
 
-        }
+//            width = GetEnclosureRadius() * 2 + 1;
+//            height = GetEnclosureRadius() * 2 + 1;
+//            fencePositions = new List<Vector2>();
+//            animals = new List<Animal>();
+//            visitorSemaphore = new SemaphoreSlim(MAX_VISITORS);
+//            currentVisitors = new HashSet<Visitor>();
 
-        public int Size
-        {
-            get { return (int)CurrentSizeType; }
-        }
-    }
-} 
+//            PlaceEnclosure(pixelPos);
+//        }
+
+//        public override void Draw(SpriteBatch spriteBatch)
+//        {
+//            FenceRenderer.Draw(spriteBatch, fencePositions, fenceTileCoordinates, FENCE_DRAW_SCALE);
+//        }
+
+//        public override void Update()
+//        {
+
+//        }
+
+//        public override void LoadContent()
+//        {
+
+//        }
+
+//        public int Size
+//        {
+//            get { return (int)CurrentSizeType; }
+//        }
+//    }
+//} 

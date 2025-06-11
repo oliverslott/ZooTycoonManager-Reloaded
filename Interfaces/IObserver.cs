@@ -4,4 +4,4 @@ namespace ZooTycoonManager.Interfaces
     {
         void Update(decimal newMoneyAmount);
     }
-} 
+}

@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {
@@ -10,7 +9,7 @@ namespace ZooTycoonManager.Commands
         private Vector2 _position;
         private int _widthInTiles;
         private int _heightInTiles;
-        private Shop _placedShop;
+        private GameObject _placedShop;
         private int _cost;
 
         public PlaceShopCommand(Vector2 position, int widthInTiles, int heightInTiles, int cost = 0)
@@ -56,29 +55,29 @@ namespace ZooTycoonManager.Commands
                     return false;
                 }
 
-                foreach (var existingShop in GameWorld.Instance.GetShops())
-                {
-                    Rectangle existingShopTileBounds = new Rectangle(existingShop.PositionX, existingShop.PositionY, existingShop.WidthInTiles, existingShop.HeightInTiles);
-                    if (existingShopTileBounds.Contains(currentTileX, currentTileY))
-                    {
-                        Debug.WriteLine($"PlaceShopCommand: Attempted to place shop on an existing shop at tile ({currentTileX}, {currentTileY}). Placement failed.");
-                        return false;
-                    }
-                }
+                //foreach (var existingShop in GameWorld.Instance.GetShops())
+                //{
+                //    Rectangle existingShopTileBounds = new Rectangle(existingShop.PositionX, existingShop.PositionY, existingShop.WidthInTiles, existingShop.HeightInTiles);
+                //    if (existingShopTileBounds.Contains(currentTileX, currentTileY))
+                //    {
+                //        Debug.WriteLine($"PlaceShopCommand: Attempted to place shop on an existing shop at tile ({currentTileX}, {currentTileY}). Placement failed.");
+                //        return false;
+                //    }
+                //}
 
                 foreach (var habitat in GameWorld.Instance.GetHabitats())
                 {
-                    if (habitat.GetFencePositions().Contains(tile))
-                    {
-                        Debug.WriteLine($"PlaceShopCommand: Attempted to place shop on a habitat fence at tile ({currentTileX}, {currentTileY}). Placement failed.");
-                        return false;
-                    }
-                    Vector2 tileCenterPixel = GameWorld.TileToPixel(tile);
-                    if (habitat.ContainsPosition(tileCenterPixel))
-                    {
-                        Debug.WriteLine($"PlaceShopCommand: Attempted to place shop inside a habitat area at tile ({currentTileX}, {currentTileY}). Placement failed.");
-                        return false;
-                    }
+                    //if (habitat.GetFencePositions().Contains(tile))
+                    //{
+                    //    Debug.WriteLine($"PlaceShopCommand: Attempted to place shop on a habitat fence at tile ({currentTileX}, {currentTileY}). Placement failed.");
+                    //    return false;
+                    //}
+                    //Vector2 tileCenterPixel = GameWorld.TileToPixel(tile);
+                    //if (habitat.ContainsPosition(tileCenterPixel))
+                    //{
+                    //    Debug.WriteLine($"PlaceShopCommand: Attempted to place shop inside a habitat area at tile ({currentTileX}, {currentTileY}). Placement failed.");
+                    //    return false;
+                    //}
                 }
 
                 if (GameWorld.Instance.map.Tiles[currentTileX, currentTileY].TextureIndex == GameWorld.ROAD_TEXTURE_INDEX)
@@ -95,12 +94,14 @@ namespace ZooTycoonManager.Commands
                 return false;
             }
 
-            _placedShop = new Shop(snappedPixelPosition, _widthInTiles, _heightInTiles, GameWorld.Instance.GetNextShopId(), _cost);
-            _placedShop.LoadContent();
-            
+            //_placedShop = new Shop(snappedPixelPosition, _widthInTiles, _heightInTiles, GameWorld.Instance.GetNextShopId(), _cost);
+            _placedShop = EntityFactory.CreateShop(snappedPixelPosition);
+
+
+            //_placedShop.LoadContent();
+
             GameWorld.Instance.Instantiate(_placedShop);
 
-            Debug.WriteLine($"Executed PlaceShopCommand: Shop {_placedShop.ShopId} at {snappedPixelPosition}, Cost: {_cost}");
             return true;
         }
 
@@ -110,26 +111,26 @@ namespace ZooTycoonManager.Commands
             {
                 GameWorld.Instance.Despawn(_placedShop);
 
-                Vector2 startTile = GameWorld.PixelToTile(_placedShop.Position);
-                for (int x = 0; x < _placedShop.WidthInPixels / GameWorld.TILE_SIZE; x++)
+                Vector2 startTile = GameWorld.PixelToTile(_placedShop.Transform.Position);
+                for (int x = 0; x < 3; x++)
                 {
-                    for (int y = 0; y < _placedShop.HeightInPixels / GameWorld.TILE_SIZE; y++)
+                    for (int y = 0; y < 3; y++)
                     {
                         int tileX = (int)startTile.X + x;
                         int tileY = (int)startTile.Y + y;
                         if (tileX >= 0 && tileX < GameWorld.GRID_WIDTH && tileY >= 0 && tileY < GameWorld.GRID_HEIGHT)
                         {
-                            GameWorld.Instance.WalkableMap[tileX, tileY] = GameWorld.Instance.GetOriginalWalkableState(tileX, tileY);
+                            //GameWorld.Instance.WalkableMap[tileX, tileY] = GameWorld.Instance.GetOriginalWalkableState(tileX, tileY);
                         }
                     }
                 }
 
                 MoneyManager.Instance.AddMoney(_cost);
-                Debug.WriteLine($"Undone PlaceShopCommand: Shop {_placedShop.ShopId} removed. Cost {_cost} refunded.");
+                //Debug.WriteLine($"Undone PlaceShopCommand: Shop {_placedShop.ShopId} removed. Cost {_cost} refunded.");
                 _placedShop = null;
             }
         }
 
         public string Description => $"Place Shop at ({_position.X / GameWorld.TILE_SIZE}, {_position.Y / GameWorld.TILE_SIZE}) for ${_cost}";
     }
-} 
+}

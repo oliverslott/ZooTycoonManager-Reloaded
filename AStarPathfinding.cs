@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ZooTycoonManager
 {
@@ -83,7 +81,7 @@ namespace ZooTycoonManager
             int[] dx = { 0, 0, 1, -1 };
             int[] dy = { 1, -1, 0, 0 };
 
-            for (int i = 0; i < 4; i++) 
+            for (int i = 0; i < 4; i++)
             {
                 int checkX = node.X + dx[i];
                 int checkY = node.Y + dy[i];

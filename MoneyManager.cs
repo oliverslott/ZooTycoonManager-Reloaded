@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using ZooTycoonManager.Interfaces;
 
@@ -41,7 +40,7 @@ namespace ZooTycoonManager
         {
             if (amount < 0)
             {
-                return; 
+                return;
             }
             _currentMoney += amount;
             Notify();
@@ -84,4 +83,4 @@ namespace ZooTycoonManager
             }
         }
     }
-} 
+}

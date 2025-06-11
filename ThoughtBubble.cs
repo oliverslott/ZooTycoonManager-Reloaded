@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace ZooTycoonManager
@@ -21,9 +20,9 @@ namespace ZooTycoonManager
         {
             if (_thoughtBubbleTexture == null || contentTexture == null) return;
 
-            Vector2 thoughtBubblePosition = new Vector2(parentPosition.X, parentPosition.Y - parentSpriteHeight); 
+            Vector2 thoughtBubblePosition = new Vector2(parentPosition.X, parentPosition.Y - parentSpriteHeight);
 
-            spriteBatch.Draw(_thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(_thoughtBubbleTexture.Width / 2, _thoughtBubbleTexture.Height /2), 0.5f, SpriteEffects.None, 0.1f);
+            spriteBatch.Draw(_thoughtBubbleTexture, thoughtBubblePosition, null, Color.White, 0f, new Vector2(_thoughtBubbleTexture.Width / 2, _thoughtBubbleTexture.Height / 2), 0.5f, SpriteEffects.None, 0.1f);
 
             Vector2 contentTexturePosition = new Vector2(thoughtBubblePosition.X, thoughtBubblePosition.Y - 4);
 
@@ -44,4 +43,4 @@ namespace ZooTycoonManager
             spriteBatch.Draw(contentTexture, contentTexturePosition, finalSourceRect, Color.White, 0f, origin, contentScale, SpriteEffects.None, 0.2f);
         }
     }
-} 
+}

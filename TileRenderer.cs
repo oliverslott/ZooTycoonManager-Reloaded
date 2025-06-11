@@ -1,10 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ZooTycoonManager
 {
@@ -28,7 +23,7 @@ namespace ZooTycoonManager
             int endY = map.Height + bufferTiles;
 
             Texture2D grassTexture = tileTextures[0];
-            Texture2D dirtTexture = tileTextures[1]; 
+            Texture2D dirtTexture = tileTextures[1];
 
             for (int x = startX; x < endX; x++)
             {
@@ -45,7 +40,7 @@ namespace ZooTycoonManager
                             Color.White
                         );
                     }
-                    
+
                     else if (x >= 0 && x < map.Width && y >= 0 && y < map.Height)
                     {
                         Tile tile = map.Tiles[x, y];
@@ -56,7 +51,7 @@ namespace ZooTycoonManager
                             Color.White
                         );
                     }
-                    else 
+                    else
                     {
                         spriteBatch.Draw(
                             grassTexture,

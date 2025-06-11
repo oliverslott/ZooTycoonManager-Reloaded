@@ -8,16 +8,15 @@ public class Button
     private Texture2D backgroundTexture;
     private Texture2D iconTexture;
     private Vector2 position;
-    private Rectangle rectangle;
     private Rectangle bounds;
     private SpriteFont font;
-    private Texture2D startGameButtonTexture;
+
+    public Action OnClick { get; set; }
 
     public int GetWidth() => backgroundTexture.Width;
     public int GetHeight() => backgroundTexture.Height;
 
     public string Text { get; set; }
-    public bool IsClicked { get; private set; }
     public Vector2 Position { get; internal set; }
     public object Texture { get; internal set; }
 
@@ -38,25 +37,23 @@ public class Button
 
     public Button(Texture2D startGameButtonTexture)
     {
-        this.startGameButtonTexture = startGameButtonTexture;
     }
 
     public void Update(MouseState current, MouseState previous)
     {
         Point mousePosition = current.Position;
-        IsClicked = false;
 
         if (bounds.Contains(mousePosition) &&
             current.LeftButton == ButtonState.Pressed &&
             previous.LeftButton == ButtonState.Released)
         {
-            IsClicked = true;
+            Click();
         }
     }
 
     public void Draw(SpriteBatch spriteBatch)
     {
-        
+
         spriteBatch.Draw(backgroundTexture, position, Color.White);
         if (iconTexture != null)
         {
@@ -78,5 +75,8 @@ public class Button
         bounds = new Rectangle((int)position.X, (int)position.Y, backgroundTexture.Width, backgroundTexture.Height);
     }
 
-
+    public void Click()
+    {
+        OnClick?.Invoke();
+    }
 }

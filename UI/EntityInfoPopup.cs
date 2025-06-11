@@ -40,9 +40,9 @@ namespace ZooTycoonManager.UI
             const int popupHeight = 226;
 
             _popupRectangle = new Rectangle(
-                _graphicsDevice.Viewport.Width - popupWidth - PADDING, 
+                _graphicsDevice.Viewport.Width - popupWidth - PADDING,
                 _graphicsDevice.Viewport.Height - popupHeight - PADDING,
-                popupWidth, 
+                popupWidth,
                 popupHeight);
 
             _closeButtonRectangle = new Rectangle(
@@ -56,7 +56,7 @@ namespace ZooTycoonManager.UI
         {
             _selectedEntity = entity;
             _isVisible = true;
-            
+
             _popupRectangle.X = _graphicsDevice.Viewport.Width - _popupRectangle.Width - PADDING;
             _popupRectangle.Y = _graphicsDevice.Viewport.Height - _popupRectangle.Height - PADDING;
 
@@ -121,7 +121,7 @@ namespace ZooTycoonManager.UI
             spriteBatch.DrawString(_font, "X", new Vector2(_closeButtonRectangle.X + 5, _closeButtonRectangle.Y + 1), Color.White);
 
             float currentY = _popupRectangle.Y + PADDING;
-            currentY = _popupRectangle.Y + PADDING/2 + CLOSE_BUTTON_SIZE + PADDING;
+            currentY = _popupRectangle.Y + PADDING / 2 + CLOSE_BUTTON_SIZE + PADDING;
 
             float leftX = _popupRectangle.X + PADDING;
 
@@ -141,10 +141,10 @@ namespace ZooTycoonManager.UI
             string hungerLabelText = "Hunger:";
             spriteBatch.DrawString(_font, hungerLabelText, new Vector2(leftX, currentY), Color.White);
             currentY += _font.LineSpacing + LABEL_BAR_SPACING;
-            
+
             float displayedHunger = 100f - _selectedEntity.Hunger;
-            float invertedHungerPercentage = displayedHunger / 100f; 
-            Color hungerColor = Color.Lerp(Color.Red, Color.LimeGreen, invertedHungerPercentage); 
+            float invertedHungerPercentage = displayedHunger / 100f;
+            Color hungerColor = Color.Lerp(Color.Red, Color.LimeGreen, invertedHungerPercentage);
             DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedHunger, 100, hungerColor);
             currentY += PROGRESS_BAR_HEIGHT + ITEM_SPACING;
 
@@ -156,10 +156,10 @@ namespace ZooTycoonManager.UI
 
                 float displayedStress = 100f - stressableEntity.Stress;
                 float displayedStressPercentage = displayedStress / 100f;
-                
+
                 Color stressColor = Color.Lerp(Color.Red, Color.LimeGreen, displayedStressPercentage);
                 DrawProgressBar(spriteBatch, new Vector2(leftX, currentY), displayedStress, 100, stressColor);
             }
         }
     }
-} 
+}

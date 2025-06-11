@@ -8,12 +8,12 @@ namespace ZooTycoonManager
     {
         private static CommandManager _instance;
         private static readonly object _lock = new object();
-        
+
         private readonly Stack<ICommand> _undoStack = new Stack<ICommand>();
         private readonly Stack<ICommand> _redoStack = new Stack<ICommand>();
-        
+
         private const int MAX_UNDO_HISTORY = 50;
-        
+
         public static CommandManager Instance
         {
             get
@@ -31,20 +31,20 @@ namespace ZooTycoonManager
                 return _instance;
             }
         }
-        
+
         private CommandManager() { }
         public void ExecuteCommand(ICommand command)
         {
             try
             {
                 bool success = command.Execute();
-                
+
                 if (success)
                 {
                     _undoStack.Push(command);
-                    
+
                     _redoStack.Clear();
-                    
+
 
                     if (_undoStack.Count > MAX_UNDO_HISTORY)
                     {
@@ -59,7 +59,7 @@ namespace ZooTycoonManager
                             _undoStack.Push(tempStack.Pop());
                         }
                     }
-                    
+
                     Debug.WriteLine($"Executed command: {command.Description}");
                 }
                 else
@@ -80,13 +80,13 @@ namespace ZooTycoonManager
                 Debug.WriteLine("No commands to undo");
                 return false;
             }
-            
+
             try
             {
                 var command = _undoStack.Pop();
                 command.Undo();
                 _redoStack.Push(command);
-                
+
                 Debug.WriteLine($"Undid command: {command.Description}");
                 return true;
             }
@@ -104,12 +104,12 @@ namespace ZooTycoonManager
                 Debug.WriteLine("No commands to redo");
                 return false;
             }
-            
+
             try
             {
                 var command = _redoStack.Pop();
                 bool success = command.Execute();
-                
+
                 if (success)
                 {
                     _undoStack.Push(command);
@@ -131,7 +131,7 @@ namespace ZooTycoonManager
         }
 
         public bool CanUndo => _undoStack.Count > 0;
-        
+
         public bool CanRedo => _redoStack.Count > 0;
 
         public string GetUndoDescription()
@@ -151,4 +151,4 @@ namespace ZooTycoonManager
             Debug.WriteLine("Command history cleared");
         }
     }
-} 
+}

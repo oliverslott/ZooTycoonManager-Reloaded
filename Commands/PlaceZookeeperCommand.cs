@@ -1,11 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZooTycoonManager.GameObjects;
 
 namespace ZooTycoonManager.Commands
 {
@@ -13,8 +7,8 @@ namespace ZooTycoonManager.Commands
     {
         private readonly Vector2 _position;
         private readonly decimal _cost;
-        private Zookeeper _createdZookeeper;
-        private Habitat _targetHabitat;
+        private GameObject _createdZookeeper;
+        private GameObject _targetHabitat;
         private int _createdZookeeperId; // To store the ID for Undo
 
         public string Description => $"Place Zookeeper at ({_position.X:F0}, {_position.Y:F0})";
@@ -28,7 +22,7 @@ namespace ZooTycoonManager.Commands
         public bool Execute()
         {
             // Find the habitat that contains the position
-            _targetHabitat = GameWorld.Instance.GetHabitats().FirstOrDefault(h => h.ContainsPosition(_position));
+            //_targetHabitat = GameWorld.Instance.GetHabitats().FirstOrDefault(h => h.ContainsPosition(_position));
 
             if (_targetHabitat == null)
             {
@@ -59,13 +53,15 @@ namespace ZooTycoonManager.Commands
             string zookeeperName = $"Zookeeper {_createdZookeeperId}";
             int zookeeperUpkeep = 100; // Default upkeep
 
-            _createdZookeeper = new Zookeeper(GameWorld.Instance.VisitorSpawnTileCoordinate, _createdZookeeperId, _targetHabitat, zookeeperName, zookeeperUpkeep);
-            _createdZookeeper.LoadContent();
-            
-            _targetHabitat.AddZookeeper(_createdZookeeper);
+            //_createdZookeeper = new Zookeeper(GameWorld.Instance.VisitorSpawnTileCoordinate, _createdZookeeperId, _targetHabitat, zookeeperName, zookeeperUpkeep);
+            //_createdZookeeper.LoadContent();
+
+            _createdZookeeper = EntityFactory.CreateZookeeper(GameWorld.Instance.VisitorSpawnTileCoordinate);
+
+            //_targetHabitat.AddZookeeper(_createdZookeeper);
             GameWorld.Instance.Instantiate(_createdZookeeper);
 
-            Debug.WriteLine($"Placed zookeeper {_createdZookeeper.Name} (ID: {_createdZookeeperId}) in habitat {_targetHabitat.Name} (spawned at visitor entrance). Cost: ${_cost}");
+            //Debug.WriteLine($"Placed zookeeper {_createdZookeeper.Name} (ID: {_createdZookeeperId}) in habitat {_targetHabitat.Name} (spawned at visitor entrance). Cost: ${_cost}");
             return true;
         }
 
@@ -78,7 +74,7 @@ namespace ZooTycoonManager.Commands
             }
 
             // Remove the zookeeper from the habitat
-            _targetHabitat.GetZookeepers().Remove(_createdZookeeper);
+            //_targetHabitat.GetZookeepers().Remove(_createdZookeeper);
             GameWorld.Instance.Despawn(_createdZookeeper);
 
             // Refund the money

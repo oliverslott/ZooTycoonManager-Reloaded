@@ -4,4 +4,4 @@ namespace ZooTycoonManager.Interfaces
     {
         int Stress { get; }
     }
-} 
+}

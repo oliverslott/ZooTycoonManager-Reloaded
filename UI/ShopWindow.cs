@@ -1,12 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace ZooTycoonManager.UI
@@ -60,13 +55,13 @@ namespace ZooTycoonManager.UI
             foreach (var button in buttons)
             {
                 button.Update(mouse, prevMouse);
-                if (button.IsClicked)
-                {
-                    if (button.Text == "Buildings") GameWorld.Instance.ShowSubMenu("Buildings");
-                    else if (button.Text == "Habitats") GameWorld.Instance.ShowSubMenu("Habitats");
-                    else if (button.Text == "Animals") GameWorld.Instance.ShowSubMenu("Animals");
-                    else if (button.Text == "Zookeepers") GameWorld.Instance.ShowSubMenu("Zookeepers");
-                }
+                //if (button.IsClicked)
+                //{
+                //    if (button.Text == "Buildings") GameWorld.Instance.ShowSubMenu("Buildings");
+                //    else if (button.Text == "Habitats") GameWorld.Instance.ShowSubMenu("Habitats");
+                //    else if (button.Text == "Animals") GameWorld.Instance.ShowSubMenu("Animals");
+                //    else if (button.Text == "Zookeepers") GameWorld.Instance.ShowSubMenu("Zookeepers");
+                //}
             }
         }
 

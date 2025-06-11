@@ -6,4 +6,4 @@ namespace ZooTycoonManager.Interfaces
         void Detach(IObserver observer);
         void Notify();
     }
-} 
+}

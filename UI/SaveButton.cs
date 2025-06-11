@@ -16,7 +16,7 @@ namespace ZooTycoonManager.UI
 
             buttons = new List<Button>();
 
-            string[] buttonTexts = { "Save"};
+            string[] buttonTexts = { "Save" };
 
             int padding = 10;
             int spacing = 10;
@@ -32,7 +32,7 @@ namespace ZooTycoonManager.UI
                 buttons.Add(new Button(buttonTexture, null, buttonPosition, buttonTexts[i], font));
             }
         }
-        
+
 
         public void Update(GameTime gametime, MouseState current, MouseState previous)
         {
@@ -40,13 +40,13 @@ namespace ZooTycoonManager.UI
             {
                 button.Update(current, previous);
 
-                if (button.IsClicked)
-                {
-                    SaveGame();
-                }
+                //if (button.IsClicked)
+                //{
+                //    SaveGame();
+                //}
             }
 
-            
+
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -59,7 +59,7 @@ namespace ZooTycoonManager.UI
 
         private void SaveGame()
         {
-            DatabaseManager.Instance.SaveGame();
+            //DatabaseManager.Instance.SaveGame();
             Debug.WriteLine("Save Game");
         }
     }

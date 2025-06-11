@@ -6,4 +6,4 @@ namespace ZooTycoonManager.Commands
         void Undo();
         string Description { get; }
     }
-} 
+}

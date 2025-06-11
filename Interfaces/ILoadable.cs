@@ -6,4 +6,4 @@ namespace ZooTycoonManager.Interfaces
     {
         void Load(SqliteDataReader reader);
     }
-} 
+}

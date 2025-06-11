@@ -119,10 +119,10 @@ namespace ZooTycoonManager
 
                 float worldViewWidth = (float)_graphics.PreferredBackBufferWidth / currentZoom;
                 float worldViewHeight = (float)_graphics.PreferredBackBufferHeight / currentZoom;
-                
+
                 float clampMinX = (worldViewWidth / 2f) - CAMERA_BOUNDS_BUFFER;
                 float clampMaxX = _mapWidthInPixels - (worldViewWidth / 2f) + CAMERA_BOUNDS_BUFFER;
-                
+
                 float clampMinY = (worldViewHeight / 2f) - CAMERA_BOUNDS_BUFFER;
                 float clampMaxY = _mapHeightInPixels - (worldViewHeight / 2f) + CAMERA_BOUNDS_BUFFER;
 
@@ -134,7 +134,7 @@ namespace ZooTycoonManager
         public Matrix GetTransformMatrix()
         {
             Vector2 screenCenter = new Vector2(
-                _graphics.PreferredBackBufferWidth / 2f, 
+                _graphics.PreferredBackBufferWidth / 2f,
                 _graphics.PreferredBackBufferHeight / 2f
             );
 
@@ -150,4 +150,4 @@ namespace ZooTycoonManager
             _graphics.ApplyChanges();
         }
     }
-} 
+}
