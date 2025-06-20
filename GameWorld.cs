@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.Linq;
 using ZooTycoonManager.Commands;
 using ZooTycoonManager.Components;
@@ -59,8 +60,7 @@ namespace ZooTycoonManager
         GameObject _habitatMenu;
         GameObject _animalMenu;
         GameObject _zookeeperMenu;
-        private StatDisplay _visitorDisplay;
-        private StatDisplay _animalDisplay;
+        GameObject _infoPanel;
 
         private Texture2D _treeTexture;
         private List<Vector2> _staticTreePositions;
@@ -74,16 +74,9 @@ namespace ZooTycoonManager
         private List<Vector2> _boundaryFenceTilePositions;
         private HashSet<Vector2> _boundaryFenceTileCoordinates;
 
-        private Texture2D _infoButtonTexture;
-        private Texture2D _infoPanelTexture;
         private Texture2D _infoRibbonTexture;
         private Texture2D _infoIconTexture;
 
-        private Button _infoButton;
-        private bool _showInfoPanel = false;
-
-        // Money Management
-        private MoneyDisplay _moneyDisplay;
 
         public bool[,] WalkableMap { get; private set; }
 
@@ -141,10 +134,8 @@ namespace ZooTycoonManager
 
         private List<GameObject> _gameObjectsToRemove = new List<GameObject>();
 
-        private EntityInfoPopup _entityInfoPopup;
+        private GameObject _entityInfoPopupObject;
         private IInspectableEntity _selectedEntity;
-
-        private SaveButton saveButton;
 
         private PlacementMode _previousPlacement;
         private bool _wasPlacingRoadModeActive;
@@ -227,13 +218,6 @@ namespace ZooTycoonManager
                 _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
                 _graphics.ApplyChanges();
                 _camera.UpdateViewport(_graphics.GraphicsDevice.Viewport);
-
-                Vector2 newIonfoButtonPos = new Vector2(
-                    _graphics.PreferredBackBufferWidth - _infoButton.GetWidth() - 70,
-                    30
-);
-                _infoButton.SetPosition(newIonfoButtonPos);
-
             }
         }
 
@@ -296,8 +280,6 @@ namespace ZooTycoonManager
             _font = Content.Load<SpriteFont>("font");
             _habitatPreviewTexture = Content.Load<Texture2D>("fencesprite2");
             _shopPreviewTexture = Content.Load<Texture2D>("foodshopsprite_cut");
-            SpriteFont uiFont = Content.Load<SpriteFont>("UIFont");
-
 
             //foreach(var gameObject in gameObjects)
             //{
@@ -310,6 +292,64 @@ namespace ZooTycoonManager
             _buttonLabels = new List<string> { "Start Game", "Load Game", "Exit" };
             _buttonRectangles = new List<Rectangle>();
             StartScreen = Content.Load<Texture2D>("StartScreen");
+
+
+
+
+
+            var buildingsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 500, 100);
+
+            var buildingsBtns = new List<GameObject>();
+            var tilesBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y - 50), "Tiles - 10", () => { _isPlacingRoadModeActive = true; ToggleShop(); });
+            var shopBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), "Shop - 1.000", () => { StartShopPlacement("Shop - 1.000"); });
+            var treeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 50), "Tree", () => { StartTreePlacement(); });
+            var waterholeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 100), "Waterhole", () => { StartWaterholePlacement(); });
+
+            buildingsBtns.Add(tilesBtn);
+            buildingsBtns.Add(shopBtn);
+            buildingsBtns.Add(treeBtn);
+            buildingsBtns.Add(waterholeBtn);
+
+            _buildingsMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), buildingsBtns));
+            _buildingsMenu.IsActive = false;
+
+            var habitatsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 500, 100);
+            var habitatsBtns = new List<GameObject>();
+            var smallBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y - 50), "Small - 5.000", () => { StartHabitatPlacement("Small - 5.000"); });
+            var mediumBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), "Medium - 10.000", () => { StartHabitatPlacement("Medium - 10.000"); });
+            var largeBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, buildingsMenuPos.Y + 50), "Large - 15.000", () => { StartHabitatPlacement("Large - 15.000"); });
+
+            habitatsBtns.Add(smallBtn);
+            habitatsBtns.Add(mediumBtn);
+            habitatsBtns.Add(largeBtn);
+
+            _habitatMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), habitatsBtns));
+            _habitatMenu.IsActive = false;
+
+            var shopPos = new Vector2(GraphicsDevice.Viewport.Width - 200, 150);
+
+            var menuBtns = new List<GameObject>();
+            var BuildingsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y - 50), "Buildings", () => { ShowSubMenu("Buildings"); });
+            var HabitatsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y), "Habitats", () => { ShowSubMenu("Habitats"); });
+            var AnimalsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 50), "Animals", () => { ShowSubMenu("Animals"); });
+            var ZookeepersBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 100), "Zookeepers", () => { ShowSubMenu("Zookeepers"); });
+
+            menuBtns.Add(BuildingsBtn);
+            menuBtns.Add(HabitatsBtn);
+            menuBtns.Add(AnimalsBtn);
+            menuBtns.Add(ZookeepersBtn);
+
+            _shopWindow = Instantiate(EntityFactory.CreateMenu(new Vector2(shopPos.X, shopPos.Y), menuBtns));
+            _shopWindow.IsActive = false;
+
+            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - 100, 30);
+            Instantiate(EntityFactory.CreateButton(shopButtonPosition, "Shop", ToggleShop, ButtonSize.Small));
+
+            Instantiate(EntityFactory.CreateButtonWithIcon(new Vector2(GraphicsDevice.Viewport.Width - 170, 30), "info", ToggleInfoPanel, ButtonSize.Small));
+
+            Instantiate(EntityFactory.CreateMoneyUI(new Vector2(20, 5)));
+            Instantiate(EntityFactory.CreateVisitorUI(new Vector2(220, 5)));
+            Instantiate(EntityFactory.CreateAnimalUI(new Vector2(420, 5)));
 
             // Initialize shopButton textures and position
 
@@ -352,10 +392,6 @@ namespace ZooTycoonManager
             SpriteFont font = Content.Load<SpriteFont>("UIFont");
 
             Vector2 subMenuPos = new Vector2(870, 75); // eller placer det ift. shopButton
-            Vector2 saveButtonPos = new Vector2(5, 80);
-
-
-            saveButton = new SaveButton(shopButtonBackgroundTexture, _font, saveButtonPos);
 
 
             // Menuliste
@@ -363,12 +399,6 @@ namespace ZooTycoonManager
             string[] habitattype = { "Small - 5.000", "Medium - 10.000", "Large - 15.000" };
             string[] animals = { "Buffalo - 1.000", "Turtle - 5.000", "Chimpanze - 2.000", "Camel - 2.500", "Orangutan - 2.500", "Kangaroo - 2.500", "Wolf - 4.000", "Bear - 9.000", "Elephant - 8.000", "Polarbear - 10.000" };
             string[] zookeepers = { "Zookeeper - 5.000" };
-
-
-            // Save game button
-            Vector2 saveGamePosition = new Vector2(500, 90);
-
-
 
             //shop window
             Vector2 shopWindowPosition = new Vector2(1070, 90);
@@ -379,36 +409,16 @@ namespace ZooTycoonManager
             Texture2D moneyBackground = Content.Load<Texture2D>("Button_Blue_3Slides");
             Vector2 moneyPosition = new Vector2(10, 20);
 
-            _moneyDisplay = new MoneyDisplay(
-                uiFont,
-                new Vector2(10, 10),
-                Color.Black,
-                1.25f,
-                moneyBackground,
-                new Vector2(0, 0),
-                new Vector2(1f, 1f)
-            );
-            MoneyManager.Instance.Attach(_moneyDisplay);
-            MoneyManager.Instance.Notify();
-
             Texture2D displayBg = Content.Load<Texture2D>("Button_Blue_3Slides");
 
-            _visitorDisplay = new StatDisplay(uiFont, new Vector2(220, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
-            _animalDisplay = new StatDisplay(uiFont, new Vector2(430, 10), Color.Black, 1.25f, displayBg, Vector2.Zero, new Vector2(1f, 1f));
-
-            _infoButtonTexture = Content.Load<Texture2D>("Button_Blue");
-            _infoPanelTexture = Content.Load<Texture2D>("Button_Blue_9Slides");
             _infoRibbonTexture = Content.Load<Texture2D>("Ribbon_Blue_3Slides");
             _infoIconTexture = Content.Load<Texture2D>("info");
-
-            Vector2 infoButtonPos = new Vector2(GraphicsDevice.Viewport.Width - _infoButtonTexture.Width - 70, 30);
-            _infoButton = new Button(_infoButtonTexture, _infoIconTexture, infoButtonPos);
 
             _treePreviewTexture = Content.Load<Texture2D>("treegpt");
             _waterholePreviewTexture = Content.Load<Texture2D>("watergpt");
 
             // entity info popup
-            _entityInfoPopup = new EntityInfoPopup(GraphicsDevice, _font);
+            _entityInfoPopupObject = Instantiate(EntityFactory.CreateEntityInfoPopup());
 
             //tile textures
             tileTextures = new Texture2D[2];
@@ -424,56 +434,7 @@ namespace ZooTycoonManager
             _treeTexture = Content.Load<Texture2D>("tree1");
             InitializeStaticTrees();
 
-            var shopPos = new Vector2(GraphicsDevice.Viewport.Width - 100, 200);
-
-            Vector2 shopButtonPosition = new Vector2(GraphicsDevice.Viewport.Width - 40, 60);
-            Instantiate(EntityFactory.CreateButton(shopButtonPosition, "Shop", ToggleShop, ButtonSize.Small));
-
-            var menuBtns = new List<GameObject>();
-            var BuildingsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y - 50), "Buildings", () => { ShowSubMenu("Buildings"); });
-            var HabitatsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y), "Habitats", () => { ShowSubMenu("Habitats"); });
-            var AnimalsBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 50), "Animals", () => { ShowSubMenu("Animals"); });
-            var ZookeepersBtn = EntityFactory.CreateButton(new Vector2(shopPos.X, shopPos.Y + 100), "Zookeepers", () => { ShowSubMenu("Zookeepers"); });
-
-
-            menuBtns.Add(BuildingsBtn);
-            menuBtns.Add(HabitatsBtn);
-            menuBtns.Add(AnimalsBtn);
-            menuBtns.Add(ZookeepersBtn);
-
-            _shopWindow = Instantiate(EntityFactory.CreateMenu(new Vector2(shopPos.X, shopPos.Y), menuBtns));
-            _shopWindow.IsActive = false;
-
-            var buildingsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
-
-            var buildingsBtns = new List<GameObject>();
-            var tilesBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y - 50), "Tiles - 10", () => { _isPlacingRoadModeActive = true; ToggleShop(); });
-            var shopBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), "Shop - 1.000", () => { StartShopPlacement("Shop - 1.000"); });
-            var treeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 50), "Tree", () => { StartTreePlacement(); });
-            var waterholeBtn = EntityFactory.CreateButton(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y + 100), "Waterhole", () => { StartWaterholePlacement(); });
-
-            buildingsBtns.Add(tilesBtn);
-            buildingsBtns.Add(shopBtn);
-            buildingsBtns.Add(treeBtn);
-            buildingsBtns.Add(waterholeBtn);
-
-            _buildingsMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(buildingsMenuPos.X, buildingsMenuPos.Y), buildingsBtns));
-            _buildingsMenu.IsActive = false;
-
-            var habitatsMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
-            var habitatsBtns = new List<GameObject>();
-            var smallBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y - 50), "Small - 5.000", () => { StartHabitatPlacement("Small - 5.000"); });
-            var mediumBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), "Medium - 10.000", () => { StartHabitatPlacement("Medium - 10.000"); });
-            var largeBtn = EntityFactory.CreateButton(new Vector2(habitatsMenuPos.X, buildingsMenuPos.Y + 50), "Large - 15.000", () => { StartHabitatPlacement("Large - 15.000"); });
-
-            habitatsBtns.Add(smallBtn);
-            habitatsBtns.Add(mediumBtn);
-            habitatsBtns.Add(largeBtn);
-
-            _habitatMenu = Instantiate(EntityFactory.CreateMenu(new Vector2(habitatsMenuPos.X, habitatsMenuPos.Y), habitatsBtns));
-            _habitatMenu.IsActive = false;
-
-            var animalMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 300, 200);
+            var animalMenuPos = new Vector2(GraphicsDevice.Viewport.Width - 500, 200);
             var animalsBtns = new List<GameObject>();
 
             for (int i = 0; i < animals.Length; i++)
@@ -500,6 +461,10 @@ namespace ZooTycoonManager
             _zookeeperMenu.IsActive = false;
 
             Instantiate(EntityFactory.CreateFPSCounter(new Vector2(_graphics.PreferredBackBufferWidth - 60, 20)));
+
+            Instantiate(EntityFactory.CreateButton(new Vector2(50, 120), "Save", () => { }, ButtonSize.Small));
+
+            _infoPanel = Instantiate(EntityFactory.CreateInfoPanel());
         }
 
         public void ToggleShop()
@@ -510,6 +475,11 @@ namespace ZooTycoonManager
             _habitatMenu.IsActive = false;
             _animalMenu.IsActive = false;
             _zookeeperMenu.IsActive = false;
+        }
+
+        private void ToggleInfoPanel()
+        {
+            _infoPanel.IsActive = !_infoPanel.IsActive;
         }
 
         MouseState prevMouseState;
@@ -560,9 +530,6 @@ namespace ZooTycoonManager
             {
                 _ignoreNextMouseClick = true;
             }
-
-            _visitorDisplay.SetText($"Visitors: {GetVisitors().Count}");
-            _animalDisplay.SetText($"Animals: {GetAnimals().Count}");
 
             KeyboardState keyboard = Keyboard.GetState();
 
@@ -651,7 +618,7 @@ namespace ZooTycoonManager
                 }
             }
 
-            bool popupHandledClick = _entityInfoPopup.Update(mouse, prevMouseState);
+            bool popupHandledClick = _entityInfoPopupObject.GetComponent<EntityInfoPopupComponent>().PopupHandledClick;
 
             // This consolidated block handles all left-click actions.
             if (mouse.LeftButton == ButtonState.Pressed)
@@ -741,12 +708,12 @@ namespace ZooTycoonManager
                             }
                             _selectedEntity = clickedEntity;
                             _selectedEntity.IsSelected = true;
-                            _entityInfoPopup.Show(_selectedEntity);
+                            _entityInfoPopupObject.GetComponent<EntityInfoPopupComponent>().Show(_selectedEntity);
                         }
 
-                        else if (!entityClickedThisFrame && _entityInfoPopup.IsVisible && !popupHandledClick)
+                        else if (!entityClickedThisFrame && _entityInfoPopupObject.GetComponent<EntityInfoPopupComponent>().IsVisible && !popupHandledClick)
                         {
-                            _entityInfoPopup.Hide();
+                            _entityInfoPopupObject.GetComponent<EntityInfoPopupComponent>().Hide();
                             if (_selectedEntity != null)
                             {
                                 _selectedEntity.IsSelected = false;
@@ -791,13 +758,10 @@ namespace ZooTycoonManager
             //_animalMenu.Update(mouseState, prevMouseState);
             //_zookeeperMenu.Update(mouseState, prevMouseState);
 
-            _infoButton.Update(Mouse.GetState(), prevMouseState);
             //if (_infoButton.IsClicked)
             //{
             //    _showInfoPanel = !_showInfoPanel;
             //}
-
-            saveButton.Update(gameTime, mouseState, prevMouseState);
 
             prevMouseState = mouse;
             prevKeyboardState = keyboard;
@@ -835,12 +799,6 @@ namespace ZooTycoonManager
                     _graphics.PreferredBackBufferWidth - 260, // repostion af knap
                     90
 );
-
-            Vector2 newIonfoButtonPos = new Vector2(
-                _graphics.PreferredBackBufferWidth - _infoButton.GetWidth() - 70,
-                30
-);
-            _infoButton.SetPosition(newIonfoButtonPos);
         }
 
         protected override void Draw(GameTime gameTime)
@@ -1084,82 +1042,6 @@ namespace ZooTycoonManager
             foreach (var gameObject in gameObjects.Where(x => x.Layer == RenderLayer.Screen))
             {
                 gameObject.Draw(_spriteBatch);
-            }
-
-            saveButton.Draw(_spriteBatch);
-
-            _moneyDisplay.Draw(_spriteBatch);
-            _visitorDisplay.Draw(_spriteBatch);
-            _animalDisplay.Draw(_spriteBatch);
-
-            _entityInfoPopup.Draw(_spriteBatch);
-
-            _infoButton.Draw(_spriteBatch);
-
-            if (_showInfoPanel)
-            {
-                // Info panel tekstlinjer
-                string[] lines = new[]
-                {
-                    "The big number at the top is your Zoo Score. It is influenced by the visitors' mood.",
-                    "So, remember to keep your visitors happy!",
-                    "They like to see happy animals, and have easy access to food when they're hungry.",
-                    "Remember to hire zookeepers to look out for your animals!",
-                    "",
-                    "Controls: ",
-                    "Use middle mouse or arrow keys to move camera",
-                    "Use mouse wheel to zoom",
-                    "You can undo and redo your actions by pressing Ctrl + Z and Ctrl + Y",
-                    "",
-                };
-
-                // Beregn bredeste linje
-                float maxWidth = lines.Max(line => _font.MeasureString(line).X);
-                float lineHeight = _font.LineSpacing;
-                int lineCount = lines.Length;
-
-                // Padding
-                int horizontalPadding = 75;
-                int verticalPadding = 100;
-
-                // Samlet panelstørrelse – med ekstra plads
-                Vector2 panelSize = new Vector2(
-                    maxWidth + horizontalPadding * 2 + 60,
-                    lineCount * lineHeight + verticalPadding + 30
-                );
-
-                // Center position
-                Vector2 panelPos = new Vector2(
-                    (_graphics.PreferredBackBufferWidth - panelSize.X) / 2,
-                    (_graphics.PreferredBackBufferHeight - panelSize.Y) / 2
-                );
-
-                // Tegn baggrund som rectangle
-                Rectangle panelRect = new Rectangle(
-                    (int)panelPos.X,
-                    (int)panelPos.Y,
-                    (int)panelSize.X,
-                    (int)panelSize.Y
-                );
-
-                _spriteBatch.Draw(_infoPanelTexture, panelRect, Color.White);
-
-                // Ribbon (øverst centreret på boksen)
-                Vector2 ribbonPos = new Vector2(
-                    panelRect.X + (panelRect.Width - _infoRibbonTexture.Width) / 2,
-                    panelRect.Y + 10
-                );
-                _spriteBatch.Draw(_infoRibbonTexture, ribbonPos, Color.White);
-                ScoreManager.Instance.Draw(_spriteBatch, _font, ribbonPos + new Vector2(_infoRibbonTexture.Width / 2 - 5f, _infoRibbonTexture.Height / 2 - 10f));
-
-                // Tekst – start lidt under ribbon
-                Vector2 textStart = new Vector2(panelRect.X + horizontalPadding, ribbonPos.Y + _infoRibbonTexture.Height + 20);
-
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    Vector2 linePos = textStart + new Vector2(0, i * lineHeight);
-                    _spriteBatch.DrawString(_font, lines[i], linePos, Color.Black);
-                }
             }
 
             _spriteBatch.End();
@@ -1425,6 +1307,7 @@ namespace ZooTycoonManager
         public GameObject Instantiate(GameObject gameObject)
         {
             gameObjects.Add(gameObject);
+            gameObject.LoadContent(Content);
             return gameObject;
         }
     }

@@ -11,6 +11,9 @@ namespace ZooTycoonManager
     public class GameObject
     {
         private List<Component> _components = new List<Component>();
+        private List<GameObject> _children = new List<GameObject>();
+
+        public GameObject Parent { get; set; }
 
         public TransformComponent Transform { get; set; }
 
@@ -29,6 +32,16 @@ namespace ZooTycoonManager
             _components.Add(component);
             component.Owner = this;
             component.Initialize();
+        }
+
+        public void AddChild(GameObject child)
+        {
+            if(child.Parent != null)
+            {
+                child.Parent._children.Remove(child);
+            }
+            child.Parent = this;
+            _children.Add(child);
         }
 
         public T GetComponent<T>() where T : Component
@@ -50,6 +63,11 @@ namespace ZooTycoonManager
             {
                 component.Update(gameTime);
             }
+
+            foreach(var child in _children)
+            {
+                child.Update(gameTime);
+            }
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -60,6 +78,11 @@ namespace ZooTycoonManager
             {
                 component.Draw(spriteBatch);
             }
+
+            foreach(var child in _children)
+            {
+                child.Draw(spriteBatch);
+            }
         }
 
         public virtual void LoadContent(ContentManager contentManager)
@@ -67,6 +90,11 @@ namespace ZooTycoonManager
             foreach (var component in _components)
             {
                 component.LoadContent(contentManager);
+            }
+
+            foreach(var child in _children)
+            {
+                child.LoadContent(contentManager);
             }
         }
     }

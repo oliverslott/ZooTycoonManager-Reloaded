@@ -1,12 +1,13 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using ZooTycoonManager.Interfaces;
 
-namespace ZooTycoonManager.UI
+namespace ZooTycoonManager.Components
 {
-    public class EntityInfoPopup
+    public class EntityInfoPopupComponent : Component
     {
         private SpriteFont _font;
         private Texture2D _backgroundTexture;
@@ -23,18 +24,15 @@ namespace ZooTycoonManager.UI
         private const int PROGRESS_BAR_WIDTH = 150;
         private const float ITEM_SPACING = 5f;
         private const float LABEL_BAR_SPACING = 3f;
+        
+        private MouseState prevMouseState;
 
-        public EntityInfoPopup(GraphicsDevice graphicsDevice, SpriteFont font)
+        public bool PopupHandledClick { get; private set; }
+
+        public override void Initialize()
         {
-            _graphicsDevice = graphicsDevice;
-            _font = font;
+            _graphicsDevice = GameWorld.Instance.GraphicsDevice;
             _isVisible = false;
-
-            _backgroundTexture = new Texture2D(graphicsDevice, 1, 1);
-            _backgroundTexture.SetData(new[] { Color.White });
-
-            _closeButtonTexture = new Texture2D(graphicsDevice, 1, 1);
-            _closeButtonTexture.SetData(new[] { Color.Red });
 
             const int popupWidth = 270;
             const int popupHeight = 226;
@@ -52,6 +50,16 @@ namespace ZooTycoonManager.UI
                 CLOSE_BUTTON_SIZE);
         }
 
+        public override void LoadContent(ContentManager contentManager)
+        {
+            _font = contentManager.Load<SpriteFont>("font");
+            _backgroundTexture = new Texture2D(_graphicsDevice, 1, 1);
+            _backgroundTexture.SetData(new[] { Color.White });
+
+            _closeButtonTexture = new Texture2D(_graphicsDevice, 1, 1);
+            _closeButtonTexture.SetData(new[] { Color.Red });
+        }
+
         public void Show(IInspectableEntity entity)
         {
             _selectedEntity = entity;
@@ -62,6 +70,7 @@ namespace ZooTycoonManager.UI
 
             _closeButtonRectangle.X = _popupRectangle.X + _popupRectangle.Width - CLOSE_BUTTON_SIZE - PADDING / 2;
             _closeButtonRectangle.Y = _popupRectangle.Y + PADDING / 2;
+            Owner.IsActive = true;
         }
 
         public void Hide()
@@ -72,28 +81,41 @@ namespace ZooTycoonManager.UI
                 _selectedEntity.IsSelected = false;
             }
             _selectedEntity = null;
+            Owner.IsActive = false;
         }
-
+        
         public bool IsVisible => _isVisible;
 
-        public bool Update(MouseState mouseState, MouseState prevMouseState)
+        public override void Update(GameTime gameTime)
         {
-            if (!_isVisible) return false;
+            if (!_isVisible)
+            {
+                PopupHandledClick = false;
+                return;
+            }
+
+            MouseState mouseState = Mouse.GetState();
 
             _popupRectangle.X = _graphicsDevice.Viewport.Width - _popupRectangle.Width - PADDING;
             _popupRectangle.Y = _graphicsDevice.Viewport.Height - _popupRectangle.Height - PADDING;
             _closeButtonRectangle.X = _popupRectangle.X + _popupRectangle.Width - CLOSE_BUTTON_SIZE - PADDING / 2;
             _closeButtonRectangle.Y = _popupRectangle.Y + PADDING / 2;
-
+            
+            PopupHandledClick = false;
             if (mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
+                if (_popupRectangle.Contains(mouseState.Position))
+                {
+                    PopupHandledClick = true;
+                }
+
                 if (_closeButtonRectangle.Contains(mouseState.Position))
                 {
                     Hide();
-                    return true;
                 }
             }
-            return false;
+
+            prevMouseState = mouseState;
         }
 
         private void DrawProgressBar(SpriteBatch spriteBatch, Vector2 barDrawPosition, float currentValue, float maxValue, Color fillColor)
@@ -112,7 +134,7 @@ namespace ZooTycoonManager.UI
             spriteBatch.DrawString(_font, valueText, new Vector2(barDrawPosition.X + PROGRESS_BAR_WIDTH + 5, textY), Color.White);
         }
 
-        public void Draw(SpriteBatch spriteBatch)
+        public override void Draw(SpriteBatch spriteBatch)
         {
             if (!_isVisible || _selectedEntity == null) return;
 
@@ -162,4 +184,4 @@ namespace ZooTycoonManager.UI
             }
         }
     }
-}
+} 

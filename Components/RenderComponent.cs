@@ -11,22 +11,25 @@ namespace ZooTycoonManager.Components
         public string TexturePath { get; set; }
 
         public Rectangle? SourceRectangle { get; set; } = null;
-        public float Width { get; set; }
-        public float Height { get; set; }
+        public float Width { get; private set; } = 0f;
+        public float Height { get; private set; } = 0f;
         public Texture2D Texture { get => _texture; set => _texture = value; }
         public Vector2 Origin { get; set; } = Vector2.Zero;
+        public bool CenterOrigin { get; set; }
 
         public RenderComponent(string texturePath)
         {
             TexturePath = texturePath;
-        }
-
-        public override void LoadContent(ContentManager contentManager)
-        {
-            _texture = contentManager.Load<Texture2D>(TexturePath);
+            _texture = GameWorld.Instance.Content.Load<Texture2D>(TexturePath);
             Width = _texture.Width;
             Height = _texture.Height;
-            Origin = new Vector2(Width, Height) / 2;
+        }
+
+        public void SetSize(Vector2 size)
+        {
+            Width = size.X;
+            Height = size.Y;
+            //Origin = new Vector2(Width, Height) / 2;
         }
 
         public override void Initialize()
@@ -36,8 +39,24 @@ namespace ZooTycoonManager.Components
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            Vector2 scale = new Vector2(Width / _texture.Width, Height / _texture.Height);
-            spriteBatch.Draw(_texture, _transform.Position, SourceRectangle, Color.White, _transform.Rotation, Origin, scale, SpriteEffects.None, 0);
+            float sourceWidth = SourceRectangle?.Width ?? _texture.Width;
+            float sourceHeight = SourceRectangle?.Height ?? _texture.Height;
+            Vector2 scale = new Vector2(Width / sourceWidth, Height / sourceHeight);
+
+            Vector2 originToUse = Origin;
+            if (CenterOrigin)
+            {
+                if (SourceRectangle.HasValue)
+                {
+                    originToUse = new Vector2(SourceRectangle.Value.Width / 2f, SourceRectangle.Value.Height / 2f);
+                }
+                else
+                {
+                    originToUse = new Vector2(_texture.Width / 2f, _texture.Height / 2f);
+                }
+            }
+
+            spriteBatch.Draw(_texture, _transform.Position, SourceRectangle, Color.White, _transform.Rotation, originToUse, scale, SpriteEffects.None, 0);
         }
     }
 }

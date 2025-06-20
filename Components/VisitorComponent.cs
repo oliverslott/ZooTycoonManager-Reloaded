@@ -16,7 +16,7 @@ namespace ZooTycoonManager.Components
                 _habitatsToVisit.Add(habitat);
             }
 
-            if(!AttemptToVisitHabitat(_habitatsToVisit[0]))
+            if(_habitatsToVisit.Count > 0 && !AttemptToVisitHabitat(_habitatsToVisit[0]))
             {
                 //Couldn't get to it, just adding it to visited list
             }
